@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lernzeit Tracker</title>
+    <link rel="manifest" href="manifest.json">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -32,7 +33,7 @@
         <!-- Top Header -->
         <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300">
             <div class="flex items-center space-x-2">
-                <button class="p-2 rounded-full hover:bg-surface transition">
+                <button class="p-2 rounded-full hover:bg-surface transition" aria-label="Home">
                     <i data-lucide="home" class="w-6 h-6"></i>
                 </button>
                 <div id="header-title" class="hidden">
@@ -41,16 +42,16 @@
             </div>
 
             <div class="flex items-center space-x-3">
-                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive">
+                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive" aria-label="Eintrag hinzufügen">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                 </button>
-                <button id="btn-timer-toggle" class="p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white">
+                <button id="btn-timer-toggle" class="p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white" aria-label="Timer öffnen">
                     <i data-lucide="play" class="w-5 h-5 fill-current"></i>
                 </button>
-                <button id="btn-theme" class="p-2 rounded-full bg-success hover:bg-green-600 transition text-white">
+                <button id="btn-theme" class="p-2 rounded-full bg-success hover:bg-green-600 transition text-white" aria-label="Theme wechseln">
                     <i data-lucide="lightbulb" class="w-5 h-5 fill-current"></i>
                 </button>
-                <button id="btn-menu" class="p-2 rounded-full hover:bg-surface transition">
+                <button id="btn-menu" class="p-2 rounded-full hover:bg-surface transition" aria-label="Menü">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
             </div>
@@ -106,7 +107,7 @@
             <div id="view-faecher" class="view-section hidden animate-fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-bold">Fächer</h1>
-                    <button id="btn-add-subject" class="bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition">
+                    <button id="btn-add-subject" class="bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition" aria-label="Fach hinzufügen">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -185,11 +186,11 @@
         <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <!-- Timer Header -->
             <div class="flex justify-between items-center p-4">
-                <button id="btn-timer-close" class="p-2 rounded-full hover:bg-surface transition">
+                <button id="btn-timer-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Timer schließen">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
                 <div class="text-sm font-medium text-adaptive-muted">Timer</div>
-                <button class="p-2 rounded-full hover:bg-surface transition">
+                <button class="p-2 rounded-full hover:bg-surface transition" aria-label="Timer maximieren">
                     <i data-lucide="maximize-2" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -199,7 +200,7 @@
 
                 <!-- Subject Selector -->
                 <div class="w-full max-w-xs">
-                     <select id="timer-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none">
+                     <select id="timer-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none" aria-label="Fach auswählen">
                         <!-- Options injected via JS -->
                      </select>
                 </div>
@@ -211,13 +212,13 @@
 
                 <!-- Controls -->
                 <div class="flex items-center space-x-6">
-                    <button id="btn-timer-start" class="w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition">
+                    <button id="btn-timer-start" class="w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition" aria-label="Timer starten">
                          <i data-lucide="play" class="w-8 h-8 fill-current ml-1"></i>
                     </button>
-                    <button id="btn-timer-pause" class="hidden w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black">
+                    <button id="btn-timer-pause" class="hidden w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black" aria-label="Timer pausieren">
                          <i data-lucide="pause" class="w-8 h-8 fill-current"></i>
                     </button>
-                    <button id="btn-timer-stop" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white">
+                    <button id="btn-timer-stop" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white" aria-label="Timer stoppen">
                          <i data-lucide="square" class="w-6 h-6 fill-current"></i>
                     </button>
                 </div>
@@ -235,7 +236,7 @@
         <div id="add-entry-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <!-- Header -->
             <div class="flex justify-between items-center p-4">
-                <button id="btn-add-close" class="p-2 rounded-full hover:bg-surface transition">
+                <button id="btn-add-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
                 <div class="text-sm font-medium text-adaptive-muted">Eintrag hinzufügen</div>
@@ -285,7 +286,7 @@
         <div id="add-subject-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <!-- Header -->
             <div class="flex justify-between items-center p-4">
-                <button id="btn-add-subject-close" class="p-2 rounded-full hover:bg-surface transition">
+                <button id="btn-add-subject-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
                 <div class="text-sm font-medium text-adaptive-muted">Fach hinzufügen</div>
@@ -332,7 +333,7 @@
         <div id="settings-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <!-- Header -->
             <div class="flex justify-between items-center p-4">
-                <button id="btn-settings-close" class="p-2 rounded-full hover:bg-surface transition">
+                <button id="btn-settings-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
                 <div class="text-sm font-medium text-adaptive-muted">Einstellungen</div>
