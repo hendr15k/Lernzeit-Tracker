@@ -98,7 +98,12 @@
 
             <!-- View: Fächer -->
             <div id="view-faecher" class="view-section hidden animate-fade-in">
-                <h1 class="text-3xl font-bold mb-6">Fächer</h1>
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Fächer</h1>
+                    <button id="btn-add-subject" class="bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
                 <div id="faecher-list" class="grid gap-4">
                     <!-- Dynamic List -->
                 </div>
@@ -243,6 +248,53 @@
             <div class="p-8 pb-12">
                 <button id="btn-add-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
                     Speichern
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Subject Overlay -->
+        <div id="add-subject-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-add-subject-close" class="p-2 rounded-full hover:bg-surface transition">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-gray-400">Fach hinzufügen</div>
+                <div class="w-10"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+
+                <!-- Name -->
+                <div class="w-full">
+                    <label class="block text-sm text-gray-400 mb-2">Name</label>
+                    <input type="text" id="add-subject-name" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Physik">
+                </div>
+
+                <!-- Color -->
+                <div class="w-full">
+                    <label class="block text-sm text-gray-400 mb-2">Farbe</label>
+                    <select id="add-subject-color" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                        <option value="bg-red-500">Rot</option>
+                        <option value="bg-orange-500">Orange</option>
+                        <option value="bg-yellow-500">Gelb</option>
+                        <option value="bg-green-500">Grün</option>
+                        <option value="bg-teal-500">Türkis</option>
+                        <option value="bg-blue-500">Blau</option>
+                        <option value="bg-indigo-500">Indigo</option>
+                        <option value="bg-purple-500">Lila</option>
+                        <option value="bg-pink-500">Pink</option>
+                        <option value="bg-gray-500">Grau</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <!-- Save Button -->
+            <div class="p-8 pb-12">
+                <button id="btn-add-subject-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Fach Speichern
                 </button>
             </div>
         </div>
