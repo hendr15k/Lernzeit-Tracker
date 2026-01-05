@@ -55,6 +55,7 @@ function initSettings() {
     const btnClose = document.getElementById('btn-settings-close');
     const btnSave = document.getElementById('btn-settings-save');
     const dailyGoalInput = document.getElementById('settings-daily-goal');
+    const btnReset = document.getElementById('btn-settings-reset');
 
     // Open Settings
     btnMenu.addEventListener('click', () => {
@@ -80,6 +81,18 @@ function initSettings() {
             alert('Bitte geben Sie ein gültiges Ziel ein.');
         }
     });
+
+    // Reset Data
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (confirm('WARNUNG: Alle Daten werden unwiderruflich gelöscht! Fortfahren?')) {
+                if (confirm('Sind Sie wirklich sicher?')) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            }
+        });
+    }
 }
 
 function initAddEntry() {
@@ -253,6 +266,11 @@ function initTimer() {
     });
 
     btnStop.addEventListener('click', () => {
+        if (timerSeconds > 0) {
+            if (!confirm('Timer stoppen? Die aktuelle Sitzung wird nicht gespeichert.')) {
+                return;
+            }
+        }
         isTimerRunning = false;
         clearInterval(timerInterval);
         timerSeconds = 0;
@@ -306,6 +324,61 @@ function updateViews() {
     renderHistory(entries, subjects);
     renderCalendar(entries);
     renderFaecher(entries, subjects);
+    renderSemester(entries, subjects);
+}
+
+function renderSemester(entries, subjects) {
+    const totalTimeEl = document.getElementById('semester-total-time');
+    const totalSessionsEl = document.getElementById('semester-total-sessions');
+    const avgSessionEl = document.getElementById('semester-avg-session');
+    const breakdownContainer = document.getElementById('semester-breakdown');
+
+    // Global Stats
+    const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
+    const totalHours = (totalSeconds / 3600).toFixed(1);
+    const totalSessions = entries.length;
+    const avgSessionMinutes = totalSessions > 0 ? Math.round((totalSeconds / totalSessions) / 60) : 0;
+
+    totalTimeEl.textContent = `${totalHours}h`;
+    totalSessionsEl.textContent = totalSessions;
+    avgSessionEl.textContent = `${avgSessionMinutes}m`;
+
+    // Breakdown
+    breakdownContainer.innerHTML = '';
+
+    // Sort subjects by duration (desc)
+    const subjectStats = subjects.map(subject => {
+        const subjectEntries = entries.filter(e => e.subjectId === subject.id);
+        const duration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
+        return { ...subject, duration };
+    }).sort((a, b) => b.duration - a.duration);
+
+    const maxDuration = subjectStats.length > 0 ? subjectStats[0].duration : 0;
+
+    subjectStats.forEach(subject => {
+        if (subject.duration === 0) return; // Skip empty subjects
+
+        const hrs = Math.floor(subject.duration / 3600);
+        const mins = Math.floor((subject.duration % 3600) / 60);
+        const percentage = maxDuration > 0 ? (subject.duration / maxDuration) * 100 : 0;
+        const totalPercentage = totalSeconds > 0 ? Math.round((subject.duration / totalSeconds) * 100) : 0;
+
+        const item = document.createElement('div');
+        item.className = 'surface-card p-4 border border-gray-800';
+        item.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full ${subject.color}"></div>
+                    <div class="font-bold">${subject.name}</div>
+                </div>
+                <div class="text-sm text-gray-400">${hrs}h ${mins}m (${totalPercentage}%)</div>
+            </div>
+            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full ${subject.color} transition-all" style="width: ${percentage}%"></div>
+            </div>
+        `;
+        breakdownContainer.appendChild(item);
+    });
 }
 
 function updateDashboard(entries) {
@@ -527,29 +600,48 @@ function renderGraph(entries) {
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        days.push(d.toDateString());
+        days.push({
+            dateStr: d.toDateString(),
+            label: d.toLocaleDateString('de-DE', { weekday: 'short' })
+        });
     }
 
     // Aggregate duration per day
     const data = days.map(day => {
-        const dayEntries = entries.filter(e => new Date(e.startTime).toDateString() === day);
-        return dayEntries.reduce((acc, curr) => acc + curr.duration, 0);
+        const dayEntries = entries.filter(e => new Date(e.startTime).toDateString() === day.dateStr);
+        return {
+            seconds: dayEntries.reduce((acc, curr) => acc + curr.duration, 0),
+            label: day.label
+        };
     });
 
-    const max = Math.max(...data, 3600); // Min 1 hour scale
+    const max = Math.max(...data.map(d => d.seconds), 3600); // Min 1 hour scale
 
-    data.forEach(seconds => {
-        const height = (seconds / max) * 100;
+    data.forEach(item => {
+        const height = (item.seconds / max) * 100;
+
+        // Container for bar + label
+        const col = document.createElement('div');
+        col.className = 'flex-1 flex flex-col justify-end group';
+
         const bar = document.createElement('div');
-        bar.className = 'flex-1 bg-blue-500/20 hover:bg-blue-500 transition-all rounded-t-sm relative group';
+        bar.className = 'w-full bg-blue-500/20 group-hover:bg-blue-500 transition-all rounded-t-sm relative';
         bar.style.height = `${Math.max(height, 5)}%`; // Min height 5%
 
         // Tooltip
         const tooltip = document.createElement('div');
-        tooltip.className = 'absolute -top-8 left-1/2 transform -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-gray-700';
-        tooltip.textContent = `${Math.round(seconds / 60)}m`;
+        tooltip.className = 'absolute -top-8 left-1/2 transform -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-gray-700 pointer-events-none';
+        tooltip.textContent = `${Math.round(item.seconds / 60)}m`;
+
+        // Label
+        const label = document.createElement('div');
+        label.className = 'text-[10px] text-gray-500 text-center mt-1';
+        label.textContent = item.label;
 
         bar.appendChild(tooltip);
-        graphContainer.appendChild(bar);
+        col.appendChild(bar);
+        col.appendChild(label);
+
+        graphContainer.appendChild(col);
     });
 }
