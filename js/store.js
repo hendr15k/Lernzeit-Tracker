@@ -63,6 +63,12 @@ class StorageManager {
         localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
     }
 
+    deleteEntry(id) {
+        // Ensure type consistency (comparing as strings)
+        const entries = this.getEntries().filter(e => String(e.id) !== String(id));
+        localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+    }
+
     getSubjects() {
         return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
     }
