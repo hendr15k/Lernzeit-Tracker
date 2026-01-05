@@ -26,35 +26,6 @@ class StorageManager {
         }
         localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 
-        // Seed dummy entries for demo if empty or just initialized
-        if (localStorage.getItem(this.STORAGE_KEYS.ENTRIES) === null) {
-            const dummyEntries = [];
-            const now = Date.now();
-            const day = 86400000;
-
-            // Generate last 5 days data
-            for (let i = 0; i < 5; i++) {
-                const date = now - (i * day);
-                // 2 entries per day
-                dummyEntries.push({
-                    id: `seed-${i}-1`,
-                    subjectId: '1', // Informatik
-                    duration: 3600 + Math.random() * 1800, // 1h - 1.5h
-                    startTime: date,
-                    endTime: date + 3600000,
-                    notes: 'Demo Session'
-                });
-                dummyEntries.push({
-                    id: `seed-${i}-2`,
-                    subjectId: '2', // Mathe
-                    duration: 1800 + Math.random() * 900, // 30m - 45m
-                    startTime: date + 5000000, // later that day
-                    endTime: date + 5000000 + 1800000,
-                    notes: 'Demo Session'
-                });
-            }
-            localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(dummyEntries));
-        }
     }
 
     getEntries() {
@@ -65,6 +36,15 @@ class StorageManager {
         const entries = this.getEntries();
         entries.push({ ...entry, id: Date.now().toString() });
         localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+    }
+
+    updateEntry(updatedEntry) {
+        const entries = this.getEntries();
+        const index = entries.findIndex(e => String(e.id) === String(updatedEntry.id));
+        if (index !== -1) {
+            entries[index] = { ...entries[index], ...updatedEntry };
+            localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+        }
     }
 
     deleteEntry(id) {

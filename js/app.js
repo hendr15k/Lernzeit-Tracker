@@ -1,6 +1,7 @@
 let timerInterval = null;
 let timerSeconds = 0;
 let isTimerRunning = false;
+let timerStartTime = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
@@ -56,6 +57,9 @@ function initSettings() {
     const btnSave = document.getElementById('btn-settings-save');
     const dailyGoalInput = document.getElementById('settings-daily-goal');
     const btnReset = document.getElementById('btn-settings-reset');
+    const btnExport = document.getElementById('btn-settings-export');
+    const btnImportTrigger = document.getElementById('btn-settings-import-trigger');
+    const importInput = document.getElementById('settings-import-input');
 
     // Open Settings
     btnMenu.addEventListener('click', () => {
@@ -82,6 +86,60 @@ function initSettings() {
         }
     });
 
+    // Export Data
+    if (btnExport) {
+        btnExport.addEventListener('click', () => {
+            const data = {
+                entries: window.storageManager.getEntries(),
+                subjects: window.storageManager.getSubjects(),
+                settings: window.storageManager.getSettings(),
+                exportDate: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "lernzeit_backup_" + new Date().toISOString().split('T')[0] + ".json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        });
+    }
+
+    // Import Data
+    if (btnImportTrigger && importInput) {
+        btnImportTrigger.addEventListener('click', () => {
+            importInput.click();
+        });
+
+        importInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (data.entries && data.subjects && data.settings) {
+                        if (confirm('Wollen Sie wirklich Ihre aktuellen Daten mit dem Backup überschreiben? Dies kann nicht rückgängig gemacht werden.')) {
+                            localStorage.setItem(window.storageManager.STORAGE_KEYS.ENTRIES, JSON.stringify(data.entries));
+                            localStorage.setItem(window.storageManager.STORAGE_KEYS.SUBJECTS, JSON.stringify(data.subjects));
+                            localStorage.setItem(window.storageManager.STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
+                            location.reload();
+                        }
+                    } else {
+                        alert('Ungültige Datei. Das Format scheint nicht zu stimmen.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Fehler beim Lesen der Datei.');
+                }
+            };
+            reader.readAsText(file);
+            // Reset input so same file can be selected again
+            importInput.value = '';
+        });
+    }
+
     // Reset Data
     if (btnReset) {
         btnReset.addEventListener('click', () => {
@@ -104,21 +162,37 @@ function initAddEntry() {
     const dateInput = document.getElementById('add-date-input');
     const durationInput = document.getElementById('add-duration-input');
 
-    // Populate subjects
-    const subjects = window.storageManager.getSubjects();
-    subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    // Helper to open overlay
+    window.openAddEntryOverlay = (editEntryId = null) => {
+        const subjects = window.storageManager.getSubjects();
+        subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
-    // Set default date to today
-    dateInput.valueAsDate = new Date();
+        if (editEntryId) {
+            const entries = window.storageManager.getEntries();
+            const entry = entries.find(e => String(e.id) === String(editEntryId));
+            if (entry) {
+                overlay.setAttribute('data-edit-id', entry.id);
+                document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag bearbeiten';
 
-    // Open/Close
-    btnAdd.addEventListener('click', () => {
+                subjectSelect.value = entry.subjectId;
+                dateInput.valueAsDate = new Date(entry.startTime);
+                durationInput.value = Math.round(entry.duration / 60);
+            }
+        } else {
+            overlay.removeAttribute('data-edit-id');
+            document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag hinzufügen';
+            dateInput.valueAsDate = new Date();
+            durationInput.value = '';
+        }
         overlay.classList.remove('translate-y-full');
-        // Refresh subjects in case they changed
-        const currentSubjects = window.storageManager.getSubjects();
-        subjectSelect.innerHTML = currentSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    };
+
+    // Open (New)
+    btnAdd.addEventListener('click', () => {
+        window.openAddEntryOverlay();
     });
 
+    // Close
     btnClose.addEventListener('click', () => {
         overlay.classList.add('translate-y-full');
     });
@@ -128,16 +202,22 @@ function initAddEntry() {
         const subjectId = subjectSelect.value;
         const dateVal = dateInput.value;
         const durationMin = parseInt(durationInput.value);
+        const editId = overlay.getAttribute('data-edit-id');
 
         if (subjectId && dateVal && durationMin > 0) {
-            const entry = {
+            const entryData = {
                 subjectId: subjectId,
                 duration: durationMin * 60,
                 startTime: new Date(dateVal).getTime(),
                 endTime: new Date(dateVal).getTime() + (durationMin * 60 * 1000),
                 notes: 'Manual Entry'
             };
-            window.storageManager.addEntry(entry);
+
+            if (editId) {
+                window.storageManager.updateEntry({ ...entryData, id: editId });
+            } else {
+                window.storageManager.addEntry(entryData);
+            }
 
             // Reset and close
             durationInput.value = '';
@@ -216,8 +296,10 @@ function initTimer() {
 
     function startInterval() {
         if (timerInterval) clearInterval(timerInterval);
+        timerStartTime = Date.now() - (timerSeconds * 1000);
         timerInterval = setInterval(() => {
-            timerSeconds++;
+            const now = Date.now();
+            timerSeconds = Math.floor((now - timerStartTime) / 1000);
             updateDisplay();
             saveState();
         }, 1000);
@@ -432,6 +514,9 @@ function renderHistory(entries, subjects) {
             </div>
             <div class="flex items-center space-x-2 text-gray-400">
                 <span>${durationMin} min</span>
+                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
                 <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${entry.id}">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
@@ -440,7 +525,15 @@ function renderHistory(entries, subjects) {
         container.appendChild(item);
     });
 
-    // Add Delete Event Listeners
+    // Add Event Listeners
+    container.querySelectorAll('.btn-edit-entry').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.getAttribute('data-id');
+            window.openAddEntryOverlay(id);
+        });
+    });
+
     container.querySelectorAll('.btn-delete-entry').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent potentially triggering other click events

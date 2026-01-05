@@ -338,8 +338,24 @@
                     <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
                 </div>
 
-                <!-- Danger Zone -->
+                <!-- Data Management -->
                 <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-lg font-bold mb-4">Datenverwaltung</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <button id="btn-settings-export" class="py-3 bg-surface hover:bg-gray-700 text-white border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Exportieren</span>
+                        </button>
+                        <button id="btn-settings-import-trigger" class="py-3 bg-surface hover:bg-gray-700 text-white border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Importieren</span>
+                        </button>
+                        <input type="file" id="settings-import-input" class="hidden" accept=".json">
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="w-full pt-4 border-t border-gray-800">
                     <h3 class="text-red-500 font-bold mb-4">Gefahrenzone</h3>
                     <button id="btn-settings-reset" class="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg transition font-medium">
                         Alle Daten löschen
