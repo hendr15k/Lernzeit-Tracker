@@ -247,6 +247,38 @@
             </div>
         </div>
 
+        <!-- Settings Overlay -->
+        <div id="settings-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-settings-close" class="p-2 rounded-full hover:bg-surface transition">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-gray-400">Einstellungen</div>
+                <div class="w-10"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-8">
+
+                <h2 class="text-2xl font-bold">Einstellungen</h2>
+
+                <!-- Daily Goal -->
+                <div class="w-full">
+                    <label class="block text-sm text-gray-400 mb-2">Tägliches Ziel (Minuten)</label>
+                    <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
+                </div>
+
+            </div>
+
+            <!-- Save Button -->
+            <div class="p-8 pb-12">
+                <button id="btn-settings-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Einstellungen Speichern
+                </button>
+            </div>
+        </div>
+
     </div>
 
     <!-- Scripts -->

@@ -18,9 +18,13 @@ class StorageManager {
             ];
             localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(defaultSubjects));
         }
-        if (!localStorage.getItem(this.STORAGE_KEYS.SETTINGS)) {
-            localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify({ darkMode: true }));
+
+        let settings = { darkMode: true, dailyGoal: 60 };
+        if (localStorage.getItem(this.STORAGE_KEYS.SETTINGS)) {
+            const storedSettings = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS));
+            settings = { ...settings, ...storedSettings };
         }
+        localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 
         // Seed dummy entries for demo if empty or just initialized
         if (!localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES)).length === 0) {
@@ -71,6 +75,16 @@ class StorageManager {
 
     getSubjects() {
         return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+    }
+
+    getSettings() {
+        return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{"darkMode":true, "dailyGoal": 60}');
+    }
+
+    updateSettings(newSettings) {
+        const currentSettings = this.getSettings();
+        const settings = { ...currentSettings, ...newSettings };
+        localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
     }
 }
 

@@ -6,9 +6,43 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initTimer();
     initAddEntry();
+    initSettings();
     updateViews();
     lucide.createIcons();
 });
+
+function initSettings() {
+    const overlay = document.getElementById('settings-overlay');
+    const btnMenu = document.getElementById('btn-menu');
+    const btnClose = document.getElementById('btn-settings-close');
+    const btnSave = document.getElementById('btn-settings-save');
+    const dailyGoalInput = document.getElementById('settings-daily-goal');
+
+    // Open Settings
+    btnMenu.addEventListener('click', () => {
+        const settings = window.storageManager.getSettings();
+        dailyGoalInput.value = settings.dailyGoal || 60;
+        overlay.classList.remove('translate-y-full');
+    });
+
+    // Close Settings
+    btnClose.addEventListener('click', () => {
+        overlay.classList.add('translate-y-full');
+    });
+
+    // Save Settings
+    btnSave.addEventListener('click', () => {
+        const newGoal = parseInt(dailyGoalInput.value);
+        if (newGoal > 0) {
+            window.storageManager.updateSettings({ dailyGoal: newGoal });
+            overlay.classList.add('translate-y-full');
+            updateViews();
+            alert('Einstellungen gespeichert!');
+        } else {
+            alert('Bitte geben Sie ein gültiges Ziel ein.');
+        }
+    });
+}
 
 function initAddEntry() {
     const overlay = document.getElementById('add-entry-overlay');
@@ -332,9 +366,16 @@ function renderCalendar(entries) {
         const hrs = Math.floor(day.duration / 3600);
         const mins = Math.floor((day.duration % 3600) / 60);
 
-        // Dummy Goal: 1h per day
-        const goalSeconds = 3600;
+        // Configurable Goal
+        const goalMinutes = window.storageManager.getSettings().dailyGoal || 60;
+        const goalSeconds = goalMinutes * 60;
         const progress = Math.min((day.duration / goalSeconds) * 100, 100);
+
+        // Display goal in text
+        const goalHrs = Math.floor(goalMinutes / 60);
+        const goalMinsRemaining = goalMinutes % 60;
+        const goalText = goalHrs > 0 ? (goalMinsRemaining > 0 ? `${goalHrs}h ${goalMinsRemaining}m` : `${goalHrs}h`) : `${goalMinsRemaining}m`;
+
 
         const item = document.createElement('div');
         item.className = 'surface-card p-4 border border-gray-800';
@@ -344,7 +385,7 @@ function renderCalendar(entries) {
                 <i data-lucide="trophy" class="w-4 h-4 ${progress >= 100 ? 'text-yellow-500' : 'text-gray-600'}"></i>
             </div>
             <div class="flex justify-between text-sm text-gray-400 mb-2">
-                <div>Lernzeit: <span class="text-white">${hrs}h ${mins}m</span> / 1h</div>
+                <div>Lernzeit: <span class="text-white">${hrs}h ${mins}m</span> / ${goalText}</div>
                 <div>${day.count} Einheiten</div>
             </div>
             <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
