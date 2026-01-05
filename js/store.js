@@ -27,7 +27,7 @@ class StorageManager {
         localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 
         // Seed dummy entries for demo if empty or just initialized
-        if (!localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES)).length === 0) {
+        if (localStorage.getItem(this.STORAGE_KEYS.ENTRIES) === null) {
             const dummyEntries = [];
             const now = Date.now();
             const day = 86400000;
@@ -75,6 +75,17 @@ class StorageManager {
 
     getSubjects() {
         return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+    }
+
+    addSubject(subject) {
+        const subjects = this.getSubjects();
+        subjects.push({ ...subject, id: Date.now().toString() });
+        localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+    }
+
+    deleteSubject(id) {
+        const subjects = this.getSubjects().filter(s => String(s.id) !== String(id));
+        localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
     }
 
     getSettings() {

@@ -7,9 +7,47 @@ document.addEventListener('DOMContentLoaded', () => {
     initTimer();
     initAddEntry();
     initSettings();
+    initSubjectManagement();
     updateViews();
     lucide.createIcons();
 });
+
+function initSubjectManagement() {
+    const overlay = document.getElementById('add-subject-overlay');
+    const btnAdd = document.getElementById('btn-add-subject');
+    const btnClose = document.getElementById('btn-add-subject-close');
+    const btnSave = document.getElementById('btn-add-subject-save');
+    const nameInput = document.getElementById('add-subject-name');
+    const colorInput = document.getElementById('add-subject-color');
+
+    // Open
+    if (btnAdd) {
+        btnAdd.addEventListener('click', () => {
+            nameInput.value = '';
+            overlay.classList.remove('translate-y-full');
+        });
+    }
+
+    // Close
+    btnClose.addEventListener('click', () => {
+        overlay.classList.add('translate-y-full');
+    });
+
+    // Save
+    btnSave.addEventListener('click', () => {
+        const name = nameInput.value.trim();
+        const color = colorInput.value;
+
+        if (name) {
+            window.storageManager.addSubject({ name, color });
+            overlay.classList.add('translate-y-full');
+            updateViews();
+            alert(`Fach "${name}" hinzugefügt!`);
+        } else {
+            alert('Bitte geben Sie einen Namen ein.');
+        }
+    });
+}
 
 function initSettings() {
     const overlay = document.getElementById('settings-overlay');
@@ -419,12 +457,24 @@ function renderFaecher(entries, subjects) {
                     <div class="text-xs text-gray-400">${hrs}h ${mins}m gelernt</div>
                 </div>
             </div>
-            <button class="p-2 hover:bg-white/5 rounded-full">
-                <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+            <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-gray-400" data-id="${subject.id}">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
             </button>
         `;
         container.appendChild(item);
     });
+
+    // Delete Handlers
+    container.querySelectorAll('.btn-delete-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = btn.getAttribute('data-id');
+            if (confirm('Fach wirklich löschen? Einträge bleiben erhalten, aber ohne Fachzuordnung.')) {
+                window.storageManager.deleteSubject(id);
+                updateViews();
+            }
+        });
+    });
+
     lucide.createIcons();
 }
 
