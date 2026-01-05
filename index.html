@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lernzeit Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f0f11',
+                        surface: '#1c1c1e',
+                        primary: '#3b82f6',
+                        success: '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-white font-sans antialiased pb-24">
+    <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden flex flex-col">
+
+        <!-- Top Header -->
+        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10">
+            <div class="flex items-center space-x-2">
+                <button class="p-2 rounded-full hover:bg-surface transition">
+                    <i data-lucide="home" class="w-6 h-6"></i>
+                </button>
+                <div id="header-title" class="hidden">
+                    <!-- Dynamic Title -->
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-timer-toggle" class="p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white">
+                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                </button>
+                <button id="btn-theme" class="p-2 rounded-full bg-success hover:bg-green-600 transition text-white">
+                    <i data-lucide="lightbulb" class="w-5 h-5 fill-current"></i>
+                </button>
+                <button id="btn-menu" class="p-2 rounded-full hover:bg-surface transition">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="flex-1 p-4 overflow-y-auto">
+
+            <!-- View: Dashboard -->
+            <div id="view-dashboard" class="view-section animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+                <div class="grid gap-4">
+                    <!-- Graph Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Aktienkurs</h2>
+                            <span class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">+12%</span>
+                        </div>
+                        <div class="h-32 flex items-end space-x-2" id="dashboard-graph">
+                            <!-- Bars injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Streak Widget -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-3xl font-bold text-primary" id="dashboard-streak">0</div>
+                             <div class="text-xs text-gray-400">Tage Streak</div>
+                        </div>
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-3xl font-bold text-success" id="dashboard-total">0h</div>
+                             <div class="text-xs text-gray-400">Gesamtzeit</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Einheiten -->
+            <div id="view-einheiten" class="view-section hidden animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Einheiten</h1>
+                <div id="einheiten-list" class="space-y-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- View: Fächer -->
+            <div id="view-faecher" class="view-section hidden animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Fächer</h1>
+                <div id="faecher-list" class="grid gap-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- View: Kalender -->
+            <div id="view-kalender" class="view-section hidden animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Kalender</h1>
+                <div class="flex space-x-2 mb-6">
+                    <button class="px-4 py-2 bg-surface rounded-full text-sm font-medium">Tagessicht</button>
+                    <button class="px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-gray-400">Wochensicht</button>
+                    <button class="px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-gray-400">Monatssicht</button>
+                </div>
+                <div id="kalender-list" class="space-y-6">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- View: Semester -->
+            <div id="view-semester" class="view-section hidden animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Semester</h1>
+                <div class="surface-card p-4 h-48 flex items-center justify-center border border-gray-800">
+                     <span class="text-gray-500">Semester Stats</span>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe">
+            <div class="max-w-md mx-auto flex justify-between items-center px-4 py-3">
+                <button class="nav-btn active flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-dashboard">
+                    <i data-lucide="gauge" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Dashboard</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-einheiten">
+                    <i data-lucide="history" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Einheiten</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-faecher">
+                    <i data-lucide="landmark" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Fächer</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-kalender">
+                    <i data-lucide="calendar" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Kalender</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-semester">
+                    <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Semester</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Timer Overlay -->
+        <div id="timer-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Timer Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-timer-close" class="p-2 rounded-full hover:bg-surface transition">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-gray-400">Timer</div>
+                <button class="p-2 rounded-full hover:bg-surface transition">
+                    <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Timer Content -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-12">
+
+                <!-- Subject Selector -->
+                <div class="w-full max-w-xs">
+                     <select id="timer-subject-select" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none">
+                        <!-- Options injected via JS -->
+                     </select>
+                </div>
+
+                <!-- Time Display -->
+                <div class="text-7xl font-mono font-bold tracking-wider" id="timer-display">
+                    00:00:00
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center space-x-6">
+                    <button id="btn-timer-start" class="w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition">
+                         <i data-lucide="play" class="w-8 h-8 fill-current ml-1"></i>
+                    </button>
+                    <button id="btn-timer-pause" class="hidden w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black">
+                         <i data-lucide="pause" class="w-8 h-8 fill-current"></i>
+                    </button>
+                    <button id="btn-timer-stop" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white">
+                         <i data-lucide="square" class="w-6 h-6 fill-current"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Save Button (visible when stopped/paused) -->
+            <div class="p-8 pb-12">
+                <button id="btn-timer-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Sitzung speichern
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/store.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
