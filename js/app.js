@@ -6,9 +6,61 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initTimer();
     initAddEntry();
+    initSettings();
     updateViews();
     lucide.createIcons();
 });
+
+function initSettings() {
+    const overlay = document.getElementById('settings-overlay');
+    const btnMenu = document.getElementById('btn-menu');
+    const btnClose = document.getElementById('btn-settings-close');
+    const btnSave = document.getElementById('btn-settings-save');
+    const btnReset = document.getElementById('btn-reset-data');
+    const goalInput = document.getElementById('settings-goal-input');
+
+    // Load Settings
+    const settings = window.storageManager.getSettings();
+    goalInput.value = settings.dailyGoal;
+
+    // Open/Close
+    btnMenu.addEventListener('click', () => {
+        overlay.classList.remove('translate-y-full');
+        // Refresh values
+        const currentSettings = window.storageManager.getSettings();
+        goalInput.value = currentSettings.dailyGoal;
+    });
+
+    btnClose.addEventListener('click', () => {
+        overlay.classList.add('translate-y-full');
+    });
+
+    // Save
+    btnSave.addEventListener('click', () => {
+        const newGoal = parseInt(goalInput.value);
+        if (newGoal > 0) {
+            const currentSettings = window.storageManager.getSettings();
+            currentSettings.dailyGoal = newGoal;
+            window.storageManager.saveSettings(currentSettings);
+
+            overlay.classList.add('translate-y-full');
+            updateViews();
+            alert('Einstellungen gespeichert!');
+        } else {
+            alert('Bitte geben Sie ein gültiges Lernziel ein.');
+        }
+    });
+
+    // Reset
+    btnReset.addEventListener('click', () => {
+        if (confirm('SIND SIE SICHER? Dies löscht ALLE Ihre Daten unwiderruflich!')) {
+            window.storageManager.clearAllData();
+            overlay.classList.add('translate-y-full');
+            updateViews();
+            alert('Alle Daten wurden zurückgesetzt.');
+        }
+    });
+}
 
 function initAddEntry() {
     const overlay = document.getElementById('add-entry-overlay');
@@ -234,6 +286,7 @@ function updateViews() {
     renderHistory(entries, subjects);
     renderCalendar(entries);
     renderFaecher(entries, subjects);
+    renderSemester(entries, subjects);
 }
 
 function updateDashboard(entries) {
@@ -332,8 +385,9 @@ function renderCalendar(entries) {
         const hrs = Math.floor(day.duration / 3600);
         const mins = Math.floor((day.duration % 3600) / 60);
 
-        // Dummy Goal: 1h per day
-        const goalSeconds = 3600;
+        // Get dynamic goal
+        const settings = window.storageManager.getSettings();
+        const goalSeconds = settings.dailyGoal * 60;
         const progress = Math.min((day.duration / goalSeconds) * 100, 100);
 
         const item = document.createElement('div');
@@ -384,6 +438,108 @@ function renderFaecher(entries, subjects) {
         `;
         container.appendChild(item);
     });
+    lucide.createIcons();
+}
+
+function renderSemester(entries, subjects) {
+    const container = document.getElementById('view-semester');
+    // Keep header
+    const header = container.querySelector('h1');
+    container.innerHTML = '';
+    container.appendChild(header);
+
+    // Calculate Global Stats
+    const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
+    const totalHours = (totalSeconds / 3600).toFixed(1);
+    const totalSessions = entries.length;
+
+    // Find Best Subject
+    const subjectDurations = {};
+    entries.forEach(e => {
+        if (!subjectDurations[e.subjectId]) subjectDurations[e.subjectId] = 0;
+        subjectDurations[e.subjectId] += e.duration;
+    });
+
+    let bestSubjectId = null;
+    let maxDuration = -1;
+    for (const [id, duration] of Object.entries(subjectDurations)) {
+        if (duration > maxDuration) {
+            maxDuration = duration;
+            bestSubjectId = id;
+        }
+    }
+    const bestSubject = subjects.find(s => s.id === bestSubjectId);
+
+    // Render Summary Cards
+    const summaryGrid = document.createElement('div');
+    summaryGrid.className = 'grid grid-cols-2 gap-4 mb-6';
+    summaryGrid.innerHTML = `
+        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+             <div class="text-2xl font-bold text-white">${totalHours}h</div>
+             <div class="text-xs text-gray-400">Gesamtzeit</div>
+        </div>
+        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+             <div class="text-2xl font-bold text-white">${totalSessions}</div>
+             <div class="text-xs text-gray-400">Sitzungen</div>
+        </div>
+    `;
+    container.appendChild(summaryGrid);
+
+    // Best Subject Highlight
+    if (bestSubject) {
+        const bestCard = document.createElement('div');
+        bestCard.className = 'surface-card p-4 border border-gray-800 mb-6 flex items-center justify-between bg-gradient-to-r from-blue-900/20 to-transparent';
+        bestCard.innerHTML = `
+            <div>
+                <div class="text-xs text-blue-400 font-bold uppercase mb-1">Top Fach</div>
+                <div class="text-xl font-bold text-white">${bestSubject.name}</div>
+                <div class="text-sm text-gray-400">${(maxDuration / 3600).toFixed(1)} Stunden</div>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <i data-lucide="award" class="w-6 h-6 text-blue-400"></i>
+            </div>
+        `;
+        container.appendChild(bestCard);
+    }
+
+    // List all subjects with progress bars
+    const listTitle = document.createElement('h2');
+    listTitle.className = 'text-lg font-bold mb-4';
+    listTitle.textContent = 'Fachübersicht';
+    container.appendChild(listTitle);
+
+    const list = document.createElement('div');
+    list.className = 'space-y-4';
+
+    // Sort subjects by duration desc
+    const sortedSubjects = [...subjects].sort((a, b) => {
+        const durA = subjectDurations[a.id] || 0;
+        const durB = subjectDurations[b.id] || 0;
+        return durB - durA;
+    });
+
+    const maxSubjectDuration = maxDuration || 1; // Avoid divide by zero
+
+    sortedSubjects.forEach(subject => {
+        const duration = subjectDurations[subject.id] || 0;
+        const hrs = (duration / 3600).toFixed(1);
+        const percent = (duration / maxSubjectDuration) * 100;
+
+        const item = document.createElement('div');
+        item.className = 'surface-card p-4 border border-gray-800';
+        item.innerHTML = `
+            <div class="flex justify-between items-end mb-2">
+                <div class="font-medium">${subject.name}</div>
+                <div class="text-sm text-gray-400">${hrs}h</div>
+            </div>
+            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full ${subject.color} opacity-80" style="width: ${percent}%"></div>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+
+    container.appendChild(list);
     lucide.createIcons();
 }
 

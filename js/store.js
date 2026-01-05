@@ -19,7 +19,7 @@ class StorageManager {
             localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(defaultSubjects));
         }
         if (!localStorage.getItem(this.STORAGE_KEYS.SETTINGS)) {
-            localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify({ darkMode: true }));
+            localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify({ darkMode: true, dailyGoal: 60 }));
         }
 
         // Seed dummy entries for demo if empty or just initialized
@@ -71,6 +71,23 @@ class StorageManager {
 
     getSubjects() {
         return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+    }
+
+    getSettings() {
+        const settings = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{}');
+        if (!settings.dailyGoal) settings.dailyGoal = 60;
+        return settings;
+    }
+
+    saveSettings(settings) {
+        localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    }
+
+    clearAllData() {
+        localStorage.removeItem(this.STORAGE_KEYS.ENTRIES);
+        localStorage.removeItem(this.STORAGE_KEYS.SUBJECTS);
+        // Re-init to seed defaults
+        this.init();
     }
 }
 
