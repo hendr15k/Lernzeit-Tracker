@@ -8,12 +8,17 @@ let currentCalendarView = 'day'; // 'day', 'week', 'month'
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
+
+    // Initial population of selects
+    updateSubjectSelects();
+
     initTimer();
     initAddEntry();
     initSettings();
     initSubjectManagement();
     initTheme();
     initCalendarViews();
+
     updateViews();
     lucide.createIcons();
 });
@@ -91,7 +96,8 @@ function initSubjectManagement() {
         if (name) {
             window.storageManager.addSubject({ name, color });
             overlay.classList.add('translate-y-full');
-            updateViews();
+            updateViews(); // This now also updates selects because updateViews calls it? No, explicit call below.
+            updateSubjectSelects();
             alert(`Fach "${name}" hinzugefügt!`);
         } else {
             alert('Bitte geben Sie einen Namen ein.');
@@ -210,11 +216,12 @@ function initAddEntry() {
     const subjectSelect = document.getElementById('add-subject-select');
     const dateInput = document.getElementById('add-date-input');
     const durationInput = document.getElementById('add-duration-input');
+    const notesInput = document.getElementById('add-notes-input');
 
     // Helper to open overlay
     window.openAddEntryOverlay = (editEntryId = null) => {
-        const subjects = window.storageManager.getSubjects();
-        subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        // Ensure selects are up to date
+        updateSubjectSelects();
 
         if (editEntryId) {
             const entries = window.storageManager.getEntries();
@@ -226,12 +233,14 @@ function initAddEntry() {
                 subjectSelect.value = entry.subjectId;
                 dateInput.valueAsDate = new Date(entry.startTime);
                 durationInput.value = Math.round(entry.duration / 60);
+                notesInput.value = entry.notes || '';
             }
         } else {
             overlay.removeAttribute('data-edit-id');
             document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag hinzufügen';
             dateInput.valueAsDate = new Date();
             durationInput.value = '';
+            notesInput.value = '';
         }
         overlay.classList.remove('translate-y-full');
     };
@@ -251,15 +260,23 @@ function initAddEntry() {
         const subjectId = subjectSelect.value;
         const dateVal = dateInput.value;
         const durationMin = parseInt(durationInput.value);
+        const notesVal = notesInput.value.trim();
         const editId = overlay.getAttribute('data-edit-id');
 
         if (subjectId && dateVal && durationMin > 0) {
+            // Create local date object to avoid UTC offsets
+            const dateParts = dateVal.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]) - 1; // Months are 0-indexed
+            const day = parseInt(dateParts[2]);
+            const startTimeDate = new Date(year, month, day);
+
             const entryData = {
                 subjectId: subjectId,
                 duration: durationMin * 60,
-                startTime: new Date(dateVal).getTime(),
-                endTime: new Date(dateVal).getTime() + (durationMin * 60 * 1000),
-                notes: 'Manual Entry'
+                startTime: startTimeDate.getTime(),
+                endTime: startTimeDate.getTime() + (durationMin * 60 * 1000),
+                notes: notesVal
             };
 
             if (editId) {
@@ -270,6 +287,7 @@ function initAddEntry() {
 
             // Reset and close
             durationInput.value = '';
+            notesInput.value = '';
             overlay.classList.add('translate-y-full');
             updateViews();
         } else {
@@ -316,9 +334,7 @@ function initTimer() {
     const display = document.getElementById('timer-display');
     const subjectSelect = document.getElementById('timer-subject-select');
 
-    // Populate subjects
-    const subjects = window.storageManager.getSubjects();
-    subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    // Subjects are populated via updateSubjectSelects()
 
     // Restore Timer State
     const savedState = localStorage.getItem('timer_state');
@@ -329,6 +345,7 @@ function initTimer() {
             const elapsedSinceSave = Math.floor((now - state.timestamp) / 1000);
             timerSeconds = state.seconds + elapsedSinceSave;
             isTimerRunning = true;
+            // Ensure value exists before setting, or just set it (browser handles missing value)
             subjectSelect.value = state.subjectId;
 
             btnStart.classList.add('hidden');
@@ -426,7 +443,7 @@ function initTimer() {
                 duration: timerSeconds,
                 startTime: Date.now() - (timerSeconds * 1000),
                 endTime: Date.now(),
-                notes: ''
+                notes: 'Timer Entry'
             };
             window.storageManager.addEntry(entry);
             alert('Lernzeit gespeichert!');
@@ -443,6 +460,23 @@ function initTimer() {
 
             // Refresh views
             updateViews();
+        }
+    });
+}
+
+function updateSubjectSelects() {
+    const subjects = window.storageManager.getSubjects();
+    const selectIds = ['add-subject-select', 'timer-subject-select'];
+
+    selectIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const currentVal = el.value;
+            el.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            // Attempt to restore selection if it still exists
+            if (currentVal && subjects.find(s => String(s.id) === String(currentVal))) {
+                el.value = currentVal;
+            }
         }
     });
 }
@@ -777,6 +811,7 @@ function renderFaecher(entries, subjects) {
             if (confirm('Fach wirklich löschen? Einträge bleiben erhalten, aber ohne Fachzuordnung.')) {
                 window.storageManager.deleteSubject(id);
                 updateViews();
+                updateSubjectSelects(); // Also update selects!
             }
         });
     });
