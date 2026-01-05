@@ -11,6 +11,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/toast.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -363,11 +364,15 @@
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <button id="btn-settings-export" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
                             <i data-lucide="download" class="w-4 h-4"></i>
-                            <span>Exportieren</span>
+                            <span>Backup (JSON)</span>
                         </button>
                         <button id="btn-settings-import-trigger" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             <span>Importieren</span>
+                        </button>
+                        <button id="btn-settings-export-csv" class="col-span-2 py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Exportieren (CSV)</span>
                         </button>
                         <input type="file" id="settings-import-input" class="hidden" accept=".json">
                     </div>
