@@ -263,6 +263,7 @@ function initAddEntry() {
     const btnSave = document.getElementById('btn-add-save');
     const subjectSelect = document.getElementById('add-subject-select');
     const dateInput = document.getElementById('add-date-input');
+    const timeInput = document.getElementById('add-time-input');
     const durationInput = document.getElementById('add-duration-input');
     const notesInput = document.getElementById('add-notes-input');
 
@@ -279,14 +280,36 @@ function initAddEntry() {
                 document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag bearbeiten';
 
                 subjectSelect.value = entry.subjectId;
-                dateInput.valueAsDate = new Date(entry.startTime);
+                // Manually format date to YYYY-MM-DD to use local time, preventing UTC offsets
+                const d = new Date(entry.startTime);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+
+                // Extract time
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                if (timeInput) timeInput.value = `${hh}:${min}`;
+
                 durationInput.value = Math.round(entry.duration / 60);
                 notesInput.value = entry.notes || '';
             }
         } else {
             overlay.removeAttribute('data-edit-id');
             document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag hinzufügen';
-            dateInput.valueAsDate = new Date();
+            // Default to today (local)
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+
+            // Default to current time
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            if (timeInput) timeInput.value = `${hh}:${min}`;
+
             durationInput.value = '';
             notesInput.value = '';
         }
@@ -307,6 +330,7 @@ function initAddEntry() {
     btnSave.addEventListener('click', () => {
         const subjectId = subjectSelect.value;
         const dateVal = dateInput.value;
+        const timeVal = timeInput ? timeInput.value : '00:00';
         const durationMin = parseInt(durationInput.value);
         const notesVal = notesInput.value.trim();
         const editId = overlay.getAttribute('data-edit-id');
@@ -317,7 +341,17 @@ function initAddEntry() {
             const year = parseInt(dateParts[0]);
             const month = parseInt(dateParts[1]) - 1; // Months are 0-indexed
             const day = parseInt(dateParts[2]);
-            const startTimeDate = new Date(year, month, day);
+
+            // Handle Time
+            let hours = 0;
+            let minutes = 0;
+            if (timeVal) {
+                const timeParts = timeVal.split(':');
+                hours = parseInt(timeParts[0]);
+                minutes = parseInt(timeParts[1]);
+            }
+
+            const startTimeDate = new Date(year, month, day, hours, minutes);
 
             const entryData = {
                 subjectId: subjectId,
@@ -670,6 +704,9 @@ function renderHistory(entries, subjects) {
         const subject = subjects.find(s => s.id === entry.subjectId) || { name: 'Gelöschtes Fach', color: 'bg-gray-400' };
         const durationMin = Math.round(entry.duration / 60);
 
+        // Format Time
+        const timeStr = new Date(entry.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
         const item = document.createElement('div');
         item.className = 'surface-card p-4 flex justify-between items-center border border-gray-800';
         item.innerHTML = `
@@ -678,6 +715,7 @@ function renderHistory(entries, subjects) {
                 <div class="font-medium text-adaptive">${subject.name}</div>
             </div>
             <div class="flex items-center space-x-2 text-adaptive-muted">
+                <span class="mr-2 text-xs opacity-75">${timeStr}</span>
                 <span>${durationMin} min</span>
                 <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
