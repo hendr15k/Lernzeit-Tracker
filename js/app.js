@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateViews();
     lucide.createIcons();
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+    }
 });
 
 function initTheme() {
@@ -795,8 +802,11 @@ function renderCalendar(entries) {
         aggregatedData = Object.values(months).sort((a, b) => b.date - a.date).map(item => {
             const monthName = item.date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
-            // Monthly goal = Daily Goal * 30
-            const goalSeconds = dailyGoalSeconds * 30;
+            // Monthly goal = Daily Goal * Days in Month
+            const year = item.date.getFullYear();
+            const month = item.date.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const goalSeconds = dailyGoalSeconds * daysInMonth;
             const progress = Math.min((item.duration / goalSeconds) * 100, 100);
 
             return {
