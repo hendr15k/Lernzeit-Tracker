@@ -2,6 +2,9 @@
 
 Ein moderner Lernzeit-Tracker, der als Progressive Web App (PWA) konzipiert ist. Er ermöglicht es Studierenden und Lernenden, ihre Lernzeiten zu erfassen, zu visualisieren und zu analysieren.
 
+[Live Demo](https://hendr15k.github.io/Lernzeit-Tracker/)
+
+
 ## Funktionen
 
 *   **Dashboard:**
