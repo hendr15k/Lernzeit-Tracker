@@ -1,0 +1,44 @@
+:root {
+    --bg-dark: #0f0f11;
+    --bg-surface: #1c1c1e;
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --color-primary: #3b82f6;
+    --color-success: #22c55e;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+.surface-card {
+    background-color: var(--bg-surface);
+    border-radius: 1rem;
+}
+
+/* Custom Scrollbar for hidden look */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.nav-active {
+    color: var(--color-primary);
+}
+
+.gradient-blue {
+    background: linear-gradient(180deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0) 100%);
+}
+
+.pill-shape {
+    border-radius: 9999px;
+}
+
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+#timer-overlay {
+    background: radial-gradient(circle at top, #1e3a8a 0%, #0f0f11 60%);
+}
