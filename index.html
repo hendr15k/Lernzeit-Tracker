@@ -124,9 +124,26 @@
 
             <!-- View: Semester -->
             <div id="view-semester" class="view-section hidden animate-fade-in">
-                <h1 class="text-3xl font-bold mb-6">Semester</h1>
-                <div class="surface-card p-4 h-48 flex items-center justify-center border border-gray-800">
-                     <span class="text-gray-500">Semester Stats</span>
+                <h1 class="text-3xl font-bold mb-6">Gesamtstatistik</h1>
+
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
+                         <div class="text-2xl font-bold text-primary" id="semester-total-time">0h</div>
+                         <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Gesamtzeit</div>
+                    </div>
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
+                         <div class="text-2xl font-bold text-white" id="semester-total-sessions">0</div>
+                         <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Sitzungen</div>
+                    </div>
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
+                         <div class="text-2xl font-bold text-gray-300" id="semester-avg-session">0m</div>
+                         <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Ø Sitzung</div>
+                    </div>
+                </div>
+
+                <h2 class="text-lg font-semibold mb-4">Fächer Übersicht</h2>
+                <div id="semester-breakdown" class="space-y-4">
+                    <!-- Dynamic List -->
                 </div>
             </div>
 
@@ -319,6 +336,14 @@
                 <div class="w-full">
                     <label class="block text-sm text-gray-400 mb-2">Tägliches Ziel (Minuten)</label>
                     <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-red-500 font-bold mb-4">Gefahrenzone</h3>
+                    <button id="btn-settings-reset" class="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg transition font-medium">
+                        Alle Daten löschen
+                    </button>
                 </div>
 
             </div>
