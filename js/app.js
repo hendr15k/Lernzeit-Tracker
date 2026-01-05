@@ -431,53 +431,38 @@ function renderFaecher(entries, subjects) {
 function calculateStreak(entries) {
     if (!entries.length) return 0;
 
-    // Get unique dates in YYYY-MM-DD format
-    const uniqueDates = [...new Set(entries.map(e => {
+    const entryDates = new Set();
+    entries.forEach(e => {
         const d = new Date(e.startTime);
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    }))].sort((a, b) => b - a); // Descending
+        d.setHours(0, 0, 0, 0);
+        entryDates.add(d.getTime());
+    });
 
-    if (uniqueDates.length === 0) return 0;
-
+    // Check Today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayTime = today.getTime();
+    today.setMilliseconds(0);
+    let checkTime = today.getTime();
 
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayTime = yesterday.getTime();
+    // If today is not in set, allow yesterday (streak might be intact but not extended today yet)
+    if (!entryDates.has(checkTime)) {
+        // Check Yesterday
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        checkTime = yesterday.getTime();
 
-    // Check if streak is alive
-    if (uniqueDates[0] !== todayTime && uniqueDates[0] !== yesterdayTime) return 0;
-
-    let streak = 0;
-    let currentCheckTime = uniqueDates[0] === todayTime ? todayTime : yesterdayTime;
-
-    // If latest entry is today, start count from today. If yesterday, start from yesterday.
-    // However, if we have both today and yesterday, we need to handle that.
-    // Actually, simpler logic:
-    // 1. Determine if streak is active (latest date is today or yesterday).
-    // 2. Iterate backwards from the latest valid streak date.
-
-    // Let's refine:
-    // If the most recent date is today, streak starts from today.
-    // If the most recent date is yesterday, streak starts from yesterday.
-    // If neither, streak is 0.
-
-    let activeDate = uniqueDates[0];
-    if (activeDate !== todayTime && activeDate !== yesterdayTime) return 0;
-
-    streak = 1;
-    let expectedPrevDate = new Date(activeDate);
-
-    // Check consecutive days
-    for (let i = 1; i < uniqueDates.length; i++) {
-        expectedPrevDate.setDate(expectedPrevDate.getDate() - 1);
-        if (uniqueDates[i] === expectedPrevDate.getTime()) {
-            streak++;
-        } else {
-            break;
+        if (!entryDates.has(checkTime)) {
+            return 0; // Neither today nor yesterday
         }
+    }
+
+    // Now count backwards from checkTime
+    let streak = 0;
+    while (entryDates.has(checkTime)) {
+        streak++;
+        const d = new Date(checkTime);
+        d.setDate(d.getDate() - 1); // Go back one day
+        checkTime = d.getTime();
     }
 
     return streak;
