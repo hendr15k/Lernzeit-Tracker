@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial population of selects
     updateSubjectSelects();
 
+    // Add Filter Listener
+    const filterSelect = document.getElementById('history-filter-subject');
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            updateViews();
+        });
+    }
+
     initTimer();
     initAddEntry();
     initSettings();
@@ -83,6 +91,33 @@ function initSubjectManagement() {
         });
     }
 
+    // Helper to open overlay
+    window.openAddSubjectOverlay = (editSubjectId = null) => {
+        if (editSubjectId) {
+            const subjects = window.storageManager.getSubjects();
+            const subject = subjects.find(s => String(s.id) === String(editSubjectId));
+            if (subject) {
+                overlay.setAttribute('data-edit-id', subject.id);
+                document.querySelector('#add-subject-overlay .text-sm.font-medium').textContent = 'Fach bearbeiten';
+                nameInput.value = subject.name;
+                colorInput.value = subject.color;
+            }
+        } else {
+            overlay.removeAttribute('data-edit-id');
+            document.querySelector('#add-subject-overlay .text-sm.font-medium').textContent = 'Fach hinzufügen';
+            nameInput.value = '';
+            colorInput.value = 'bg-blue-500'; // Default
+        }
+        overlay.classList.remove('translate-y-full');
+    };
+
+    // Open
+    if (btnAdd) {
+        btnAdd.addEventListener('click', () => {
+            window.openAddSubjectOverlay();
+        });
+    }
+
     // Close
     btnClose.addEventListener('click', () => {
         overlay.classList.add('translate-y-full');
@@ -92,13 +127,19 @@ function initSubjectManagement() {
     btnSave.addEventListener('click', () => {
         const name = nameInput.value.trim();
         const color = colorInput.value;
+        const editId = overlay.getAttribute('data-edit-id');
 
         if (name) {
-            window.storageManager.addSubject({ name, color });
+            if (editId) {
+                 window.storageManager.updateSubject({ id: editId, name, color });
+                 alert(`Fach "${name}" aktualisiert!`);
+            } else {
+                 window.storageManager.addSubject({ name, color });
+                 alert(`Fach "${name}" hinzugefügt!`);
+            }
             overlay.classList.add('translate-y-full');
-            updateViews(); // This now also updates selects because updateViews calls it? No, explicit call below.
+            updateViews();
             updateSubjectSelects();
-            alert(`Fach "${name}" hinzugefügt!`);
         } else {
             alert('Bitte geben Sie einen Namen ein.');
         }
@@ -466,16 +507,36 @@ function initTimer() {
 
 function updateSubjectSelects() {
     const subjects = window.storageManager.getSubjects();
-    const selectIds = ['add-subject-select', 'timer-subject-select'];
+    const selectIds = ['add-subject-select', 'timer-subject-select', 'history-filter-subject'];
 
     selectIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             const currentVal = el.value;
-            el.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            let options = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+            // Add "All Subjects" option for the filter
+            if (id === 'history-filter-subject') {
+                options = `<option value="">Alle Fächer</option>` + options;
+            }
+
+            el.innerHTML = options;
+
             // Attempt to restore selection if it still exists
-            if (currentVal && subjects.find(s => String(s.id) === String(currentVal))) {
-                el.value = currentVal;
+            // For filter, if value is "", it's valid.
+            if (id === 'history-filter-subject') {
+                // If currentVal matches a subject or is empty, keep it.
+                // However, we just rebuilt innerHTML.
+                // If previously selected subject was deleted, it won't be in the list, so we might reset to "" (All).
+                if (currentVal === "" || subjects.find(s => String(s.id) === String(currentVal))) {
+                    el.value = currentVal;
+                } else {
+                    el.value = "";
+                }
+            } else {
+                 if (currentVal && subjects.find(s => String(s.id) === String(currentVal))) {
+                    el.value = currentVal;
+                }
             }
         }
     });
@@ -564,13 +625,26 @@ function renderHistory(entries, subjects) {
     const container = document.getElementById('einheiten-list');
     container.innerHTML = '';
 
-    if (entries.length === 0) {
+    // Filter Logic
+    let filterSubjectId = '';
+    const filterSelect = document.getElementById('history-filter-subject');
+    if (filterSelect) {
+        filterSubjectId = filterSelect.value;
+    }
+
+    // Filter entries if a subject is selected
+    let filteredEntries = entries;
+    if (filterSubjectId) {
+        filteredEntries = entries.filter(e => String(e.subjectId) === String(filterSubjectId));
+    }
+
+    if (filteredEntries.length === 0) {
         container.innerHTML = '<div class="text-center text-adaptive-muted mt-10">Keine Einträge vorhanden.</div>';
         return;
     }
 
     // Sort by date desc
-    const sortedEntries = [...entries].sort((a, b) => b.startTime - a.startTime);
+    const sortedEntries = [...filteredEntries].sort((a, b) => b.startTime - a.startTime);
 
     // Group by Date
     let currentDate = '';
@@ -585,7 +659,8 @@ function renderHistory(entries, subjects) {
             container.appendChild(header);
         }
 
-        const subject = subjects.find(s => s.id === entry.subjectId) || { name: 'Unknown', color: 'bg-gray-500' };
+        // Handle deleted subjects
+        const subject = subjects.find(s => s.id === entry.subjectId) || { name: 'Gelöschtes Fach', color: 'bg-gray-400' };
         const durationMin = Math.round(entry.duration / 60);
 
         const item = document.createElement('div');
@@ -797,21 +872,33 @@ function renderFaecher(entries, subjects) {
                     <div class="text-xs text-adaptive-muted">${hrs}h ${mins}m gelernt</div>
                 </div>
             </div>
-            <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}">
-                <i data-lucide="trash-2" class="w-5 h-5"></i>
-            </button>
+            <div class="flex items-center">
+                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${subject.id}">
+                    <i data-lucide="pencil" class="w-5 h-5"></i>
+                </button>
+                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+            </div>
         `;
         container.appendChild(item);
     });
 
-    // Delete Handlers
+    // Handlers
+    container.querySelectorAll('.btn-edit-subject').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = btn.getAttribute('data-id');
+            window.openAddSubjectOverlay(id);
+        });
+    });
+
     container.querySelectorAll('.btn-delete-subject').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = btn.getAttribute('data-id');
             if (confirm('Fach wirklich löschen? Einträge bleiben erhalten, aber ohne Fachzuordnung.')) {
                 window.storageManager.deleteSubject(id);
                 updateViews();
-                updateSubjectSelects(); // Also update selects!
+                updateSubjectSelects();
             }
         });
     });

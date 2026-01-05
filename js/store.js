@@ -98,6 +98,15 @@ class StorageManager {
         localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
     }
 
+    updateSubject(updatedSubject) {
+        const subjects = this.getSubjects();
+        const index = subjects.findIndex(s => String(s.id) === String(updatedSubject.id));
+        if (index !== -1) {
+            subjects[index] = { ...subjects[index], ...updatedSubject };
+            localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+        }
+    }
+
     deleteSubject(id) {
         const subjects = this.getSubjects().filter(s => String(s.id) !== String(id));
         localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
