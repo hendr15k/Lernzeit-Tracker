@@ -5,9 +5,64 @@ let isTimerRunning = false;
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initTimer();
+    initAddEntry();
     updateViews();
     lucide.createIcons();
 });
+
+function initAddEntry() {
+    const overlay = document.getElementById('add-entry-overlay');
+    const btnAdd = document.getElementById('btn-add');
+    const btnClose = document.getElementById('btn-add-close');
+    const btnSave = document.getElementById('btn-add-save');
+    const subjectSelect = document.getElementById('add-subject-select');
+    const dateInput = document.getElementById('add-date-input');
+    const durationInput = document.getElementById('add-duration-input');
+
+    // Populate subjects
+    const subjects = window.storageManager.getSubjects();
+    subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+    // Set default date to today
+    dateInput.valueAsDate = new Date();
+
+    // Open/Close
+    btnAdd.addEventListener('click', () => {
+        overlay.classList.remove('translate-y-full');
+        // Refresh subjects in case they changed
+        const currentSubjects = window.storageManager.getSubjects();
+        subjectSelect.innerHTML = currentSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    });
+
+    btnClose.addEventListener('click', () => {
+        overlay.classList.add('translate-y-full');
+    });
+
+    // Save
+    btnSave.addEventListener('click', () => {
+        const subjectId = subjectSelect.value;
+        const dateVal = dateInput.value;
+        const durationMin = parseInt(durationInput.value);
+
+        if (subjectId && dateVal && durationMin > 0) {
+            const entry = {
+                subjectId: subjectId,
+                duration: durationMin * 60,
+                startTime: new Date(dateVal).getTime(),
+                endTime: new Date(dateVal).getTime() + (durationMin * 60 * 1000),
+                notes: 'Manual Entry'
+            };
+            window.storageManager.addEntry(entry);
+
+            // Reset and close
+            durationInput.value = '';
+            overlay.classList.add('translate-y-full');
+            updateViews();
+        } else {
+            alert('Bitte füllen Sie alle Felder korrekt aus.');
+        }
+    });
+}
 
 function initNavigation() {
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -51,6 +106,51 @@ function initTimer() {
     const subjects = window.storageManager.getSubjects();
     subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
+    // Restore Timer State
+    const savedState = localStorage.getItem('timer_state');
+    if (savedState) {
+        const state = JSON.parse(savedState);
+        if (state.isRunning) {
+            const now = Date.now();
+            const elapsedSinceSave = Math.floor((now - state.timestamp) / 1000);
+            timerSeconds = state.seconds + elapsedSinceSave;
+            isTimerRunning = true;
+            subjectSelect.value = state.subjectId;
+
+            btnStart.classList.add('hidden');
+            btnPause.classList.remove('hidden');
+            timerOverlay.classList.remove('translate-y-full'); // Show overlay if running
+
+            startInterval();
+        } else {
+            timerSeconds = state.seconds;
+            subjectSelect.value = state.subjectId;
+            updateDisplay();
+        }
+    }
+
+    function startInterval() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            updateDisplay();
+            saveState();
+        }, 1000);
+    }
+
+    function saveState() {
+        localStorage.setItem('timer_state', JSON.stringify({
+            isRunning: isTimerRunning,
+            seconds: timerSeconds,
+            subjectId: subjectSelect.value,
+            timestamp: Date.now()
+        }));
+    }
+
+    function clearState() {
+        localStorage.removeItem('timer_state');
+    }
+
     // Open/Close Overlay
     btnToggle.addEventListener('click', () => {
         timerOverlay.classList.remove('translate-y-full');
@@ -65,10 +165,8 @@ function initTimer() {
             isTimerRunning = true;
             btnStart.classList.add('hidden');
             btnPause.classList.remove('hidden');
-            timerInterval = setInterval(() => {
-                timerSeconds++;
-                updateDisplay();
-            }, 1000);
+            startInterval();
+            saveState();
         }
     });
 
@@ -78,6 +176,7 @@ function initTimer() {
             clearInterval(timerInterval);
             btnPause.classList.add('hidden');
             btnStart.classList.remove('hidden');
+            saveState();
         }
     });
 
@@ -88,6 +187,7 @@ function initTimer() {
         updateDisplay();
         btnPause.classList.add('hidden');
         btnStart.classList.remove('hidden');
+        clearState();
     });
 
     function updateDisplay() {
@@ -118,6 +218,7 @@ function initTimer() {
             btnPause.classList.add('hidden');
             btnStart.classList.remove('hidden');
             timerOverlay.classList.add('translate-y-full');
+            clearState();
 
             // Refresh views
             updateViews();
@@ -186,11 +287,26 @@ function renderHistory(entries, subjects) {
             </div>
             <div class="flex items-center space-x-2 text-gray-400">
                 <span>${durationMin} min</span>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${entry.id}">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
             </div>
         `;
         container.appendChild(item);
     });
+
+    // Add Delete Event Listeners
+    container.querySelectorAll('.btn-delete-entry').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent potentially triggering other click events
+            if (confirm('Eintrag wirklich löschen?')) {
+                const id = btn.getAttribute('data-id');
+                window.storageManager.deleteEntry(id);
+                updateViews();
+            }
+        });
+    });
+
     lucide.createIcons();
 }
 
@@ -274,42 +390,50 @@ function renderFaecher(entries, subjects) {
 function calculateStreak(entries) {
     if (!entries.length) return 0;
 
-    const dates = [...new Set(entries.map(e => new Date(e.startTime).toDateString()))];
-    dates.sort((a, b) => new Date(b) - new Date(a)); // Descending
+    // Get unique dates in YYYY-MM-DD format
+    const uniqueDates = [...new Set(entries.map(e => {
+        const d = new Date(e.startTime);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    }))].sort((a, b) => b - a); // Descending
+
+    if (uniqueDates.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayTime = yesterday.getTime();
+
+    // Check if streak is alive
+    if (uniqueDates[0] !== todayTime && uniqueDates[0] !== yesterdayTime) return 0;
 
     let streak = 0;
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    let currentCheckTime = uniqueDates[0] === todayTime ? todayTime : yesterdayTime;
 
-    // Check if streak is alive (entry today or yesterday)
-    if (dates[0] !== today && dates[0] !== yesterday) return 0;
+    // If latest entry is today, start count from today. If yesterday, start from yesterday.
+    // However, if we have both today and yesterday, we need to handle that.
+    // Actually, simpler logic:
+    // 1. Determine if streak is active (latest date is today or yesterday).
+    // 2. Iterate backwards from the latest valid streak date.
 
-    let currentDate = new Date();
-    // Logic: Iterate back day by day and check if date exists in set
-    // Simplified for demo: just counting consecutive dates in the sorted list
-    // This simple logic assumes no gaps in the sorted array relative to calendar days
-    // A more robust solution would check date diffs.
+    // Let's refine:
+    // If the most recent date is today, streak starts from today.
+    // If the most recent date is yesterday, streak starts from yesterday.
+    // If neither, streak is 0.
 
-    // Robust simple approach:
-    let checkDate = new Date();
-    if (dates.includes(checkDate.toDateString())) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-        // Check yesterday if today has no entry
-        checkDate.setDate(checkDate.getDate() - 1);
-        if (dates.includes(checkDate.toDateString())) {
+    let activeDate = uniqueDates[0];
+    if (activeDate !== todayTime && activeDate !== yesterdayTime) return 0;
+
+    streak = 1;
+    let expectedPrevDate = new Date(activeDate);
+
+    // Check consecutive days
+    for (let i = 1; i < uniqueDates.length; i++) {
+        expectedPrevDate.setDate(expectedPrevDate.getDate() - 1);
+        if (uniqueDates[i] === expectedPrevDate.getTime()) {
             streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-            return 0;
-        }
-    }
-
-    while (true) {
-        if (dates.includes(checkDate.toDateString())) {
-            streak++;
-            checkDate.setDate(checkDate.getDate() - 1);
         } else {
             break;
         }
