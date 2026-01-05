@@ -16,8 +16,8 @@
             theme: {
                 extend: {
                     colors: {
-                        dark: '#0f0f11',
-                        surface: '#1c1c1e',
+                        dark: 'var(--color-bg)',
+                        surface: 'var(--color-surface)',
                         primary: '#3b82f6',
                         success: '#22c55e',
                     }
@@ -26,11 +26,11 @@
         }
     </script>
 </head>
-<body class="bg-dark text-white font-sans antialiased pb-24">
+<body class="bg-dark text-adaptive font-sans antialiased pb-24">
     <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden flex flex-col">
 
         <!-- Top Header -->
-        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10">
+        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300">
             <div class="flex items-center space-x-2">
                 <button class="p-2 rounded-full hover:bg-surface transition">
                     <i data-lucide="home" class="w-6 h-6"></i>
@@ -41,7 +41,7 @@
             </div>
 
             <div class="flex items-center space-x-3">
-                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition">
+                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                 </button>
                 <button id="btn-timer-toggle" class="p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white">
@@ -78,11 +78,11 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
                              <div class="text-3xl font-bold text-primary" id="dashboard-streak">0</div>
-                             <div class="text-xs text-gray-400">Tage Streak</div>
+                             <div class="text-xs text-adaptive-muted">Tage Streak</div>
                         </div>
                         <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
                              <div class="text-3xl font-bold text-success" id="dashboard-total">0h</div>
-                             <div class="text-xs text-gray-400">Gesamtzeit</div>
+                             <div class="text-xs text-adaptive-muted">Gesamtzeit</div>
                         </div>
                     </div>
                 </div>
@@ -112,10 +112,10 @@
             <!-- View: Kalender -->
             <div id="view-kalender" class="view-section hidden animate-fade-in">
                 <h1 class="text-3xl font-bold mb-6">Kalender</h1>
-                <div class="flex space-x-2 mb-6">
-                    <button class="px-4 py-2 bg-surface rounded-full text-sm font-medium">Tagessicht</button>
-                    <button class="px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-gray-400">Wochensicht</button>
-                    <button class="px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-gray-400">Monatssicht</button>
+                <div class="flex space-x-2 mb-6" id="calendar-view-controls">
+                    <button class="calendar-view-btn px-4 py-2 bg-surface rounded-full text-sm font-medium text-adaptive" data-view="day">Tagessicht</button>
+                    <button class="calendar-view-btn px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted" data-view="week">Wochensicht</button>
+                    <button class="calendar-view-btn px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted" data-view="month">Monatssicht</button>
                 </div>
                 <div id="kalender-list" class="space-y-6">
                     <!-- Dynamic List -->
@@ -129,15 +129,15 @@
                 <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
                          <div class="text-2xl font-bold text-primary" id="semester-total-time">0h</div>
-                         <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Gesamtzeit</div>
+                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Gesamtzeit</div>
                     </div>
                     <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
-                         <div class="text-2xl font-bold text-white" id="semester-total-sessions">0</div>
-                         <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Sitzungen</div>
+                         <div class="text-2xl font-bold text-adaptive" id="semester-total-sessions">0</div>
+                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Sitzungen</div>
                     </div>
                     <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
-                         <div class="text-2xl font-bold text-gray-300" id="semester-avg-session">0m</div>
-                         <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Ø Sitzung</div>
+                         <div class="text-2xl font-bold text-adaptive" id="semester-avg-session">0m</div>
+                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Ø Sitzung</div>
                     </div>
                 </div>
 
@@ -152,23 +152,23 @@
         <!-- Bottom Navigation -->
         <nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe">
             <div class="max-w-md mx-auto flex justify-between items-center px-4 py-3">
-                <button class="nav-btn active flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-dashboard">
+                <button class="nav-btn active flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-dashboard">
                     <i data-lucide="gauge" class="w-6 h-6"></i>
                     <span class="text-[10px]">Dashboard</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-einheiten">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-einheiten">
                     <i data-lucide="history" class="w-6 h-6"></i>
                     <span class="text-[10px]">Einheiten</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-faecher">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-faecher">
                     <i data-lucide="landmark" class="w-6 h-6"></i>
                     <span class="text-[10px]">Fächer</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-kalender">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-kalender">
                     <i data-lucide="calendar" class="w-6 h-6"></i>
                     <span class="text-[10px]">Kalender</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition w-1/5" data-target="view-semester">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-semester">
                     <i data-lucide="graduation-cap" class="w-6 h-6"></i>
                     <span class="text-[10px]">Semester</span>
                 </button>
@@ -176,13 +176,13 @@
         </nav>
 
         <!-- Timer Overlay -->
-        <div id="timer-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+        <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <!-- Timer Header -->
             <div class="flex justify-between items-center p-4">
                 <button id="btn-timer-close" class="p-2 rounded-full hover:bg-surface transition">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
-                <div class="text-sm font-medium text-gray-400">Timer</div>
+                <div class="text-sm font-medium text-adaptive-muted">Timer</div>
                 <button class="p-2 rounded-full hover:bg-surface transition">
                     <i data-lucide="maximize-2" class="w-5 h-5"></i>
                 </button>
@@ -193,7 +193,7 @@
 
                 <!-- Subject Selector -->
                 <div class="w-full max-w-xs">
-                     <select id="timer-subject-select" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none">
+                     <select id="timer-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none">
                         <!-- Options injected via JS -->
                      </select>
                 </div>
@@ -232,7 +232,7 @@
                 <button id="btn-add-close" class="p-2 rounded-full hover:bg-surface transition">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
-                <div class="text-sm font-medium text-gray-400">Eintrag hinzufügen</div>
+                <div class="text-sm font-medium text-adaptive-muted">Eintrag hinzufügen</div>
                 <div class="w-10"></div> <!-- Spacer -->
             </div>
 
@@ -241,22 +241,22 @@
 
                 <!-- Subject -->
                 <div class="w-full">
-                    <label class="block text-sm text-gray-400 mb-2">Fach</label>
-                    <select id="add-subject-select" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                    <label class="block text-sm text-adaptive-muted mb-2">Fach</label>
+                    <select id="add-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
                         <!-- Options injected via JS -->
                     </select>
                 </div>
 
                 <!-- Date -->
                 <div class="w-full">
-                    <label class="block text-sm text-gray-400 mb-2">Datum</label>
-                    <input type="date" id="add-date-input" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none">
+                    <label class="block text-sm text-adaptive-muted mb-2">Datum</label>
+                    <input type="date" id="add-date-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
                 </div>
 
                 <!-- Duration -->
                 <div class="w-full">
-                    <label class="block text-sm text-gray-400 mb-2">Dauer (Minuten)</label>
-                    <input type="number" id="add-duration-input" min="1" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 45">
+                    <label class="block text-sm text-adaptive-muted mb-2">Dauer (Minuten)</label>
+                    <input type="number" id="add-duration-input" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 45">
                 </div>
 
             </div>
@@ -276,7 +276,7 @@
                 <button id="btn-add-subject-close" class="p-2 rounded-full hover:bg-surface transition">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
-                <div class="text-sm font-medium text-gray-400">Fach hinzufügen</div>
+                <div class="text-sm font-medium text-adaptive-muted">Fach hinzufügen</div>
                 <div class="w-10"></div> <!-- Spacer -->
             </div>
 
@@ -285,14 +285,14 @@
 
                 <!-- Name -->
                 <div class="w-full">
-                    <label class="block text-sm text-gray-400 mb-2">Name</label>
-                    <input type="text" id="add-subject-name" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Physik">
+                    <label class="block text-sm text-adaptive-muted mb-2">Name</label>
+                    <input type="text" id="add-subject-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Physik">
                 </div>
 
                 <!-- Color -->
                 <div class="w-full">
-                    <label class="block text-sm text-gray-400 mb-2">Farbe</label>
-                    <select id="add-subject-color" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                    <label class="block text-sm text-adaptive-muted mb-2">Farbe</label>
+                    <select id="add-subject-color" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
                         <option value="bg-red-500">Rot</option>
                         <option value="bg-orange-500">Orange</option>
                         <option value="bg-yellow-500">Gelb</option>
@@ -323,7 +323,7 @@
                 <button id="btn-settings-close" class="p-2 rounded-full hover:bg-surface transition">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
-                <div class="text-sm font-medium text-gray-400">Einstellungen</div>
+                <div class="text-sm font-medium text-adaptive-muted">Einstellungen</div>
                 <div class="w-10"></div> <!-- Spacer -->
             </div>
 
@@ -334,19 +334,19 @@
 
                 <!-- Daily Goal -->
                 <div class="w-full">
-                    <label class="block text-sm text-gray-400 mb-2">Tägliches Ziel (Minuten)</label>
-                    <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-white p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
+                    <label class="block text-sm text-adaptive-muted mb-2">Tägliches Ziel (Minuten)</label>
+                    <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
                 </div>
 
                 <!-- Data Management -->
                 <div class="w-full pt-8 border-t border-gray-800">
                     <h3 class="text-lg font-bold mb-4">Datenverwaltung</h3>
                     <div class="grid grid-cols-2 gap-4 mb-4">
-                        <button id="btn-settings-export" class="py-3 bg-surface hover:bg-gray-700 text-white border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                        <button id="btn-settings-export" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
                             <i data-lucide="download" class="w-4 h-4"></i>
                             <span>Exportieren</span>
                         </button>
-                        <button id="btn-settings-import-trigger" class="py-3 bg-surface hover:bg-gray-700 text-white border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                        <button id="btn-settings-import-trigger" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             <span>Importieren</span>
                         </button>

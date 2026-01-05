@@ -3,15 +3,64 @@ let timerSeconds = 0;
 let isTimerRunning = false;
 let timerStartTime = 0;
 
+// Calendar View State
+let currentCalendarView = 'day'; // 'day', 'week', 'month'
+
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initTimer();
     initAddEntry();
     initSettings();
     initSubjectManagement();
+    initTheme();
+    initCalendarViews();
     updateViews();
     lucide.createIcons();
 });
+
+function initTheme() {
+    const btnTheme = document.getElementById('btn-theme');
+    const settings = window.storageManager.getSettings();
+
+    // Apply initial theme
+    applyTheme(settings.darkMode);
+
+    if (btnTheme) {
+        btnTheme.addEventListener('click', () => {
+            const currentSettings = window.storageManager.getSettings();
+            const newMode = !currentSettings.darkMode;
+            window.storageManager.updateSettings({ darkMode: newMode });
+            applyTheme(newMode);
+        });
+    }
+}
+
+function applyTheme(isDark) {
+    if (isDark) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
+
+function initCalendarViews() {
+    const buttons = document.querySelectorAll('.calendar-view-btn');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentCalendarView = btn.getAttribute('data-view');
+
+            // Update active state
+            buttons.forEach(b => {
+                b.classList.remove('bg-surface', 'text-adaptive');
+                b.classList.add('hover:bg-surface', 'text-adaptive-muted');
+            });
+            btn.classList.remove('hover:bg-surface', 'text-adaptive-muted');
+            btn.classList.add('bg-surface', 'text-adaptive');
+
+            updateViews();
+        });
+    });
+}
 
 function initSubjectManagement() {
     const overlay = document.getElementById('add-subject-overlay');
@@ -237,11 +286,11 @@ function initNavigation() {
         btn.addEventListener('click', () => {
             // Update active state of buttons
             navButtons.forEach(b => {
-                b.classList.remove('active', 'text-white');
-                b.classList.add('text-gray-400');
+                b.classList.remove('active', 'text-adaptive');
+                b.classList.add('text-adaptive-muted');
             });
-            btn.classList.add('active', 'text-white');
-            btn.classList.remove('text-gray-400');
+            btn.classList.add('active', 'text-adaptive');
+            btn.classList.remove('text-adaptive-muted');
 
             // Switch view
             const targetId = btn.getAttribute('data-target');
@@ -453,7 +502,7 @@ function renderSemester(entries, subjects) {
                     <div class="w-3 h-3 rounded-full ${subject.color}"></div>
                     <div class="font-bold">${subject.name}</div>
                 </div>
-                <div class="text-sm text-gray-400">${hrs}h ${mins}m (${totalPercentage}%)</div>
+                <div class="text-sm text-adaptive-muted">${hrs}h ${mins}m (${totalPercentage}%)</div>
             </div>
             <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div class="h-full ${subject.color} transition-all" style="width: ${percentage}%"></div>
@@ -482,7 +531,7 @@ function renderHistory(entries, subjects) {
     container.innerHTML = '';
 
     if (entries.length === 0) {
-        container.innerHTML = '<div class="text-center text-gray-500 mt-10">Keine Einträge vorhanden.</div>';
+        container.innerHTML = '<div class="text-center text-adaptive-muted mt-10">Keine Einträge vorhanden.</div>';
         return;
     }
 
@@ -497,7 +546,7 @@ function renderHistory(entries, subjects) {
         if (dateStr !== currentDate) {
             currentDate = dateStr;
             const header = document.createElement('div');
-            header.className = 'text-xs text-gray-500 font-bold mt-4 mb-2 uppercase tracking-wide';
+            header.className = 'text-xs text-adaptive-muted font-bold mt-4 mb-2 uppercase tracking-wide';
             header.textContent = currentDate;
             container.appendChild(header);
         }
@@ -510,9 +559,9 @@ function renderHistory(entries, subjects) {
         item.innerHTML = `
             <div class="flex items-center space-x-3">
                 <div class="w-3 h-3 rounded-full ${subject.color}"></div>
-                <div class="font-medium">${subject.name}</div>
+                <div class="font-medium text-adaptive">${subject.name}</div>
             </div>
-            <div class="flex items-center space-x-2 text-gray-400">
+            <div class="flex items-center space-x-2 text-adaptive-muted">
                 <span>${durationMin} min</span>
                 <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -548,55 +597,146 @@ function renderHistory(entries, subjects) {
     lucide.createIcons();
 }
 
+// Helpers for Calendar Aggregation
+function getWeekNumber(d) {
+    // ISO 8601 week number
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return { year: d.getUTCFullYear(), week: weekNo };
+}
+
 function renderCalendar(entries) {
     const container = document.getElementById('kalender-list');
     container.innerHTML = '';
 
-    // Group by Day
-    const days = {};
-    entries.forEach(entry => {
-        const dateKey = new Date(entry.startTime).toLocaleDateString('de-DE');
-        if (!days[dateKey]) days[dateKey] = { duration: 0, count: 0, date: new Date(entry.startTime) };
-        days[dateKey].duration += entry.duration;
-        days[dateKey].count++;
-    });
+    // Aggregation Logic
+    let aggregatedData = [];
+    const settings = window.storageManager.getSettings();
+    const dailyGoalSeconds = (settings.dailyGoal || 60) * 60;
 
-    const sortedDays = Object.values(days).sort((a, b) => b.date - a.date);
+    if (currentCalendarView === 'day') {
+        const days = {};
+        entries.forEach(entry => {
+            const date = new Date(entry.startTime);
+            const dateKey = date.toLocaleDateString('de-DE');
+            if (!days[dateKey]) days[dateKey] = { duration: 0, count: 0, date: date };
+            days[dateKey].duration += entry.duration;
+            days[dateKey].count++;
+        });
+        aggregatedData = Object.values(days).sort((a, b) => b.date - a.date).map(item => {
+             const weekday = item.date.toLocaleDateString('de-DE', { weekday: 'long' });
+             const dateStr = item.date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
-    sortedDays.forEach(day => {
-        const dateStr = day.date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
-        const weekday = day.date.toLocaleDateString('de-DE', { weekday: 'long' });
+             // Progress based on daily goal
+             const goalSeconds = dailyGoalSeconds;
+             const progress = Math.min((item.duration / goalSeconds) * 100, 100);
 
-        const hrs = Math.floor(day.duration / 3600);
-        const mins = Math.floor((day.duration % 3600) / 60);
+             return {
+                 title: `${dateStr} <span class="text-adaptive-muted font-normal">. ${weekday}</span>`,
+                 duration: item.duration,
+                 subtext: `${item.count} Einheiten`,
+                 progress: progress,
+                 goalTarget: goalSeconds
+             };
+        });
 
-        // Configurable Goal
-        const goalMinutes = window.storageManager.getSettings().dailyGoal || 60;
-        const goalSeconds = goalMinutes * 60;
-        const progress = Math.min((day.duration / goalSeconds) * 100, 100);
+    } else if (currentCalendarView === 'week') {
+        const weeks = {};
+        entries.forEach(entry => {
+            const date = new Date(entry.startTime);
+            const { year, week } = getWeekNumber(date);
+            const key = `${year}-W${week}`;
+            if (!weeks[key]) weeks[key] = { duration: 0, count: 0, year, week, firstDate: date }; // Keep a date for sorting
+            weeks[key].duration += entry.duration;
+            weeks[key].count++;
+            // Update date to be most recent in that week
+            if(date > weeks[key].firstDate) weeks[key].firstDate = date;
+        });
 
-        // Display goal in text
+        aggregatedData = Object.values(weeks).sort((a, b) => {
+            if (b.year !== a.year) return b.year - a.year;
+            return b.week - a.week;
+        }).map(item => {
+            // Weekly goal = Daily Goal * 5 (assuming 5 learning days/week?) or just show total?
+            // Let's use Daily Goal * 7 for week progress bar to be strict? Or maybe just * 5.
+            const goalSeconds = dailyGoalSeconds * 7;
+            const progress = Math.min((item.duration / goalSeconds) * 100, 100);
+
+            return {
+                title: `KW ${item.week} <span class="text-adaptive-muted font-normal">/ ${item.year}</span>`,
+                duration: item.duration,
+                subtext: `${item.count} Einheiten`,
+                progress: progress,
+                goalTarget: goalSeconds
+            };
+        });
+
+    } else if (currentCalendarView === 'month') {
+        const months = {};
+        entries.forEach(entry => {
+            const date = new Date(entry.startTime);
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            if (!months[key]) months[key] = { duration: 0, count: 0, date: date };
+            months[key].duration += entry.duration;
+            months[key].count++;
+        });
+
+        aggregatedData = Object.values(months).sort((a, b) => b.date - a.date).map(item => {
+            const monthName = item.date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+            // Monthly goal = Daily Goal * 30
+            const goalSeconds = dailyGoalSeconds * 30;
+            const progress = Math.min((item.duration / goalSeconds) * 100, 100);
+
+            return {
+                title: monthName,
+                duration: item.duration,
+                subtext: `${item.count} Einheiten`,
+                progress: progress,
+                goalTarget: goalSeconds
+            };
+        });
+    }
+
+    // Render Items
+    if (aggregatedData.length === 0) {
+        container.innerHTML = '<div class="text-center text-adaptive-muted mt-10">Keine Daten für diesen Zeitraum.</div>';
+    }
+
+    aggregatedData.forEach(item => {
+        const hrs = Math.floor(item.duration / 3600);
+        const mins = Math.floor((item.duration % 3600) / 60);
+
+        // Goal Text
+        const goalMinutes = Math.round(item.goalTarget / 60);
         const goalHrs = Math.floor(goalMinutes / 60);
         const goalMinsRemaining = goalMinutes % 60;
-        const goalText = goalHrs > 0 ? (goalMinsRemaining > 0 ? `${goalHrs}h ${goalMinsRemaining}m` : `${goalHrs}h`) : `${goalMinsRemaining}m`;
+        let goalText = "";
+        if (currentCalendarView === 'day') {
+             goalText = goalHrs > 0 ? (goalMinsRemaining > 0 ? `${goalHrs}h ${goalMinsRemaining}m` : `${goalHrs}h`) : `${goalMinsRemaining}m`;
+        } else {
+             // For Week/Month, maybe just show hours
+             goalText = `${goalHrs}h`;
+        }
 
-
-        const item = document.createElement('div');
-        item.className = 'surface-card p-4 border border-gray-800';
-        item.innerHTML = `
+        const domItem = document.createElement('div');
+        domItem.className = 'surface-card p-4 border border-gray-800';
+        domItem.innerHTML = `
             <div class="flex justify-between items-center mb-2">
-                <div class="font-bold">${dateStr} <span class="text-gray-500 font-normal">. ${weekday}</span></div>
-                <i data-lucide="trophy" class="w-4 h-4 ${progress >= 100 ? 'text-yellow-500' : 'text-gray-600'}"></i>
+                <div class="font-bold text-adaptive">${item.title}</div>
+                <i data-lucide="trophy" class="w-4 h-4 ${item.progress >= 100 ? 'text-yellow-500' : 'text-adaptive-muted'}"></i>
             </div>
-            <div class="flex justify-between text-sm text-gray-400 mb-2">
-                <div>Lernzeit: <span class="text-white">${hrs}h ${mins}m</span> / ${goalText}</div>
-                <div>${day.count} Einheiten</div>
+            <div class="flex justify-between text-sm text-adaptive-muted mb-2">
+                <div>Lernzeit: <span class="text-adaptive font-medium">${hrs}h ${mins}m</span> / ${goalText}</div>
+                <div>${item.subtext}</div>
             </div>
             <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div class="h-full bg-success transition-all" style="width: ${progress}%"></div>
+                <div class="h-full bg-success transition-all" style="width: ${item.progress}%"></div>
             </div>
         `;
-        container.appendChild(item);
+        container.appendChild(domItem);
     });
     lucide.createIcons();
 }
@@ -619,11 +759,11 @@ function renderFaecher(entries, subjects) {
                     ${subject.name.substring(0, 2)}
                 </div>
                 <div>
-                    <div class="font-bold">${subject.name}</div>
-                    <div class="text-xs text-gray-400">${hrs}h ${mins}m gelernt</div>
+                    <div class="font-bold text-adaptive">${subject.name}</div>
+                    <div class="text-xs text-adaptive-muted">${hrs}h ${mins}m gelernt</div>
                 </div>
             </div>
-            <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-gray-400" data-id="${subject.id}">
+            <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}">
                 <i data-lucide="trash-2" class="w-5 h-5"></i>
             </button>
         `;
@@ -723,12 +863,12 @@ function renderGraph(entries) {
 
         // Tooltip
         const tooltip = document.createElement('div');
-        tooltip.className = 'absolute -top-8 left-1/2 transform -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-gray-700 pointer-events-none';
+        tooltip.className = 'absolute -top-8 left-1/2 transform -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-gray-700 pointer-events-none text-adaptive';
         tooltip.textContent = `${Math.round(item.seconds / 60)}m`;
 
         // Label
         const label = document.createElement('div');
-        label.className = 'text-[10px] text-gray-500 text-center mt-1';
+        label.className = 'text-[10px] text-adaptive-muted text-center mt-1';
         label.textContent = item.label;
 
         bar.appendChild(tooltip);

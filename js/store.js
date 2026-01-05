@@ -9,27 +9,52 @@ class StorageManager {
     }
 
     init() {
-        if (!localStorage.getItem(this.STORAGE_KEYS.SUBJECTS)) {
+        // Subjects
+        let subjects = [];
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEYS.SUBJECTS);
+            if (stored) {
+                subjects = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error('Error parsing subjects:', e);
+            // If corrupt, we might want to reset or keep empty.
+            // For now, let's treat it as empty so we re-seed if needed, or just warn.
+        }
+
+        if (!subjects || subjects.length === 0) {
             // Seed default subjects if empty
             const defaultSubjects = [
                 { id: '1', name: 'Informatik', color: 'bg-blue-500' },
                 { id: '2', name: 'Mathe', color: 'bg-green-500' },
                 { id: '3', name: 'Englisch', color: 'bg-yellow-500' }
             ];
+            // Only overwrite if it was actually missing or we want to force seed on corruption?
+            // Safer to just overwrite if it's corrupt/missing.
             localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(defaultSubjects));
         }
 
+        // Settings
         let settings = { darkMode: true, dailyGoal: 60 };
-        if (localStorage.getItem(this.STORAGE_KEYS.SETTINGS)) {
-            const storedSettings = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS));
-            settings = { ...settings, ...storedSettings };
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                settings = { ...settings, ...parsed };
+            }
+        } catch (e) {
+            console.error('Error parsing settings:', e);
         }
         localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-
     }
 
     getEntries() {
-        return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]');
+        try {
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]');
+        } catch (e) {
+            console.error('Error parsing entries:', e);
+            return [];
+        }
     }
 
     addEntry(entry) {
@@ -54,7 +79,17 @@ class StorageManager {
     }
 
     getSubjects() {
-        return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+        try {
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+        } catch (e) {
+            console.error('Error parsing subjects:', e);
+            // Return defaults or empty if corrupted
+            return [
+                { id: '1', name: 'Informatik', color: 'bg-blue-500' },
+                { id: '2', name: 'Mathe', color: 'bg-green-500' },
+                { id: '3', name: 'Englisch', color: 'bg-yellow-500' }
+            ];
+        }
     }
 
     addSubject(subject) {
@@ -69,7 +104,12 @@ class StorageManager {
     }
 
     getSettings() {
-        return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{"darkMode":true, "dailyGoal": 60}');
+        try {
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{"darkMode":true, "dailyGoal": 60}');
+        } catch (e) {
+            console.error('Error parsing settings:', e);
+            return { darkMode: true, dailyGoal: 60 };
+        }
     }
 
     updateSettings(newSettings) {

@@ -1,20 +1,35 @@
 :root {
-    --bg-dark: #0f0f11;
-    --bg-surface: #1c1c1e;
-    --text-primary: #ffffff;
-    --text-secondary: #a1a1aa;
+    /* Light Mode Default */
+    --color-bg: #f3f4f6; /* gray-100 */
+    --color-surface: #ffffff; /* white */
+    --color-text: #111827; /* gray-900 */
+    --color-text-muted: #6b7280; /* gray-500 */
+
     --color-primary: #3b82f6;
     --color-success: #22c55e;
+
+    --timer-overlay-bg: radial-gradient(circle at top, #bfdbfe 0%, #f3f4f6 60%);
+}
+
+.dark {
+    --color-bg: #0f0f11;
+    --color-surface: #1c1c1e;
+    --color-text: #ffffff;
+    --color-text-muted: #a1a1aa;
+
+    --timer-overlay-bg: radial-gradient(circle at top, #1e3a8a 0%, #0f0f11 60%);
 }
 
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-primary);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .surface-card {
-    background-color: var(--bg-surface);
+    background-color: var(--color-surface);
     border-radius: 1rem;
+    transition: background-color 0.3s;
 }
 
 /* Custom Scrollbar for hidden look */
@@ -40,5 +55,18 @@ body {
 }
 
 #timer-overlay {
-    background: radial-gradient(circle at top, #1e3a8a 0%, #0f0f11 60%);
+    background: var(--timer-overlay-bg);
+    transition: opacity 0.3s, transform 0.3s;
 }
+
+/* Adaptive Text Utilities */
+.text-adaptive { color: var(--color-text) !important; }
+.text-adaptive-muted { color: var(--color-text-muted) !important; }
+.hover\:text-adaptive:hover { color: var(--color-text) !important; }
+
+/* Helpers for Tailwind config to hook into */
+.bg-dark { background-color: var(--color-bg) !important; }
+.bg-surface { background-color: var(--color-surface) !important; }
+
+/* NOTE: We removed the global text-white/text-gray-400 overrides to avoid breaking buttons. */
+/* You must update HTML to use text-adaptive where needed. */
