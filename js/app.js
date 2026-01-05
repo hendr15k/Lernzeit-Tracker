@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateViews();
     lucide.createIcons();
 
+    // Init Toast Container
+    const toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    document.body.appendChild(toastContainer);
+
     // Register Service Worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
@@ -139,16 +144,16 @@ function initSubjectManagement() {
         if (name) {
             if (editId) {
                  window.storageManager.updateSubject({ id: editId, name, color });
-                 alert(`Fach "${name}" aktualisiert!`);
+                 showToast(`Fach "${name}" aktualisiert!`, 'success');
             } else {
                  window.storageManager.addSubject({ name, color });
-                 alert(`Fach "${name}" hinzugefügt!`);
+                 showToast(`Fach "${name}" hinzugefügt!`, 'success');
             }
             overlay.classList.add('translate-y-full');
             updateViews();
             updateSubjectSelects();
         } else {
-            alert('Bitte geben Sie einen Namen ein.');
+            showToast('Bitte geben Sie einen Namen ein.', 'error');
         }
     });
 }
@@ -161,6 +166,7 @@ function initSettings() {
     const dailyGoalInput = document.getElementById('settings-daily-goal');
     const btnReset = document.getElementById('btn-settings-reset');
     const btnExport = document.getElementById('btn-settings-export');
+    const btnExportCSV = document.getElementById('btn-settings-export-csv');
     const btnImportTrigger = document.getElementById('btn-settings-import-trigger');
     const importInput = document.getElementById('settings-import-input');
 
@@ -183,13 +189,13 @@ function initSettings() {
             window.storageManager.updateSettings({ dailyGoal: newGoal });
             overlay.classList.add('translate-y-full');
             updateViews();
-            alert('Einstellungen gespeichert!');
+            showToast('Einstellungen gespeichert!', 'success');
         } else {
-            alert('Bitte geben Sie ein gültiges Ziel ein.');
+            showToast('Bitte geben Sie ein gültiges Ziel ein.', 'error');
         }
     });
 
-    // Export Data
+    // Export Data (JSON)
     if (btnExport) {
         btnExport.addEventListener('click', () => {
             const data = {
@@ -205,6 +211,45 @@ function initSettings() {
             document.body.appendChild(downloadAnchorNode); // required for firefox
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
+        });
+    }
+
+    // Export Data (CSV)
+    if (btnExportCSV) {
+        btnExportCSV.addEventListener('click', () => {
+            const entries = window.storageManager.getEntries();
+            const subjects = window.storageManager.getSubjects();
+
+            // Header
+            let csvContent = "Datum,Uhrzeit,Fach,Dauer (Min),Notizen\n";
+
+            // Rows
+            entries.forEach(entry => {
+                const date = new Date(entry.startTime);
+                const dateStr = date.toLocaleDateString('de-DE');
+                const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                const subject = subjects.find(s => s.id === entry.subjectId);
+                const subjectName = subject ? subject.name : 'Unbekannt';
+                const durationMin = Math.round(entry.duration / 60);
+                // Escape quotes in notes and wrap in quotes
+                const notes = entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : "";
+
+                csvContent += `${dateStr},${timeStr},"${subjectName}",${durationMin},${notes}\n`;
+            });
+
+            // Use Blob to handle special characters and larger files
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "lernzeit_export_" + new Date().toISOString().split('T')[0] + ".csv");
+            document.body.appendChild(link); // Required for FF
+            link.click();
+            link.remove();
+
+            // Clean up
+            setTimeout(() => URL.revokeObjectURL(url), 100);
         });
     }
 
@@ -230,11 +275,11 @@ function initSettings() {
                             location.reload();
                         }
                     } else {
-                        alert('Ungültige Datei. Das Format scheint nicht zu stimmen.');
+                        showToast('Ungültige Datei. Das Format scheint nicht zu stimmen.', 'error');
                     }
                 } catch (err) {
                     console.error(err);
-                    alert('Fehler beim Lesen der Datei.');
+                    showToast('Fehler beim Lesen der Datei.', 'error');
                 }
             };
             reader.readAsText(file);
@@ -336,6 +381,11 @@ function initAddEntry() {
         const editId = overlay.getAttribute('data-edit-id');
 
         if (subjectId && dateVal && durationMin > 0) {
+            if (durationMin > 1440) { // 24 hours
+                showToast('Dauer kann nicht länger als 24 Stunden sein.', 'error');
+                return;
+            }
+
             // Create local date object to avoid UTC offsets
             const dateParts = dateVal.split('-');
             const year = parseInt(dateParts[0]);
@@ -372,8 +422,9 @@ function initAddEntry() {
             notesInput.value = '';
             overlay.classList.add('translate-y-full');
             updateViews();
+            showToast('Eintrag gespeichert!', 'success');
         } else {
-            alert('Bitte füllen Sie alle Felder korrekt aus.');
+            showToast('Bitte füllen Sie alle Felder korrekt aus.', 'error');
         }
     });
 }
@@ -528,7 +579,7 @@ function initTimer() {
                 notes: 'Timer Entry'
             };
             window.storageManager.addEntry(entry);
-            alert('Lernzeit gespeichert!');
+            showToast('Lernzeit gespeichert!', 'success');
 
             // Reset
             isTimerRunning = false;
@@ -717,10 +768,10 @@ function renderHistory(entries, subjects) {
             <div class="flex items-center space-x-2 text-adaptive-muted">
                 <span class="mr-2 text-xs opacity-75">${timeStr}</span>
                 <span>${durationMin} min</span>
-                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}">
+                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}" aria-label="Eintrag bearbeiten">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${entry.id}">
+                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${entry.id}" aria-label="Eintrag löschen">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -921,10 +972,10 @@ function renderFaecher(entries, subjects) {
                 </div>
             </div>
             <div class="flex items-center">
-                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${subject.id}">
+                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach bearbeiten">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                 </button>
-                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}">
+                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach löschen">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -992,6 +1043,28 @@ function calculateStreak(entries) {
     }
 
     return streak;
+}
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} show`;
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = message;
+    toast.appendChild(textSpan);
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('translate-y-full', 'opacity-0');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
 }
 
 function renderGraph(entries) {
