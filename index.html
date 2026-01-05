@@ -90,7 +90,13 @@
 
             <!-- View: Einheiten -->
             <div id="view-einheiten" class="view-section hidden animate-fade-in">
-                <h1 class="text-3xl font-bold mb-6">Einheiten</h1>
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Einheiten</h1>
+                    <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm">
+                        <option value="">Alle Fächer</option>
+                        <!-- Options injected via JS -->
+                    </select>
+                </div>
                 <div id="einheiten-list" class="space-y-4">
                     <!-- Dynamic List -->
                 </div>
