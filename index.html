@@ -8,7 +8,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.473.0"></script>
     <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="css/toast.css">
@@ -356,6 +356,12 @@
                 <div class="w-full">
                     <label class="block text-sm text-adaptive-muted mb-2">Tägliches Ziel (Minuten)</label>
                     <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
+                </div>
+
+                <!-- Learning Days -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Lern-Tage pro Woche</label>
+                    <input type="number" id="settings-learning-days" min="1" max="7" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5">
                 </div>
 
                 <!-- Data Management -->

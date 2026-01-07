@@ -164,6 +164,7 @@ function initSettings() {
     const btnClose = document.getElementById('btn-settings-close');
     const btnSave = document.getElementById('btn-settings-save');
     const dailyGoalInput = document.getElementById('settings-daily-goal');
+    const learningDaysInput = document.getElementById('settings-learning-days');
     const btnReset = document.getElementById('btn-settings-reset');
     const btnExport = document.getElementById('btn-settings-export');
     const btnExportCSV = document.getElementById('btn-settings-export-csv');
@@ -174,6 +175,7 @@ function initSettings() {
     btnMenu.addEventListener('click', () => {
         const settings = window.storageManager.getSettings();
         dailyGoalInput.value = settings.dailyGoal || 60;
+        if (learningDaysInput) learningDaysInput.value = settings.learningDays || 5;
         overlay.classList.remove('translate-y-full');
     });
 
@@ -185,13 +187,18 @@ function initSettings() {
     // Save Settings
     btnSave.addEventListener('click', () => {
         const newGoal = parseInt(dailyGoalInput.value);
-        if (newGoal > 0) {
-            window.storageManager.updateSettings({ dailyGoal: newGoal });
+        let learningDays = 5;
+        if (learningDaysInput) {
+            learningDays = parseInt(learningDaysInput.value);
+        }
+
+        if (newGoal > 0 && learningDays >= 1 && learningDays <= 7) {
+            window.storageManager.updateSettings({ dailyGoal: newGoal, learningDays: learningDays });
             overlay.classList.add('translate-y-full');
             updateViews();
             showToast('Einstellungen gespeichert!', 'success');
         } else {
-            showToast('Bitte geben Sie ein gültiges Ziel ein.', 'error');
+            showToast('Bitte geben Sie gültige Werte ein.', 'error');
         }
     });
 
@@ -864,9 +871,9 @@ function renderCalendar(entries) {
             if (b.year !== a.year) return b.year - a.year;
             return b.week - a.week;
         }).map(item => {
-            // Weekly goal = Daily Goal * 5 (assuming 5 learning days/week?) or just show total?
-            // Let's use Daily Goal * 7 for week progress bar to be strict? Or maybe just * 5.
-            const goalSeconds = dailyGoalSeconds * 7;
+            // Weekly goal = Daily Goal * Learning Days
+            const learningDays = settings.learningDays || 5;
+            const goalSeconds = dailyGoalSeconds * learningDays;
             const progress = Math.min((item.duration / goalSeconds) * 100, 100);
 
             return {

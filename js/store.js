@@ -35,7 +35,7 @@ class StorageManager {
         }
 
         // Settings
-        let settings = { darkMode: true, dailyGoal: 60 };
+        let settings = { darkMode: true, dailyGoal: 60, learningDays: 5 };
         try {
             const stored = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
             if (stored) {
@@ -114,10 +114,10 @@ class StorageManager {
 
     getSettings() {
         try {
-            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{"darkMode":true, "dailyGoal": 60}');
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{"darkMode":true, "dailyGoal": 60, "learningDays": 5}');
         } catch (e) {
             console.error('Error parsing settings:', e);
-            return { darkMode: true, dailyGoal: 60 };
+            return { darkMode: true, dailyGoal: 60, learningDays: 5 };
         }
     }
 
