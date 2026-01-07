@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernzeit-tracker-v2';
+const CACHE_NAME = 'lernzeit-tracker-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -15,6 +15,18 @@ self.addEventListener('install', (e) => {
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
+        })
+    );
+});
+
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys().then((keyList) => {
+            return Promise.all(keyList.map((key) => {
+                if (key !== CACHE_NAME && key.startsWith('lernzeit-tracker-')) {
+                    return caches.delete(key);
+                }
+            }));
         })
     );
 });

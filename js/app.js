@@ -1109,7 +1109,7 @@ function renderGraph(entries) {
 
         const bar = document.createElement('div');
         bar.className = 'w-full bg-blue-500/20 group-hover:bg-blue-500 transition-all rounded-t-sm relative';
-        bar.style.height = `${Math.max(height, 5)}%`; // Min height 5%
+        bar.style.height = item.seconds > 0 ? `${Math.max(height, 5)}%` : '0%'; // Min height 5% only if valid duration
 
         // Tooltip
         const tooltip = document.createElement('div');

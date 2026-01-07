@@ -1,8 +1,18 @@
-.toast {
+#toast-container {
     position: fixed;
     bottom: 24px;
     left: 50%;
-    transform: translateX(-50%) translateY(100%);
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    align-items: center;
+}
+
+.toast {
+    position: static;
     background-color: var(--color-surface);
     color: var(--color-text);
     padding: 12px 24px;
@@ -10,18 +20,18 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
     opacity: 0;
+    transform: translateY(100%);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 100;
     font-size: 0.875rem;
     font-weight: 500;
-    pointer-events: none;
+    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .toast.show {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
     opacity: 1;
 }
 
