@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernzeit-tracker-v1';
+const CACHE_NAME = 'lernzeit-tracker-v2';
 const ASSETS = [
     './',
     './index.html',
@@ -8,7 +8,7 @@ const ASSETS = [
     './icon-192.png',
     './icon-512.png',
     'https://cdn.tailwindcss.com',
-    'https://unpkg.com/lucide@latest'
+    'https://unpkg.com/lucide@0.473.0'
 ];
 
 self.addEventListener('install', (e) => {
