@@ -8,6 +8,15 @@ class StorageManager {
         this.init();
     }
 
+    _save(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (e) {
+            console.error(`Error saving to ${key}:`, e);
+            alert('Fehler beim Speichern! Möglicherweise ist der Speicher voll.');
+        }
+    }
+
     init() {
         // Subjects
         let subjects = [];
@@ -31,7 +40,7 @@ class StorageManager {
             ];
             // Only overwrite if it was actually missing or we want to force seed on corruption?
             // Safer to just overwrite if it's corrupt/missing.
-            localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(defaultSubjects));
+            this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
         }
 
         // Settings
@@ -45,7 +54,7 @@ class StorageManager {
         } catch (e) {
             console.error('Error parsing settings:', e);
         }
-        localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+        this._save(this.STORAGE_KEYS.SETTINGS, settings);
     }
 
     getEntries() {
@@ -60,7 +69,7 @@ class StorageManager {
     addEntry(entry) {
         const entries = this.getEntries();
         entries.push({ ...entry, id: Date.now().toString() });
-        localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+        this._save(this.STORAGE_KEYS.ENTRIES, entries);
     }
 
     updateEntry(updatedEntry) {
@@ -68,14 +77,14 @@ class StorageManager {
         const index = entries.findIndex(e => String(e.id) === String(updatedEntry.id));
         if (index !== -1) {
             entries[index] = { ...entries[index], ...updatedEntry };
-            localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+            this._save(this.STORAGE_KEYS.ENTRIES, entries);
         }
     }
 
     deleteEntry(id) {
         // Ensure type consistency (comparing as strings)
         const entries = this.getEntries().filter(e => String(e.id) !== String(id));
-        localStorage.setItem(this.STORAGE_KEYS.ENTRIES, JSON.stringify(entries));
+        this._save(this.STORAGE_KEYS.ENTRIES, entries);
     }
 
     getSubjects() {
@@ -95,7 +104,7 @@ class StorageManager {
     addSubject(subject) {
         const subjects = this.getSubjects();
         subjects.push({ ...subject, id: Date.now().toString() });
-        localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+        this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
     }
 
     updateSubject(updatedSubject) {
@@ -103,13 +112,13 @@ class StorageManager {
         const index = subjects.findIndex(s => String(s.id) === String(updatedSubject.id));
         if (index !== -1) {
             subjects[index] = { ...subjects[index], ...updatedSubject };
-            localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+            this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
         }
     }
 
     deleteSubject(id) {
         const subjects = this.getSubjects().filter(s => String(s.id) !== String(id));
-        localStorage.setItem(this.STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+        this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
     }
 
     getSettings() {
@@ -124,7 +133,7 @@ class StorageManager {
     updateSettings(newSettings) {
         const currentSettings = this.getSettings();
         const settings = { ...currentSettings, ...newSettings };
-        localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+        this._save(this.STORAGE_KEYS.SETTINGS, settings);
     }
 }
 
