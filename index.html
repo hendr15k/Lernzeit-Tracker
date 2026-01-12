@@ -87,17 +87,32 @@
                              <div class="text-xs text-adaptive-muted">Gesamtzeit</div>
                         </div>
                     </div>
+
+                    <!-- Extra Stats Widget -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-xl font-bold text-adaptive" id="dashboard-best-day">0h</div>
+                             <div class="text-xs text-adaptive-muted">Bester Tag</div>
+                        </div>
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-xl font-bold text-adaptive" id="dashboard-avg-day">0h</div>
+                             <div class="text-xs text-adaptive-muted">Ø pro Tag</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- View: Einheiten -->
             <div id="view-einheiten" class="view-section hidden animate-fade-in">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold">Einheiten</h1>
-                    <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm">
-                        <option value="">Alle Fächer</option>
-                        <!-- Options injected via JS -->
-                    </select>
+                <div class="flex flex-col space-y-4 mb-6">
+                    <div class="flex justify-between items-center">
+                        <h1 class="text-3xl font-bold">Einheiten</h1>
+                        <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm">
+                            <option value="">Alle Fächer</option>
+                            <!-- Options injected via JS -->
+                        </select>
+                    </div>
+                    <input type="text" id="history-search-input" placeholder="Suche in Notizen oder Fächern..." class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-sm">
                 </div>
                 <div id="einheiten-list" class="space-y-4">
                     <!-- Dynamic List -->
@@ -270,7 +285,13 @@
                 <!-- Duration -->
                 <div class="w-full">
                     <label class="block text-sm text-adaptive-muted mb-2">Dauer (Minuten)</label>
-                    <input type="number" id="add-duration-input" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 45">
+                    <input type="number" id="add-duration-input" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none mb-2" placeholder="z.B. 45">
+                    <div class="flex gap-2 justify-between">
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="15">15m</button>
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="30">30m</button>
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="45">45m</button>
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="60">60m</button>
+                    </div>
                 </div>
 
                 <!-- Notes -->

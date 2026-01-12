@@ -20,6 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Add Search Listener
+    const searchInput = document.getElementById('history-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            updateViews();
+        });
+    }
+
     initTimer();
     initAddEntry();
     initSettings();
@@ -373,6 +381,14 @@ function initAddEntry() {
         window.openAddEntryOverlay();
     });
 
+    // Quick Duration Buttons
+    const quickButtons = document.querySelectorAll('.btn-quick-duration');
+    quickButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            durationInput.value = btn.getAttribute('data-val');
+        });
+    });
+
     // Close
     btnClose.addEventListener('click', () => {
         overlay.classList.add('translate-y-full');
@@ -716,6 +732,22 @@ function updateDashboard(entries) {
     const totalHours = (totalSeconds / 3600).toFixed(1);
     document.getElementById('dashboard-total').textContent = `${totalHours}h`;
 
+    // Best Day
+    const dayTotals = {};
+    entries.forEach(e => {
+        const d = new Date(e.startTime).toDateString();
+        dayTotals[d] = (dayTotals[d] || 0) + e.duration;
+    });
+    const maxDaySeconds = Object.values(dayTotals).length > 0 ? Math.max(...Object.values(dayTotals)) : 0;
+    const maxDayHours = (maxDaySeconds / 3600).toFixed(1);
+    document.getElementById('dashboard-best-day').textContent = `${maxDayHours}h`;
+
+    // Average per Active Day
+    const activeDaysCount = Object.keys(dayTotals).length;
+    const avgSeconds = activeDaysCount > 0 ? totalSeconds / activeDaysCount : 0;
+    const avgHours = (avgSeconds / 3600).toFixed(1);
+    document.getElementById('dashboard-avg-day').textContent = `${avgHours}h`;
+
     // Render Graph (Last 7 days)
     renderGraph(entries);
 }
@@ -731,10 +763,26 @@ function renderHistory(entries, subjects) {
         filterSubjectId = filterSelect.value;
     }
 
+    let searchTerm = '';
+    const searchInput = document.getElementById('history-search-input');
+    if (searchInput) {
+        searchTerm = searchInput.value.toLowerCase();
+    }
+
     // Filter entries if a subject is selected
     let filteredEntries = entries;
     if (filterSubjectId) {
         filteredEntries = entries.filter(e => String(e.subjectId) === String(filterSubjectId));
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+        filteredEntries = filteredEntries.filter(e => {
+            const subject = subjects.find(s => s.id === e.subjectId);
+            const subjectName = subject ? subject.name.toLowerCase() : '';
+            const notes = e.notes ? e.notes.toLowerCase() : '';
+            return subjectName.includes(searchTerm) || notes.includes(searchTerm);
+        });
     }
 
     if (filteredEntries.length === 0) {
