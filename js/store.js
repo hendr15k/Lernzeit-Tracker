@@ -13,13 +13,17 @@ class StorageManager {
             localStorage.setItem(key, JSON.stringify(data));
         } catch (e) {
             console.error(`Error saving to ${key}:`, e);
-            alert('Fehler beim Speichern! Möglicherweise ist der Speicher voll.');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Fehler beim Speichern! Möglicherweise ist der Speicher voll.', 'error');
+            } else {
+                console.error('Fehler beim Speichern! Möglicherweise ist der Speicher voll.');
+            }
         }
     }
 
     init() {
         // Subjects
-        let subjects = [];
+        let subjects = null;
         try {
             const stored = localStorage.getItem(this.STORAGE_KEYS.SUBJECTS);
             if (stored) {
@@ -31,7 +35,7 @@ class StorageManager {
             // For now, let's treat it as empty so we re-seed if needed, or just warn.
         }
 
-        if (!subjects || subjects.length === 0) {
+        if (subjects === null) {
             // Seed default subjects if empty
             const defaultSubjects = [
                 { id: '1', name: 'Informatik', color: 'bg-blue-500' },
