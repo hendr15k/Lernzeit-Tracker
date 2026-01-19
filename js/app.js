@@ -253,7 +253,7 @@ function initSettings() {
             });
 
             // Use Blob to handle special characters and larger files
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
 
             const link = document.createElement("a");
@@ -338,6 +338,15 @@ function initAddEntry() {
             if (entry) {
                 overlay.setAttribute('data-edit-id', entry.id);
                 document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag bearbeiten';
+
+                // Check if subject exists in select (it might have been deleted)
+                const exists = Array.from(subjectSelect.options).some(opt => opt.value === entry.subjectId);
+                if (!exists) {
+                    const tempOption = document.createElement('option');
+                    tempOption.value = entry.subjectId;
+                    tempOption.textContent = '(Gelöschtes Fach)';
+                    subjectSelect.appendChild(tempOption);
+                }
 
                 subjectSelect.value = entry.subjectId;
                 // Manually format date to YYYY-MM-DD to use local time, preventing UTC offsets
@@ -978,7 +987,9 @@ function renderCalendar(entries) {
             const year = item.date.getFullYear();
             const month = item.date.getMonth();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const goalSeconds = dailyGoalSeconds * daysInMonth;
+            const learningDays = settings.learningDays || 5;
+            // Approximate working days: daysInMonth / 7 * learningDays
+            const goalSeconds = dailyGoalSeconds * (daysInMonth / 7) * learningDays;
             const progress = Math.min((item.duration / goalSeconds) * 100, 100);
 
             return {
