@@ -594,11 +594,24 @@ function initTimer() {
 
     btnSave.addEventListener('click', () => {
         if (timerSeconds > 0) {
+            let endTime = Date.now();
+            // If timer is paused, use the timestamp from when it was paused
+            if (!isTimerRunning) {
+                try {
+                    const savedState = JSON.parse(localStorage.getItem('timer_state'));
+                    if (savedState && !savedState.isRunning) {
+                        endTime = savedState.timestamp;
+                    }
+                } catch (e) {
+                    console.error('Error parsing timer state:', e);
+                }
+            }
+
             const entry = {
                 subjectId: subjectSelect.value,
                 duration: timerSeconds,
-                startTime: Date.now() - (timerSeconds * 1000),
-                endTime: Date.now(),
+                startTime: endTime - (timerSeconds * 1000),
+                endTime: endTime,
                 notes: 'Timer Entry'
             };
             window.storageManager.addEntry(entry);
@@ -693,6 +706,21 @@ function renderSemester(entries, subjects) {
         const duration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
         return { ...subject, duration };
     }).sort((a, b) => b.duration - a.duration);
+
+    // Check for missing time (entries with deleted subjects)
+    const totalKnownDuration = subjectStats.reduce((acc, curr) => acc + curr.duration, 0);
+    const missingDuration = totalSeconds - totalKnownDuration;
+
+    if (missingDuration > 0) {
+        subjectStats.push({
+            name: 'Sonstige / Gelöscht',
+            color: 'bg-gray-400',
+            duration: missingDuration,
+            id: 'deleted'
+        });
+        // Re-sort
+        subjectStats.sort((a, b) => b.duration - a.duration);
+    }
 
     const maxDuration = subjectStats.length > 0 ? subjectStats[0].duration : 0;
 
