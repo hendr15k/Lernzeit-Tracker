@@ -141,4 +141,6 @@ class StorageManager {
     }
 }
 
-window.storageManager = new StorageManager();
+document.addEventListener('DOMContentLoaded', () => {
+    window.storageManager = new StorageManager();
+});

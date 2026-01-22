@@ -816,7 +816,7 @@ function renderHistory(entries, subjects) {
     if (searchTerm) {
         filteredEntries = filteredEntries.filter(e => {
             const subject = subjects.find(s => s.id === e.subjectId);
-            const subjectName = subject ? subject.name.toLowerCase() : '';
+            const subjectName = subject ? subject.name.toLowerCase() : 'gelöschtes fach';
             const notes = e.notes ? e.notes.toLowerCase() : '';
             return subjectName.includes(searchTerm) || notes.includes(searchTerm);
         });
