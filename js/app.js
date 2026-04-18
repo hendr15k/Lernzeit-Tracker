@@ -785,6 +785,9 @@ function updateDashboard(entries) {
     const avgHours = (avgSeconds / 3600).toFixed(1);
     document.getElementById('dashboard-avg-day').textContent = `${avgHours}h`;
 
+    // Weekly comparison badge
+    updateWeeklyComparison(entries);
+
     // Render Graph (Last 7 days)
     renderGraph(entries);
 }
@@ -1214,4 +1217,52 @@ function renderGraph(entries) {
 
         graphContainer.appendChild(col);
     });
+}
+
+function updateWeeklyComparison(entries) {
+    const badge = document.getElementById('dashboard-week-comparison');
+    if (!badge) return;
+
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    // This week: Monday 00:00 to now
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(now.getDate() - mondayOffset);
+    thisWeekStart.setHours(0, 0, 0, 0);
+
+    // Last week: Monday 00:00 to Sunday 23:59:59
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
+    lastWeekEnd.setHours(23, 59, 59, 999);
+
+    const thisWeekSeconds = entries
+        .filter(e => e.startTime >= thisWeekStart.getTime())
+        .reduce((acc, e) => acc + e.duration, 0);
+
+    const lastWeekSeconds = entries
+        .filter(e => e.startTime >= lastWeekStart.getTime() && e.startTime <= lastWeekEnd.getTime())
+        .reduce((acc, e) => acc + e.duration, 0);
+
+    const thisWeekHrs = (thisWeekSeconds / 3600).toFixed(1);
+
+    if (lastWeekSeconds === 0 && thisWeekSeconds === 0) {
+        badge.textContent = '—';
+        badge.className = 'text-xs bg-gray-400/10 text-gray-400 px-2 py-1 rounded-full';
+    } else if (lastWeekSeconds === 0) {
+        badge.textContent = `+${thisWeekHrs}h diese Woche`;
+        badge.className = 'text-xs bg-green-400/10 text-green-400 px-2 py-1 rounded-full';
+    } else {
+        const change = ((thisWeekSeconds - lastWeekSeconds) / lastWeekSeconds) * 100;
+        const sign = change >= 0 ? '+' : '';
+        badge.textContent = `${sign}${Math.round(change)}% vs. Woche davor`;
+        if (change >= 0) {
+            badge.className = 'text-xs bg-green-400/10 text-green-400 px-2 py-1 rounded-full';
+        } else {
+            badge.className = 'text-xs bg-red-400/10 text-red-400 px-2 py-1 rounded-full';
+        }
+    }
 }
