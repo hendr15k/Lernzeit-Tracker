@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernzeit-tracker-v3';
+const CACHE_NAME = 'lernzeit-tracker-v4';
 const ASSETS = [
     './',
     './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
     './css/toast.css',
     './js/app.js',
     './js/store.js',
+    './sw.js',
     './icon-192.png',
     './icon-512.png',
     'https://cdn.tailwindcss.com',
