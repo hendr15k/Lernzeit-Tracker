@@ -6,6 +6,10 @@ let timerStartTime = 0;
 // Calendar View State
 let currentCalendarView = 'day'; // 'day', 'week', 'month'
 
+// PWA Install State
+let deferredPrompt = null;
+let pwaBannerDismissed = localStorage.getItem('pwa_banner_dismissed') === 'true';
+
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
 
@@ -49,7 +53,53 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(() => console.log('Service Worker registered'))
             .catch(err => console.error('Service Worker registration failed:', err));
     }
+
+    // PWA Install Prompt
+    initPWAInstall();
 });
+
+function initPWAInstall() {
+    const banner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('pwa-install-btn');
+    const dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+    if (!banner || !installBtn || !dismissBtn) return;
+
+    // Listen for the install prompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Show banner after 5 seconds if not already dismissed or installed
+        if (!pwaBannerDismissed && !navigator.standalone) {
+            setTimeout(() => {
+                banner.classList.remove('hidden', 'translate-y-full');
+            }, 5000);
+        }
+    });
+
+    // Install button clicked
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === 'accepted') {
+            banner.classList.add('translate-y-full');
+            setTimeout(() => banner.classList.add('hidden'), 300);
+        }
+        deferredPrompt = null;
+    });
+
+    // Dismiss button clicked
+    dismissBtn.addEventListener('click', () => {
+        pwaBannerDismissed = true;
+        localStorage.setItem('pwa_banner_dismissed', 'true');
+        banner.classList.add('translate-y-full');
+        setTimeout(() => banner.classList.add('hidden'), 300);
+    });
+}
 
 function initTheme() {
     const btnTheme = document.getElementById('btn-theme');
