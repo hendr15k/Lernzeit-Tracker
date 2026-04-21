@@ -607,6 +607,32 @@ function initTimer() {
     const btnSave = document.getElementById('btn-timer-save');
     const display = document.getElementById('timer-display');
     const subjectSelect = document.getElementById('timer-subject-select');
+    const notesInput = document.getElementById('timer-notes-input');
+    const btnNotesToggle = document.getElementById('btn-timer-notes-toggle');
+    const notesCollapsed = document.getElementById('timer-notes-collapsed');
+    const notesToggleLabel = document.getElementById('timer-notes-toggle-label');
+
+    // Notes toggle
+    let notesExpanded = false;
+    if (btnNotesToggle && notesCollapsed) {
+        btnNotesToggle.addEventListener('click', () => {
+            notesExpanded = !notesExpanded;
+            if (notesExpanded) {
+                notesCollapsed.classList.remove('hidden');
+                notesToggleLabel.textContent = 'Notizen ▲';
+            } else {
+                notesCollapsed.classList.add('hidden');
+                notesToggleLabel.textContent = 'Notizen';
+            }
+        });
+    }
+
+    // Notes persistence in localStorage
+    if (notesInput) {
+        notesInput.addEventListener('input', () => {
+            localStorage.setItem('timer_notes', notesInput.value);
+        });
+    }
 
     // Subjects are populated via updateSubjectSelects()
 
@@ -626,12 +652,29 @@ function initTimer() {
             btnPause.classList.remove('hidden');
             timerOverlay.classList.remove('translate-y-full'); // Show overlay if running
 
+            // Restore notes
+            const savedNotes = localStorage.getItem('timer_notes');
+            if (savedNotes && notesInput) {
+                notesInput.value = savedNotes;
+                notesExpanded = true;
+                notesCollapsed.classList.remove('hidden');
+                notesToggleLabel.textContent = 'Notizen ▲';
+            }
+
             startInterval();
             requestWakeLock();
         } else {
             timerSeconds = state.seconds;
             subjectSelect.value = state.subjectId;
             updateDisplay();
+            // Restore notes even if paused
+            const savedNotes = localStorage.getItem('timer_notes');
+            if (savedNotes && notesInput) {
+                notesInput.value = savedNotes;
+                notesExpanded = true;
+                notesCollapsed.classList.remove('hidden');
+                notesToggleLabel.textContent = 'Notizen ▲';
+            }
         }
     }
 
@@ -729,12 +772,13 @@ function initTimer() {
                 }
             }
 
+            const timerNotes = notesInput ? notesInput.value.trim() : '';
             const entry = {
                 subjectId: subjectSelect.value,
                 duration: timerSeconds,
                 startTime: endTime - (timerSeconds * 1000),
                 endTime: endTime,
-                notes: 'Timer Entry'
+                notes: timerNotes
             };
             window.storageManager.addEntry(entry);
             showToast('Lernzeit gespeichert!', 'success');
@@ -749,6 +793,13 @@ function initTimer() {
             timerOverlay.classList.add('translate-y-full');
             clearState();
             releaseWakeLock();
+
+            // Clear notes
+            if (notesInput) notesInput.value = '';
+            localStorage.removeItem('timer_notes');
+            notesExpanded = false;
+            if (notesCollapsed) notesCollapsed.classList.add('hidden');
+            if (notesToggleLabel) notesToggleLabel.textContent = 'Notizen';
 
             // Refresh views
             updateViews();
@@ -901,6 +952,9 @@ function updateDashboard(entries) {
 
     // Weekly comparison badge
     updateWeeklyComparison(entries);
+
+    // Update Daily Goal Progress Ring
+    updateDailyGoalRing(entries);
 
     // Render Graph (Last 7 days)
     renderGraph(entries);
@@ -1435,6 +1489,46 @@ function renderDashboardSubjects(entries) {
     if (summary) {
         summary.textContent = summaryParts.join(' | ');
     }
+}
+
+function updateDailyGoalRing(entries) {
+    const settings = window.storageManager.getSettings();
+    const dailyGoalMinutes = settings.dailyGoal || 60;
+    const dailyGoalSeconds = dailyGoalMinutes * 60;
+
+    // Calculate today's total study time
+    const todayStr = new Date().toDateString();
+    const todaySeconds = entries
+        .filter(e => new Date(e.startTime).toDateString() === todayStr)
+        .reduce((acc, curr) => acc + curr.duration, 0);
+
+    const pct = Math.min(todaySeconds / dailyGoalSeconds, 1);
+    const circumference = 2 * Math.PI * 52; // r=52
+    const offset = circumference * (1 - pct);
+
+    const progressEl = document.getElementById('daily-goal-progress');
+    const timeEl = document.getElementById('daily-goal-time');
+    const labelEl = document.getElementById('daily-goal-label');
+    const fireEl = document.getElementById('daily-goal-fire');
+
+    if (!progressEl) return;
+
+    // Update ring
+    progressEl.setAttribute('stroke-dashoffset', offset);
+    progressEl.setAttribute('stroke', pct >= 1 ? '#22c55e' : '#3b82f6');
+
+    // Center text: today's total
+    const hrs = Math.floor(todaySeconds / 3600);
+    const mins = Math.round((todaySeconds % 3600) / 60);
+    timeEl.textContent = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+    // Label: daily goal
+    const goalHrs = Math.floor(dailyGoalMinutes / 60);
+    const goalMins = dailyGoalMinutes % 60;
+    labelEl.textContent = goalHrs > 0 ? (goalMins > 0 ? `Ziel: ${goalHrs}h ${goalMins}m` : `Ziel: ${goalHrs}h`) : `Ziel: ${goalMins}m`;
+
+    // Fire emoji when goal met
+    fireEl.setAttribute('opacity', pct >= 1 ? '1' : '0');
 }
 
 function renderGraph(entries) {

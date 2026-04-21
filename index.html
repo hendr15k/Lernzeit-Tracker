@@ -69,6 +69,27 @@
             <div id="view-dashboard" class="view-section animate-fade-in">
                 <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
                 <div class="grid gap-4">
+                    <!-- Daily Goal Progress Ring -->
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center">
+                        <svg id="daily-goal-ring" width="120" height="120" viewBox="0 0 120 120" class="block">
+                            <!-- Background track -->
+                            <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2937" stroke-width="8" />
+                            <!-- Progress arc -->
+                            <circle id="daily-goal-progress" cx="60" cy="60" r="52" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"
+                                stroke-dasharray="326.73" stroke-dashoffset="326.73"
+                                transform="rotate(-90 60 60)"
+                                style="transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;" />
+                            <!-- Center text -->
+                            <text id="daily-goal-time" x="60" y="55" text-anchor="middle" dominant-baseline="central"
+                                fill="currentColor" font-size="16" font-weight="bold" font-family="inherit">0m</text>
+                            <text id="daily-goal-label" x="60" y="73" text-anchor="middle" dominant-baseline="central"
+                                fill="#9ca3af" font-size="11" font-family="inherit">Ziel: 1h</text>
+                            <!-- Fire emoji when goal met -->
+                            <text id="daily-goal-fire" x="95" y="28" text-anchor="middle" dominant-baseline="central"
+                                font-size="16" opacity="0" style="transition: opacity 0.3s ease;">🔥</text>
+                        </svg>
+                    </div>
+
                     <!-- Graph Widget -->
                     <div class="surface-card p-4 border border-gray-800">
                         <div class="h-32 flex items-end space-x-2" id="dashboard-graph">
@@ -137,6 +158,17 @@
                                 <div class="text-lg font-bold text-adaptive" id="weekly-total">0h</div>
                                 <div class="text-[10px] text-adaptive-muted">Woche gesamt</div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Wochenvergleich by Subject -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Wochenvergleich</h2>
+                            <span id="weekly-compare-range" class="text-xs text-adaptive-muted"></span>
+                        </div>
+                        <div id="weekly-compare-list" class="space-y-3">
+                            <!-- Dynamic rows -->
                         </div>
                     </div>
 
@@ -272,9 +304,25 @@
                      </select>
                 </div>
 
+                <!-- Thema (Topics) -->
+                <div class="w-full max-w-xs">
+                     <input type="text" id="timer-topics-input" list="timer-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" placeholder="Thema (z.B. Reihen, Folgen)">
+                     <datalist id="timer-topics-datalist"></datalist>
+                </div>
+
                 <!-- Time Display -->
                 <div class="text-7xl font-mono font-bold tracking-wider" id="timer-display">
                     00:00:00
+                </div>
+
+                <!-- Notes Toggle & Textarea -->
+                <div class="w-full max-w-xs" id="timer-notes-wrapper">
+                    <button id="btn-timer-notes-toggle" class="text-sm text-adaptive-muted hover:text-adaptive transition flex items-center gap-1 mx-auto" type="button">
+                        📝 <span id="timer-notes-toggle-label">Notizen</span>
+                    </button>
+                    <div id="timer-notes-collapsed" class="hidden w-full mt-2">
+                        <textarea id="timer-notes-input" class="w-full bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm resize-none" rows="3" placeholder="Notizen zur Session..."></textarea>
+                    </div>
                 </div>
 
                 <!-- Controls -->
@@ -319,6 +367,13 @@
                     <select id="add-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
                         <!-- Options injected via JS -->
                     </select>
+                </div>
+
+                <!-- Thema (Topics) -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Thema</label>
+                    <input type="text" id="add-topics-input" list="add-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Reihen, Folgen">
+                    <datalist id="add-topics-datalist"></datalist>
                 </div>
 
                 <!-- Date -->
