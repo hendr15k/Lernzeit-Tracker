@@ -612,6 +612,8 @@ function initAddEntry() {
                 window.storageManager.addEntry(entryData);
             }
 
+            checkAchievements(window.storageManager.getEntries(), { showToasts: true });
+
             // Reset and close
             durationInput.value = '';
             notesInput.value = '';
@@ -875,6 +877,7 @@ function initTimer() {
                 topics: topicsVal
             };
             window.storageManager.addEntry(entry);
+            checkAchievements(window.storageManager.getEntries(), { showToasts: true });
             showToast(`🍅 Pomodoro #${pomodoroCount} gespeichert!`, 'success');
 
             if (pomodoroCount % pomo.longBreakInterval === 0) {
@@ -1027,6 +1030,7 @@ function initTimer() {
                 topics: topicsVal
             };
             window.storageManager.addEntry(entry);
+            checkAchievements(window.storageManager.getEntries(), { showToasts: true });
             showToast('Lernzeit gespeichert!', 'success');
 
             // Reset
@@ -1120,6 +1124,157 @@ function getTopTopicsForSubject(subjectId, limit = 3) {
     return getTopicsForSubject(subjectId).slice(0, limit);
 }
 
+const ACHIEVEMENT_DEFINITIONS = [
+    { id: 'first_timer', icon: '🏃', name: 'Erste Schritte' },
+    { id: 'streak_7', icon: '🔥', name: '7-Tage-Streak' },
+    { id: 'hours_10', icon: '⏰', name: 'Stunden-Jäger' },
+    { id: 'hours_100', icon: '📚', name: '100-Stunden-Krieger' },
+    { id: 'pomodoro_1', icon: '🍅', name: 'Pomodoro-Anfänger' },
+    { id: 'pomodoro_10', icon: '🍅', name: 'Pomodoro-Meister' },
+    { id: 'weekly_goal', icon: '📅', name: 'Wochenziel erreicht' },
+    { id: 'monthly_goal', icon: '🎯', name: 'Monatsziel erreicht' }
+];
+
+function getStoredAchievements() {
+    try {
+        const raw = localStorage.getItem('lt_achievements');
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.error('Error parsing achievements:', e);
+        return [];
+    }
+}
+
+function saveAchievements(achievements) {
+    localStorage.setItem('lt_achievements', JSON.stringify(achievements));
+}
+
+function formatAchievementDate(dateString) {
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return 'unbekannt';
+    return date.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+function getCurrentWeekRange() {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { start: monday, end: sunday };
+}
+
+function getCurrentMonthRange() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end };
+}
+
+function getAchievementProgress(entries) {
+    const settings = window.storageManager.getSettings();
+    const dailyGoalMinutes = settings.dailyGoal || 60;
+    const dailyGoalSeconds = dailyGoalMinutes * 60;
+    const streak = calculateStreak(entries);
+    const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
+    const pomodoroEntries = entries.filter(entry => (entry.notes || '').includes('🍅'));
+
+    const weekRange = getCurrentWeekRange();
+    const weekSeconds = entries
+        .filter(e => e.startTime >= weekRange.start.getTime() && e.startTime <= weekRange.end.getTime())
+        .reduce((acc, curr) => acc + curr.duration, 0);
+
+    const monthRange = getCurrentMonthRange();
+    const monthSeconds = entries
+        .filter(e => e.startTime >= monthRange.start.getTime() && e.startTime <= monthRange.end.getTime())
+        .reduce((acc, curr) => acc + curr.duration, 0);
+
+    return {
+        first_timer: entries.length >= 1,
+        streak_7: streak >= 7,
+        hours_10: totalSeconds >= 10 * 3600,
+        hours_100: totalSeconds >= 100 * 3600,
+        pomodoro_1: pomodoroEntries.length >= 1,
+        pomodoro_10: pomodoroEntries.length >= 10,
+        weekly_goal: weekSeconds >= dailyGoalSeconds * 5,
+        monthly_goal: monthSeconds >= dailyGoalSeconds * 20
+    };
+}
+
+function checkAchievements(entries, { showToasts = false } = {}) {
+    const unlocked = getStoredAchievements();
+    const unlockedIds = new Set(unlocked.map(item => item.id));
+    const progress = getAchievementProgress(entries);
+    const newlyUnlocked = [];
+
+    ACHIEVEMENT_DEFINITIONS.forEach(def => {
+        if (progress[def.id] && !unlockedIds.has(def.id)) {
+            const achievement = {
+                id: def.id,
+                unlockedAt: new Date().toISOString()
+            };
+            unlocked.push(achievement);
+            unlockedIds.add(def.id);
+            newlyUnlocked.push(def);
+        }
+    });
+
+    if (newlyUnlocked.length > 0) {
+        saveAchievements(unlocked);
+        if (showToasts) {
+            newlyUnlocked.forEach(def => {
+                showToast(`${def.icon} Achievement freigeschaltet: ${def.name}`, 'success');
+            });
+        }
+    }
+
+    renderAchievements(entries);
+    return unlocked;
+}
+
+function renderAchievements(entries) {
+    const container = document.getElementById('achievements-list');
+    const summary = document.getElementById('achievements-summary');
+    if (!container) return;
+
+    const unlocked = getStoredAchievements();
+    const unlockedMap = new Map(unlocked.map(item => [item.id, item]));
+    container.innerHTML = '';
+
+    ACHIEVEMENT_DEFINITIONS.forEach(def => {
+        const unlockedEntry = unlockedMap.get(def.id);
+        const isUnlocked = Boolean(unlockedEntry);
+        const card = document.createElement('div');
+        card.className = `rounded-xl border p-3 transition-colors ${isUnlocked ? 'border-primary/30 bg-primary/5' : 'border-gray-800 bg-surface opacity-70'}`;
+        card.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="text-2xl leading-none ${isUnlocked ? '' : 'grayscale opacity-60'}">${isUnlocked ? def.icon : '🔒'}</div>
+                <div class="min-w-0">
+                    <div class="text-sm font-semibold ${isUnlocked ? 'text-adaptive' : 'text-adaptive-muted'}">${isUnlocked ? def.name : '? ??? ???'}</div>
+                    <div class="text-[11px] mt-1 ${isUnlocked ? 'text-adaptive-muted' : 'text-adaptive-muted'}">${isUnlocked ? `freigeschaltet am ${formatAchievementDate(unlockedEntry.unlockedAt)}` : 'Noch gesperrt'}</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    if (summary) {
+        summary.textContent = `${unlocked.length}/${ACHIEVEMENT_DEFINITIONS.length} freigeschaltet`;
+    }
+}
+
 function renderTopicBadges(topics) {
     if (!topics) return '';
 
@@ -1140,6 +1295,7 @@ function updateViews() {
     renderCalendar(entries);
     renderFaecher(entries, subjects);
     renderSemester(entries, subjects);
+    checkAchievements(entries);
 }
 
 function renderSemester(entries, subjects) {
@@ -1215,6 +1371,8 @@ function updateDashboard(entries) {
     // Calculate Streak
     const streak = calculateStreak(entries);
     document.getElementById('dashboard-streak').textContent = streak;
+
+    renderAchievements(entries);
 
     // Calculate Total Time
     const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
@@ -1642,6 +1800,8 @@ function renderWeeklyStats(entries) {
     const mostProductiveEl = document.getElementById('weekly-most-productive');
     const totalEl = document.getElementById('weekly-total');
     if (!chartContainer) return;
+
+    checkAchievements(entries);
     chartContainer.innerHTML = '';
 
     // Calculate current week (Mo–So)
