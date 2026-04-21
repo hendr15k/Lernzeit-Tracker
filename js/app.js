@@ -1442,6 +1442,193 @@ function renderWeeklyStats(entries) {
     if (totalEl) totalEl.textContent = `${totalH}h`;
 }
 
+function renderWeeklyComparison(entries) {
+    const container = document.getElementById('weekly-compare-list');
+    const rangeEl = document.getElementById('weekly-compare-range');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const subjects = window.storageManager.getSubjects();
+
+    // Calculate current week (Mo–So) using same logic as renderWeeklyStats
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    const thisMonday = new Date(now);
+    thisMonday.setDate(now.getDate() - mondayOffset);
+    thisMonday.setHours(0, 0, 0, 0);
+
+    const thisSunday = new Date(thisMonday);
+    thisSunday.setDate(thisMonday.getDate() + 6);
+    thisSunday.setHours(23, 59, 59, 999);
+
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setDate(thisMonday.getDate() - 7);
+    const lastSunday = new Date(thisMonday);
+    lastSunday.setDate(thisMonday.getDate() - 1);
+    lastSunday.setHours(23, 59, 59, 999);
+
+    // Range label
+    if (rangeEl) {
+        const mStr = thisMonday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        const sStr = thisSunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        const lmStr = lastMonday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        const lsStr = lastSunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        rangeEl.textContent = `${lmStr}–${lsStr} vs ${mStr}–${sStr}`;
+    }
+
+    // Calculate hours per subject for each week
+    const thisWeekStart = thisMonday.getTime();
+    const thisWeekEnd = thisSunday.getTime();
+    const lastWeekStart = lastMonday.getTime();
+    const lastWeekEnd = lastSunday.getTime();
+
+    const subjectData = subjects.map(subject => {
+        const thisWeekEntries = entries.filter(e => e.subjectId === subject.id && e.startTime >= thisWeekStart && e.startTime <= thisWeekEnd);
+        const lastWeekEntries = entries.filter(e => e.subjectId === subject.id && e.startTime >= lastWeekStart && e.startTime <= lastWeekEnd);
+
+        const thisWeekSeconds = thisWeekEntries.reduce((acc, e) => acc + e.duration, 0);
+        const lastWeekSeconds = lastWeekEntries.reduce((acc, e) => acc + e.duration, 0);
+
+        return {
+            ...subject,
+            thisWeekSeconds,
+            lastWeekSeconds
+        };
+    });
+
+    // Also check for entries with deleted subjects
+    const knownSubjectIds = new Set(subjects.map(s => s.id));
+    const orphanThis = entries.filter(e => !knownSubjectIds.has(e.subjectId) && e.startTime >= thisWeekStart && e.startTime <= thisWeekEnd)
+        .reduce((acc, e) => acc + e.duration, 0);
+    const orphanLast = entries.filter(e => !knownSubjectIds.has(e.subjectId) && e.startTime >= lastWeekStart && e.startTime <= lastWeekEnd)
+        .reduce((acc, e) => acc + e.duration, 0);
+
+    if (orphanThis > 0 || orphanLast > 0) {
+        subjectData.push({
+            name: 'Sonstige',
+            color: 'bg-gray-400',
+            thisWeekSeconds: orphanThis,
+            lastWeekSeconds: orphanLast
+        });
+    }
+
+    // Sort by this week's total descending
+    subjectData.sort((a, b) => b.thisWeekSeconds - a.thisWeekSeconds);
+
+    // Find max for bar scaling (across both weeks for visual context)
+    const maxSeconds = Math.max(
+        ...subjectData.map(s => Math.max(s.thisWeekSeconds, s.lastWeekSeconds)),
+        3600 // minimum 1h scale
+    );
+
+    if (subjectData.every(s => s.thisWeekSeconds === 0 && s.lastWeekSeconds === 0)) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-4">Keine Daten für diesen Zeitraum.</div>';
+        return;
+    }
+
+    // Render each subject row
+    subjectData.forEach(subject => {
+        if (subject.thisWeekSeconds === 0 && subject.lastWeekSeconds === 0) return;
+
+        const thisWeekH = (subject.thisWeekSeconds / 3600).toFixed(1);
+        const lastWeekH = (subject.lastWeekSeconds / 3600).toFixed(1);
+
+        const thisBarPct = Math.max((subject.thisWeekSeconds / maxSeconds) * 100, 3);
+        const lastBarPct = Math.max((subject.lastWeekSeconds / maxSeconds) * 100, 3);
+
+        // Change indicator
+        let changeHtml = '';
+        if (subject.lastWeekSeconds === 0 && subject.thisWeekSeconds > 0) {
+            changeHtml = '<span class="text-xs text-green-400 font-medium">Neu</span>';
+        } else if (subject.thisWeekSeconds === 0 && subject.lastWeekSeconds > 0) {
+            changeHtml = '<span class="text-xs text-red-400 font-medium">↓100%</span>';
+        } else if (subject.lastWeekSeconds > 0) {
+            const change = ((subject.thisWeekSeconds - subject.lastWeekSeconds) / subject.lastWeekSeconds) * 100;
+            const rounded = Math.round(Math.abs(change));
+            if (change >= 0) {
+                changeHtml = `<span class="text-xs text-green-400 font-medium">↑${rounded}%</span>`;
+            } else {
+                changeHtml = `<span class="text-xs text-red-400 font-medium">↓${rounded}%</span>`;
+            }
+        }
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+            <div class="w-10 text-xs font-bold text-adaptive truncate flex-shrink-0" title="${subject.name}">${subject.name.substring(0, 5)}</div>
+            <div class="flex-1 min-w-0 space-y-1">
+                <div class="flex items-center gap-1.5">
+                    <div class="h-2 bg-primary/60 rounded-full" style="width: ${subject.thisWeekSeconds > 0 ? thisBarPct : 0}%"></div>
+                    <span class="text-[10px] text-adaptive-muted whitespace-nowrap">${subject.thisWeekSeconds > 0 ? thisWeekH + 'h' : '—'}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div class="h-2 bg-gray-500/50 rounded-full" style="width: ${subject.lastWeekSeconds > 0 ? lastBarPct : 0}%"></div>
+                    <span class="text-[10px] text-adaptive-muted whitespace-nowrap">${subject.lastWeekSeconds > 0 ? lastWeekH + 'h' : '—'}</span>
+                </div>
+            </div>
+            <div class="w-12 text-right flex-shrink-0">${changeHtml}</div>
+        `;
+        container.appendChild(row);
+    });
+
+    // Total row
+    const totalThis = subjectData.reduce((acc, s) => acc + s.thisWeekSeconds, 0);
+    const totalLast = subjectData.reduce((acc, s) => acc + s.lastWeekSeconds, 0);
+    const totalThisH = (totalThis / 3600).toFixed(1);
+    const totalLastH = (totalLast / 3600).toFixed(1);
+
+    let totalChangeHtml = '';
+    if (totalLast === 0 && totalThis > 0) {
+        totalChangeHtml = '<span class="text-xs text-green-400 font-medium">Neu</span>';
+    } else if (totalThis === 0 && totalLast > 0) {
+        totalChangeHtml = '<span class="text-xs text-red-400 font-medium">↓100%</span>';
+    } else if (totalLast > 0) {
+        const change = ((totalThis - totalLast) / totalLast) * 100;
+        const rounded = Math.round(Math.abs(change));
+        if (change >= 0) {
+            totalChangeHtml = `<span class="text-xs text-green-400 font-medium">↑${rounded}%</span>`;
+        } else {
+            totalChangeHtml = `<span class="text-xs text-red-400 font-medium">↓${rounded}%</span>`;
+        }
+    }
+
+    const totalThisBarPct = Math.max((totalThis / maxSeconds) * 100, 3);
+    const totalLastBarPct = Math.max((totalLast / maxSeconds) * 100, 3);
+
+    const separator = document.createElement('div');
+    separator.className = 'border-t border-gray-700 my-2';
+    container.appendChild(separator);
+
+    const totalRow = document.createElement('div');
+    totalRow.className = 'flex items-center gap-2';
+    totalRow.innerHTML = `
+        <div class="w-10 text-xs font-bold text-adaptive flex-shrink-0">Gesamt</div>
+        <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex items-center gap-1.5">
+                <div class="h-2 bg-primary/60 rounded-full" style="width: ${totalThis > 0 ? totalThisBarPct : 0}%"></div>
+                <span class="text-[10px] text-adaptive-muted whitespace-nowrap font-bold">${totalThis > 0 ? totalThisH + 'h' : '—'}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <div class="h-2 bg-gray-500/50 rounded-full" style="width: ${totalLast > 0 ? totalLastBarPct : 0}%"></div>
+                <span class="text-[10px] text-adaptive-muted whitespace-nowrap font-bold">${totalLast > 0 ? totalLastH + 'h' : '—'}</span>
+            </div>
+        </div>
+        <div class="w-12 text-right flex-shrink-0">${totalChangeHtml}</div>
+    `;
+    container.appendChild(totalRow);
+
+    // Legend
+    const legend = document.createElement('div');
+    legend.className = 'flex items-center gap-4 mt-3 pt-2 border-t border-gray-700/50';
+    legend.innerHTML = `
+        <div class="flex items-center gap-1.5"><div class="w-3 h-2 bg-primary/60 rounded-full"></div><span class="text-[10px] text-adaptive-muted">Diese Woche</span></div>
+        <div class="flex items-center gap-1.5"><div class="w-3 h-2 bg-gray-500/50 rounded-full"></div><span class="text-[10px] text-adaptive-muted">Letzte Woche</span></div>
+    `;
+    container.appendChild(legend);
+}
+
 function renderDashboardSubjects(entries) {
     const subjects = window.storageManager.getSubjects();
     const container = document.getElementById('dashboard-subject-tiles');
