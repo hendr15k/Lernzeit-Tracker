@@ -723,15 +723,17 @@ function initTimer() {
     if (btnPomodoroToggle) {
         btnPomodoroToggle.addEventListener('click', () => {
             pomodoroMode = !pomodoroMode;
-            if (pomodoroMode && !isTimerRunning) {
-                // Reset pomodoro state
-                pomodoroPhase = 'work';
-                pomodoroCount = 0;
-                pomodoroWorkSeconds = 0;
-                const pomo = getPomodoroSettings();
-                pomodoroCountdown = pomo.work;
+            if (pomodoroMode) {
+                // Initialize pomodoro state
+                if (pomodoroCountdown === 0) {
+                    pomodoroPhase = 'work';
+                    pomodoroCount = 0;
+                    pomodoroWorkSeconds = 0;
+                    const pomo = getPomodoroSettings();
+                    pomodoroCountdown = pomo.work;
+                }
                 updatePomodoroDisplay();
-            } else if (!pomodoroMode) {
+            } else {
                 // Switching back to Frei — show elapsed time
                 updateDisplay();
             }
