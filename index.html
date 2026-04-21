@@ -311,8 +311,13 @@
                 </div>
 
                 <!-- Time Display -->
-                <div class="text-7xl font-mono font-bold tracking-wider" id="timer-display">
-                    00:00:00
+                <div class="flex flex-col items-center space-y-2">
+                    <div id="timer-ring-bg" class="w-48 h-48 rounded-full border-4 border-transparent flex items-center justify-center transition-colors duration-500">
+                        <div class="text-7xl font-mono font-bold tracking-wider" id="timer-display">
+                            00:00:00
+                        </div>
+                    </div>
+                    <div id="pomodoro-indicator" class="text-sm text-adaptive-muted"></div>
                 </div>
 
                 <!-- Notes Toggle & Textarea -->
@@ -327,6 +332,7 @@
 
                 <!-- Controls -->
                 <div class="flex items-center space-x-6">
+                    <button id="btn-pomodoro-toggle" class="absolute top-20 right-6 text-xs bg-surface hover:bg-gray-700 px-3 py-1.5 rounded-full transition border border-gray-700">🍅 Pomodoro</button>
                     <button id="btn-timer-start" class="w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition" aria-label="Timer starten">
                          <i data-lucide="play" class="w-8 h-8 fill-current ml-1"></i>
                     </button>
@@ -500,6 +506,39 @@
                         <span class="text-lg text-adaptive-muted">A</span>
                     </div>
                     <div class="text-center text-xs text-adaptive-muted mt-1" id="settings-font-size-label">16px</div>
+                </div>
+
+                <!-- Pomodoro Settings -->
+                <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-lg font-bold mb-4">🍅 Pomodoro</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Arbeit (Min)</label>
+                            <input type="number" id="settings-pomo-work" min="1" max="120" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="25">
+                        </div>
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Kurze Pause (Min)</label>
+                            <input type="number" id="settings-pomo-short" min="1" max="60" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="5">
+                        </div>
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Lange Pause (Min)</label>
+                            <input type="number" id="settings-pomo-long" min="1" max="60" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="15">
+                        </div>
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Lange Pause alle X</label>
+                            <input type="number" id="settings-pomo-interval" min="1" max="10" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="4">
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-pomo-auto-break" checked class="accent-primary w-4 h-4">
+                            Pause automatisch starten
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-pomo-auto-work" class="accent-primary w-4 h-4">
+                            Arbeit automatisch nach Pause starten
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Data Management -->

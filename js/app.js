@@ -7,6 +7,13 @@ let wakeLock = null;
 // Calendar View State
 let currentCalendarView = 'day'; // 'day', 'week', 'month'
 
+// Pomodoro State
+let pomodoroMode = false; // false = Frei (stopwatch), true = Pomodoro (countdown)
+let pomodoroPhase = 'work'; // 'work' | 'shortBreak' | 'longBreak'
+let pomodoroCount = 0; // completed work sessions
+let pomodoroCountdown = 0; // remaining seconds in pomodoro phase
+let pomodoroWorkSeconds = 0; // elapsed work seconds for saving
+
 // Wake Lock management
 async function requestWakeLock() {
     if ('wakeLock' in navigator) {
@@ -282,6 +289,12 @@ function initSettings() {
     const btnExportCSV = document.getElementById('btn-settings-export-csv');
     const btnImportTrigger = document.getElementById('btn-settings-import-trigger');
     const importInput = document.getElementById('settings-import-input');
+    const pomoWorkInput = document.getElementById('settings-pomo-work');
+    const pomoShortInput = document.getElementById('settings-pomo-short');
+    const pomoLongInput = document.getElementById('settings-pomo-long');
+    const pomoIntervalInput = document.getElementById('settings-pomo-interval');
+    const pomoAutoBreakInput = document.getElementById('settings-pomo-auto-break');
+    const pomoAutoWorkInput = document.getElementById('settings-pomo-auto-work');
 
     // Open Settings
     btnMenu.addEventListener('click', () => {
@@ -292,6 +305,13 @@ function initSettings() {
             fontSizeInput.value = settings.fontSize;
             fontSizeLabel.textContent = settings.fontSize + 'px';
         }
+        // Pomodoro settings
+        if (pomoWorkInput) pomoWorkInput.value = settings.pomoWork || 25;
+        if (pomoShortInput) pomoShortInput.value = settings.pomoShortBreak || 5;
+        if (pomoLongInput) pomoLongInput.value = settings.pomoLongBreak || 15;
+        if (pomoIntervalInput) pomoIntervalInput.value = settings.pomoLongBreakInterval || 4;
+        if (pomoAutoBreakInput) pomoAutoBreakInput.checked = settings.pomoAutoBreak !== false;
+        if (pomoAutoWorkInput) pomoAutoWorkInput.checked = settings.pomoAutoWork === true;
         overlay.classList.remove('translate-y-full');
     });
 
@@ -309,7 +329,20 @@ function initSettings() {
         }
 
         if (newGoal > 0 && learningDays >= 1 && learningDays <= 7) {
-            window.storageManager.updateSettings({ dailyGoal: newGoal, learningDays: learningDays, fontSize: parseInt(fontSizeInput.value) || 16 });
+            const newSettings = {
+                dailyGoal: newGoal,
+                learningDays: learningDays,
+                fontSize: parseInt(fontSizeInput.value) || 16
+            };
+            // Pomodoro settings
+            if (pomoWorkInput) newSettings.pomoWork = parseInt(pomoWorkInput.value) || 25;
+            if (pomoShortInput) newSettings.pomoShortBreak = parseInt(pomoShortInput.value) || 5;
+            if (pomoLongInput) newSettings.pomoLongBreak = parseInt(pomoLongInput.value) || 15;
+            if (pomoIntervalInput) newSettings.pomoLongBreakInterval = parseInt(pomoIntervalInput.value) || 4;
+            if (pomoAutoBreakInput) newSettings.pomoAutoBreak = pomoAutoBreakInput.checked;
+            if (pomoAutoWorkInput) newSettings.pomoAutoWork = pomoAutoWorkInput.checked;
+
+            window.storageManager.updateSettings(newSettings);
             applyFontSize(parseInt(fontSizeInput.value) || 16);
             overlay.classList.add('translate-y-full');
             updateViews();
@@ -619,6 +652,55 @@ function initNavigation() {
     });
 }
 
+// Pomodoro Helpers
+function playBeep(freq = 800, duration = 200, count = 2) {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        for (let i = 0; i < count; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.value = 0.3;
+            const start = ctx.currentTime + i * (duration / 1000 + 0.15);
+            osc.start(start);
+            osc.stop(start + duration / 1000);
+        }
+    } catch (e) {
+        console.warn('Audio beep failed:', e);
+    }
+}
+
+function getPomodoroSettings() {
+    const settings = window.storageManager.getSettings();
+    return {
+        work: (settings.pomoWork || 25) * 60,
+        shortBreak: (settings.pomoShortBreak || 5) * 60,
+        longBreak: (settings.pomoLongBreak || 15) * 60,
+        longBreakInterval: settings.pomoLongBreakInterval || 4,
+        autoStartBreak: settings.pomoAutoBreak !== false,
+        autoStartWork: settings.pomoAutoWork === true
+    };
+}
+
+function updatePomodoroIndicator() {
+    const indicator = document.getElementById('pomodoro-indicator');
+    const modeToggle = document.getElementById('btn-pomodoro-toggle');
+    if (!pomodoroMode) {
+        if (indicator) indicator.textContent = 'Frei';
+        if (modeToggle) modeToggle.textContent = '🍅 Pomodoro';
+        return;
+    }
+    const pomo = getPomodoroSettings();
+    if (modeToggle) modeToggle.textContent = '⏱ Frei';
+    if (indicator) {
+        const phaseLabel = pomodoroPhase === 'work' ? 'Arbeit' : pomodoroPhase === 'shortBreak' ? 'Pause' : 'Lange Pause';
+        indicator.textContent = `🍅 ${pomodoroCount}/${pomo.longBreakInterval} · ${phaseLabel}`;
+    }
+}
+
 function initTimer() {
     const timerOverlay = document.getElementById('timer-overlay');
     const btnToggle = document.getElementById('btn-timer-toggle');
@@ -635,6 +717,27 @@ function initTimer() {
     const btnNotesToggle = document.getElementById('btn-timer-notes-toggle');
     const notesCollapsed = document.getElementById('timer-notes-collapsed');
     const notesToggleLabel = document.getElementById('timer-notes-toggle-label');
+
+    // Pomodoro Toggle
+    const btnPomodoroToggle = document.getElementById('btn-pomodoro-toggle');
+    if (btnPomodoroToggle) {
+        btnPomodoroToggle.addEventListener('click', () => {
+            pomodoroMode = !pomodoroMode;
+            if (pomodoroMode && !isTimerRunning) {
+                // Reset pomodoro state
+                pomodoroPhase = 'work';
+                pomodoroCount = 0;
+                pomodoroWorkSeconds = 0;
+                const pomo = getPomodoroSettings();
+                pomodoroCountdown = pomo.work;
+                updatePomodoroDisplay();
+            } else if (!pomodoroMode) {
+                // Switching back to Frei — show elapsed time
+                updateDisplay();
+            }
+            updatePomodoroIndicator();
+        });
+    }
 
     // Notes toggle
     let notesExpanded = false;
@@ -679,6 +782,15 @@ function initTimer() {
     const savedState = localStorage.getItem('timer_state');
     if (savedState) {
         const state = JSON.parse(savedState);
+        // Restore pomodoro state
+        if (state.pomodoroMode) {
+            pomodoroMode = true;
+            pomodoroPhase = state.pomodoroPhase || 'work';
+            pomodoroCount = state.pomodoroCount || 0;
+            pomodoroCountdown = state.pomodoroCountdown || 0;
+            pomodoroWorkSeconds = state.pomodoroWorkSeconds || 0;
+            updatePomodoroIndicator();
+        }
         if (state.isRunning) {
             const now = Date.now();
             const elapsedSinceSave = Math.floor((now - state.timestamp) / 1000);
@@ -725,18 +837,101 @@ function initTimer() {
         timerInterval = setInterval(() => {
             const now = Date.now();
             timerSeconds = Math.floor((now - timerStartTime) / 1000);
-            updateDisplay();
+
+            if (pomodoroMode) {
+                pomodoroCountdown = Math.max(0, pomodoroCountdown - 1);
+                if (pomodoroPhase === 'work') {
+                    pomodoroWorkSeconds++;
+                }
+                if (pomodoroCountdown <= 0) {
+                    transitionPomodoroPhase();
+                }
+                updatePomodoroDisplay();
+            } else {
+                updateDisplay();
+            }
             saveState();
         }, 1000);
     }
 
+    function transitionPomodoroPhase() {
+        playBeep(pomodoroPhase === 'work' ? 600 : 1000, 300, 3);
+        const pomo = getPomodoroSettings();
+
+        if (pomodoroPhase === 'work') {
+            pomodoroCount++;
+            // Auto-save work session
+            const endTime = Date.now();
+            const timerNotes = notesInput ? notesInput.value.trim() : '';
+            const topicsVal = topicsInput ? topicsInput.value.trim() : '';
+            const entry = {
+                subjectId: subjectSelect.value,
+                duration: pomodoroWorkSeconds,
+                startTime: endTime - (pomodoroWorkSeconds * 1000),
+                endTime: endTime,
+                notes: timerNotes + ' 🍅',
+                topics: topicsVal
+            };
+            window.storageManager.addEntry(entry);
+            showToast(`🍅 Pomodoro #${pomodoroCount} gespeichert!`, 'success');
+
+            if (pomodoroCount % pomo.longBreakInterval === 0) {
+                pomodoroPhase = 'longBreak';
+                pomodoroCountdown = pomo.longBreak;
+            } else {
+                pomodoroPhase = 'shortBreak';
+                pomodoroCountdown = pomo.shortBreak;
+            }
+            pomodoroWorkSeconds = 0;
+
+            if (!pomo.autoStartWork) {
+                // Pause after break if not auto-starting next work
+            }
+        } else {
+            // Break ended
+            pomodoroPhase = 'work';
+            pomodoroCountdown = pomo.work;
+            pomodoroWorkSeconds = 0;
+
+            if (!pomo.autoStartWork) {
+                isTimerRunning = false;
+                clearInterval(timerInterval);
+                btnPause.classList.add('hidden');
+                btnStart.classList.remove('hidden');
+                releaseWakeLock();
+                showToast('Pause beendet — bereit für nächsten Pomodoro!', 'success');
+            }
+        }
+        updatePomodoroIndicator();
+    }
+
+    function updatePomodoroDisplay() {
+        const mins = Math.floor(pomodoroCountdown / 60);
+        const secs = pomodoroCountdown % 60;
+        display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        // Update timer ring color
+        const timerBg = document.getElementById('timer-ring-bg');
+        if (timerBg) {
+            timerBg.className = pomodoroPhase === 'work'
+                ? 'w-48 h-48 rounded-full border-4 border-green-500/30 flex items-center justify-center transition-colors duration-500'
+                : 'w-48 h-48 rounded-full border-4 border-amber-500/30 flex items-center justify-center transition-colors duration-500';
+        }
+    }
+
     function saveState() {
-        localStorage.setItem('timer_state', JSON.stringify({
+        const state = {
             isRunning: isTimerRunning,
             seconds: timerSeconds,
             subjectId: subjectSelect.value,
-            timestamp: Date.now()
-        }));
+            timestamp: Date.now(),
+            pomodoroMode: pomodoroMode,
+            pomodoroPhase: pomodoroPhase,
+            pomodoroCount: pomodoroCount,
+            pomodoroCountdown: pomodoroCountdown,
+            pomodoroWorkSeconds: pomodoroWorkSeconds
+        };
+        localStorage.setItem('timer_state', JSON.stringify(state));
     }
 
     function clearState() {
@@ -784,7 +979,13 @@ function initTimer() {
         clearInterval(timerInterval);
         releaseWakeLock();
         timerSeconds = 0;
+        pomodoroCount = 0;
+        pomodoroWorkSeconds = 0;
+        pomodoroPhase = 'work';
+        pomodoroCountdown = 0;
         updateDisplay();
+        updatePomodoroDisplay();
+        updatePomodoroIndicator();
         btnPause.classList.add('hidden');
         btnStart.classList.remove('hidden');
         clearState();
@@ -814,6 +1015,7 @@ function initTimer() {
             }
 
             const timerNotes = notesInput ? notesInput.value.trim() : '';
+            const topicsVal = topicsInput ? topicsInput.value.trim() : '';
             const entry = {
                 subjectId: subjectSelect.value,
                 duration: timerSeconds,
