@@ -35,9 +35,9 @@ class StorageManager {
 
         if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
             const defaultSubjects = [
-                { id: '1', name: 'Informatik', color: 'bg-blue-500' },
-                { id: '2', name: 'Mathe', color: 'bg-green-500' },
-                { id: '3', name: 'Englisch', color: 'bg-yellow-500' }
+                { id: '1', name: 'HM2', color: 'bg-blue-500' },
+                { id: '2', name: 'GET2', color: 'bg-green-500' },
+                { id: '3', name: 'Bauelemente', color: 'bg-orange-500' }
             ];
             this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
         }
@@ -98,9 +98,9 @@ class StorageManager {
             console.error('Error parsing subjects:', e);
             // Return defaults or empty if corrupted
             return [
-                { id: '1', name: 'Informatik', color: 'bg-blue-500' },
-                { id: '2', name: 'Mathe', color: 'bg-green-500' },
-                { id: '3', name: 'Englisch', color: 'bg-yellow-500' }
+                { id: '1', name: 'HM2', color: 'bg-blue-500' },
+                { id: '2', name: 'GET2', color: 'bg-green-500' },
+                { id: '3', name: 'Bauelemente', color: 'bg-orange-500' }
             ];
         }
     }

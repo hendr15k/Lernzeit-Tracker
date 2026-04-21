@@ -904,6 +904,9 @@ function updateDashboard(entries) {
 
     // Render Graph (Last 7 days)
     renderGraph(entries);
+
+    // Render Subject Tiles
+    renderDashboardSubjects(entries);
 }
 
 function renderHistory(entries, subjects) {
@@ -1276,6 +1279,58 @@ function showToast(message, type = 'success') {
             toast.remove();
         }, 300);
     }, 3000);
+}
+
+function renderDashboardSubjects(entries) {
+    const subjects = window.storageManager.getSubjects();
+    const container = document.getElementById('dashboard-subject-tiles');
+    const summary = document.getElementById('dashboard-subject-summary');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (subjects.length === 0) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-4">Keine Fächer konfiguriert. Gehe zu Fächer → +</div>';
+        if (summary) summary.textContent = '';
+        return;
+    }
+
+    const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
+    const maxDuration = Math.max(...subjects.map(s => {
+        return entries.filter(e => e.subjectId === s.id).reduce((acc, curr) => acc + curr.duration, 0);
+    }), 1);
+
+    let summaryParts = [];
+
+    subjects.forEach(subject => {
+        const subjectEntries = entries.filter(e => e.subjectId === subject.id);
+        const duration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
+        const hrs = (duration / 3600).toFixed(1);
+        const barWidth = Math.round((duration / maxDuration) * 100);
+
+        summaryParts.push(`${subject.name}: ${hrs}h`);
+
+        const tile = document.createElement('div');
+        tile.className = 'flex items-center gap-3';
+        tile.innerHTML = `
+            <div class="w-8 h-8 rounded-full ${subject.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                ${subject.name.substring(0, 2)}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-adaptive truncate">${subject.name}</span>
+                    <span class="text-sm font-bold text-adaptive ml-2">${hrs}h</span>
+                </div>
+                <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full ${subject.color} transition-all rounded-full" style="width: ${barWidth}%"></div>
+                </div>
+            </div>
+        `;
+        container.appendChild(tile);
+    });
+
+    if (summary) {
+        summary.textContent = summaryParts.join(' | ');
+    }
 }
 
 function renderGraph(entries) {
