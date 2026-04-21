@@ -2,9 +2,40 @@ let timerInterval = null;
 let timerSeconds = 0;
 let isTimerRunning = false;
 let timerStartTime = 0;
+let wakeLock = null;
 
 // Calendar View State
 let currentCalendarView = 'day'; // 'day', 'week', 'month'
+
+// Wake Lock management
+async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock acquired');
+            wakeLock.addEventListener('release', () => {
+                console.log('Wake Lock released');
+            });
+        } catch (err) {
+            console.warn('Wake Lock request failed:', err);
+        }
+    }
+}
+
+async function releaseWakeLock() {
+    if (wakeLock) {
+        try {
+            await wakeLock.release();
+        } catch (e) { }
+        wakeLock = null;
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isTimerRunning) {
+        requestWakeLock();
+    }
+});
 
 // PWA Install State
 let deferredPrompt = null;
@@ -35,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTimer();
     initAddEntry();
     initSettings();
+    initFontSize();
     initSubjectManagement();
     initTheme();
     initCalendarViews();
@@ -99,6 +131,26 @@ function initPWAInstall() {
         banner.classList.add('translate-y-full');
         setTimeout(() => banner.classList.add('hidden'), 300);
     });
+}
+
+function initFontSize() {
+    const fontSizeInput = document.getElementById('settings-font-size');
+    const fontSizeLabel = document.getElementById('settings-font-size-label');
+    const settings = window.storageManager.getSettings();
+
+    // Apply saved font size on load
+    applyFontSize(settings.fontSize || 16);
+
+    // Live preview while dragging
+    if (fontSizeInput) {
+        fontSizeInput.addEventListener('input', () => {
+            fontSizeLabel.textContent = fontSizeInput.value + 'px';
+        });
+    }
+}
+
+function applyFontSize(size) {
+    document.documentElement.style.fontSize = size + 'px';
 }
 
 function initTheme() {
@@ -223,6 +275,8 @@ function initSettings() {
     const btnSave = document.getElementById('btn-settings-save');
     const dailyGoalInput = document.getElementById('settings-daily-goal');
     const learningDaysInput = document.getElementById('settings-learning-days');
+    const fontSizeInput = document.getElementById('settings-font-size');
+    const fontSizeLabel = document.getElementById('settings-font-size-label');
     const btnReset = document.getElementById('btn-settings-reset');
     const btnExport = document.getElementById('btn-settings-export');
     const btnExportCSV = document.getElementById('btn-settings-export-csv');
@@ -234,6 +288,10 @@ function initSettings() {
         const settings = window.storageManager.getSettings();
         dailyGoalInput.value = settings.dailyGoal || 60;
         if (learningDaysInput) learningDaysInput.value = settings.learningDays || 5;
+        if (fontSizeInput && settings.fontSize) {
+            fontSizeInput.value = settings.fontSize;
+            fontSizeLabel.textContent = settings.fontSize + 'px';
+        }
         overlay.classList.remove('translate-y-full');
     });
 
@@ -251,7 +309,8 @@ function initSettings() {
         }
 
         if (newGoal > 0 && learningDays >= 1 && learningDays <= 7) {
-            window.storageManager.updateSettings({ dailyGoal: newGoal, learningDays: learningDays });
+            window.storageManager.updateSettings({ dailyGoal: newGoal, learningDays: learningDays, fontSize: parseInt(fontSizeInput.value) || 16 });
+            applyFontSize(parseInt(fontSizeInput.value) || 16);
             overlay.classList.add('translate-y-full');
             updateViews();
             showToast('Einstellungen gespeichert!', 'success');
@@ -568,6 +627,7 @@ function initTimer() {
             timerOverlay.classList.remove('translate-y-full'); // Show overlay if running
 
             startInterval();
+            requestWakeLock();
         } else {
             timerSeconds = state.seconds;
             subjectSelect.value = state.subjectId;
@@ -615,6 +675,7 @@ function initTimer() {
             btnPause.classList.remove('hidden');
             startInterval();
             saveState();
+            requestWakeLock();
         }
     });
 
@@ -625,6 +686,7 @@ function initTimer() {
             btnPause.classList.add('hidden');
             btnStart.classList.remove('hidden');
             saveState();
+            releaseWakeLock();
         }
     });
 
@@ -636,6 +698,7 @@ function initTimer() {
         }
         isTimerRunning = false;
         clearInterval(timerInterval);
+        releaseWakeLock();
         timerSeconds = 0;
         updateDisplay();
         btnPause.classList.add('hidden');
@@ -685,6 +748,7 @@ function initTimer() {
             btnStart.classList.remove('hidden');
             timerOverlay.classList.add('translate-y-full');
             clearState();
+            releaseWakeLock();
 
             // Refresh views
             updateViews();

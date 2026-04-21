@@ -389,6 +389,17 @@
                     <input type="number" id="settings-learning-days" min="1" max="7" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5">
                 </div>
 
+                <!-- Font Size -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Schriftgröße</label>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-adaptive-muted">A</span>
+                        <input type="range" id="settings-font-size" min="12" max="24" step="1" value="16" class="flex-1 accent-primary">
+                        <span class="text-lg text-adaptive-muted">A</span>
+                    </div>
+                    <div class="text-center text-xs text-adaptive-muted mt-1" id="settings-font-size-label">16px</div>
+                </div>
+
                 <!-- Data Management -->
                 <div class="w-full pt-8 border-t border-gray-800">
                     <h3 class="text-lg font-bold mb-4">Datenverwaltung</h3>

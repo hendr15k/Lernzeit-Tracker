@@ -31,34 +31,34 @@ class StorageManager {
             }
         } catch (e) {
             console.error('Error parsing subjects:', e);
-            // If corrupt, we might want to reset or keep empty.
-            // For now, let's treat it as empty so we re-seed if needed, or just warn.
         }
 
-        if (subjects === null) {
-            // Seed default subjects if empty
+        if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
             const defaultSubjects = [
                 { id: '1', name: 'Informatik', color: 'bg-blue-500' },
                 { id: '2', name: 'Mathe', color: 'bg-green-500' },
                 { id: '3', name: 'Englisch', color: 'bg-yellow-500' }
             ];
-            // Only overwrite if it was actually missing or we want to force seed on corruption?
-            // Safer to just overwrite if it's corrupt/missing.
             this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
         }
 
-        // Settings
-        let settings = { darkMode: true, dailyGoal: 60, learningDays: 5 };
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                settings = { ...settings, ...parsed };
+        // Settings — only seed defaults if no saved settings exist
+        const storedSettings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
+        if (!storedSettings) {
+            const defaults = { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
+            this._save(this.STORAGE_KEYS.SETTINGS, defaults);
+        } else {
+            // Ensure fontSize key exists in existing settings (migration)
+            try {
+                const parsed = JSON.parse(storedSettings);
+                if (parsed.fontSize === undefined) {
+                    parsed.fontSize = 16;
+                    this._save(this.STORAGE_KEYS.SETTINGS, parsed);
+                }
+            } catch (e) {
+                console.error('Error parsing settings during migration:', e);
             }
-        } catch (e) {
-            console.error('Error parsing settings:', e);
         }
-        this._save(this.STORAGE_KEYS.SETTINGS, settings);
     }
 
     getEntries() {
@@ -127,10 +127,12 @@ class StorageManager {
 
     getSettings() {
         try {
-            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SETTINGS) || '{"darkMode":true, "dailyGoal": 60, "learningDays": 5}');
+            const raw = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
+            if (!raw) return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
+            return JSON.parse(raw);
         } catch (e) {
             console.error('Error parsing settings:', e);
-            return { darkMode: true, dailyGoal: 60, learningDays: 5 };
+            return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
         }
     }
 
