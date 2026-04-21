@@ -435,6 +435,21 @@ function initAddEntry() {
     const timeInput = document.getElementById('add-time-input');
     const durationInput = document.getElementById('add-duration-input');
     const notesInput = document.getElementById('add-notes-input');
+    const topicsInput = document.getElementById('add-topics-input');
+    const topicsDatalist = document.getElementById('add-topics-datalist');
+
+    function updateAddTopicsDatalist(subjectId) {
+        if (!topicsDatalist || !subjectId) {
+            if (topicsDatalist) topicsDatalist.innerHTML = '';
+            return;
+        }
+        const pastTopics = getTopicsForSubject(subjectId);
+        topicsDatalist.innerHTML = pastTopics.map(topic => `<option value="${escapeHtml(topic)}">`).join('');
+    }
+
+    subjectSelect.addEventListener('change', () => {
+        updateAddTopicsDatalist(subjectSelect.value);
+    });
 
     // Helper to open overlay
     window.openAddEntryOverlay = (editEntryId = null) => {
@@ -458,6 +473,7 @@ function initAddEntry() {
                 }
 
                 subjectSelect.value = entry.subjectId;
+                updateAddTopicsDatalist(entry.subjectId);
                 // Manually format date to YYYY-MM-DD to use local time, preventing UTC offsets
                 const d = new Date(entry.startTime);
                 const yyyy = d.getFullYear();
@@ -472,6 +488,7 @@ function initAddEntry() {
 
                 durationInput.value = Math.round(entry.duration / 60);
                 notesInput.value = entry.notes || '';
+                if (topicsInput) topicsInput.value = entry.topics || '';
             }
         } else {
             overlay.removeAttribute('data-edit-id');
@@ -490,6 +507,8 @@ function initAddEntry() {
 
             durationInput.value = '';
             notesInput.value = '';
+            if (topicsInput) topicsInput.value = '';
+            updateAddTopicsDatalist(subjectSelect.value);
         }
         overlay.classList.remove('translate-y-full');
     };
@@ -519,6 +538,7 @@ function initAddEntry() {
         const timeVal = timeInput ? timeInput.value : '00:00';
         const durationMin = parseInt(durationInput.value);
         const notesVal = notesInput.value.trim();
+        const topicsVal = topicsInput ? topicsInput.value.trim() : '';
         const editId = overlay.getAttribute('data-edit-id');
 
         if (subjectId && dateVal && durationMin > 0) {
@@ -549,7 +569,8 @@ function initAddEntry() {
                 duration: durationMin * 60,
                 startTime: startTimeDate.getTime(),
                 endTime: startTimeDate.getTime() + (durationMin * 60 * 1000),
-                notes: notesVal
+                notes: notesVal,
+                topics: topicsVal
             };
 
             if (editId) {
@@ -561,6 +582,7 @@ function initAddEntry() {
             // Reset and close
             durationInput.value = '';
             notesInput.value = '';
+            if (topicsInput) topicsInput.value = '';
             overlay.classList.add('translate-y-full');
             updateViews();
             showToast('Eintrag gespeichert!', 'success');
@@ -607,6 +629,8 @@ function initTimer() {
     const btnSave = document.getElementById('btn-timer-save');
     const display = document.getElementById('timer-display');
     const subjectSelect = document.getElementById('timer-subject-select');
+    const topicsInput = document.getElementById('timer-topics-input');
+    const topicsDatalist = document.getElementById('timer-topics-datalist');
     const notesInput = document.getElementById('timer-notes-input');
     const btnNotesToggle = document.getElementById('btn-timer-notes-toggle');
     const notesCollapsed = document.getElementById('timer-notes-collapsed');
@@ -636,6 +660,21 @@ function initTimer() {
 
     // Subjects are populated via updateSubjectSelects()
 
+    function updateTimerTopicsDatalist(subjectId) {
+        if (!topicsDatalist || !subjectId) {
+            if (topicsDatalist) topicsDatalist.innerHTML = '';
+            return;
+        }
+        const pastTopics = getTopicsForSubject(subjectId);
+        topicsDatalist.innerHTML = pastTopics.map(topic => `<option value="${escapeHtml(topic)}">`).join('');
+    }
+
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', () => {
+            updateTimerTopicsDatalist(subjectSelect.value);
+        });
+    }
+
     // Restore Timer State
     const savedState = localStorage.getItem('timer_state');
     if (savedState) {
@@ -647,6 +686,7 @@ function initTimer() {
             isTimerRunning = true;
             // Ensure value exists before setting, or just set it (browser handles missing value)
             subjectSelect.value = state.subjectId;
+            updateTimerTopicsDatalist(state.subjectId);
 
             btnStart.classList.add('hidden');
             btnPause.classList.remove('hidden');
@@ -666,6 +706,7 @@ function initTimer() {
         } else {
             timerSeconds = state.seconds;
             subjectSelect.value = state.subjectId;
+            updateTimerTopicsDatalist(state.subjectId);
             updateDisplay();
             // Restore notes even if paused
             const savedNotes = localStorage.getItem('timer_notes');
@@ -778,7 +819,8 @@ function initTimer() {
                 duration: timerSeconds,
                 startTime: endTime - (timerSeconds * 1000),
                 endTime: endTime,
-                notes: timerNotes
+                notes: timerNotes,
+                topics: topicsVal
             };
             window.storageManager.addEntry(entry);
             showToast('Lernzeit gespeichert!', 'success');
@@ -796,6 +838,7 @@ function initTimer() {
 
             // Clear notes
             if (notesInput) notesInput.value = '';
+            if (topicsInput) topicsInput.value = '';
             localStorage.removeItem('timer_notes');
             notesExpanded = false;
             if (notesCollapsed) notesCollapsed.classList.add('hidden');
@@ -842,6 +885,46 @@ function updateSubjectSelects() {
             }
         }
     });
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getTopicsForSubject(subjectId) {
+    const entries = window.storageManager.getEntries();
+    const topicCounts = {};
+
+    entries.forEach(entry => {
+        if (String(entry.subjectId) !== String(subjectId) || !entry.topics) return;
+        entry.topics.split(',').map(topic => topic.trim()).filter(Boolean).forEach(topic => {
+            topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+        });
+    });
+
+    return Object.entries(topicCounts)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de'))
+        .map(([topic]) => topic);
+}
+
+function getTopTopicsForSubject(subjectId, limit = 3) {
+    return getTopicsForSubject(subjectId).slice(0, limit);
+}
+
+function renderTopicBadges(topics) {
+    if (!topics) return '';
+
+    return topics
+        .split(',')
+        .map(topic => topic.trim())
+        .filter(Boolean)
+        .map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">${escapeHtml(topic)}</span>`)
+        .join('');
 }
 
 function updateViews() {
@@ -998,7 +1081,8 @@ function renderHistory(entries, subjects) {
             const subject = subjects.find(s => s.id === e.subjectId);
             const subjectName = subject ? subject.name.toLowerCase() : 'gelöschtes fach';
             const notes = e.notes ? e.notes.toLowerCase() : '';
-            return subjectName.includes(searchTerm) || notes.includes(searchTerm);
+            const topics = e.topics ? e.topics.toLowerCase() : '';
+            return subjectName.includes(searchTerm) || notes.includes(searchTerm) || topics.includes(searchTerm);
         });
     }
 
@@ -1031,13 +1115,16 @@ function renderHistory(entries, subjects) {
         const timeStr = new Date(entry.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
         const item = document.createElement('div');
-        item.className = 'surface-card p-4 flex justify-between items-center border border-gray-800';
+        item.className = 'surface-card p-4 flex justify-between items-center gap-3 border border-gray-800';
         item.innerHTML = `
-            <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 rounded-full ${subject.color}"></div>
-                <div class="font-medium text-adaptive">${subject.name}</div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="w-3 h-3 rounded-full ${subject.color} flex-shrink-0"></div>
+                    <div class="font-medium text-adaptive truncate">${escapeHtml(subject.name)}</div>
+                </div>
+                ${entry.topics ? `<div class="mt-2 ml-6 flex flex-wrap gap-1">${renderTopicBadges(entry.topics)}</div>` : ''}
             </div>
-            <div class="flex items-center space-x-2 text-adaptive-muted">
+            <div class="flex items-center space-x-2 text-adaptive-muted flex-shrink-0">
                 <span class="mr-2 text-xs opacity-75">${timeStr}</span>
                 <span>${durationMin} min</span>
                 <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}" aria-label="Eintrag bearbeiten">
@@ -1232,20 +1319,22 @@ function renderFaecher(entries, subjects) {
         const totalDuration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
         const hrs = Math.floor(totalDuration / 3600);
         const mins = Math.floor((totalDuration % 3600) / 60);
+        const topTopics = getTopTopicsForSubject(subject.id, 3);
 
         const item = document.createElement('div');
-        item.className = 'surface-card p-4 flex items-center justify-between border border-gray-800';
+        item.className = 'surface-card p-4 flex items-center justify-between gap-4 border border-gray-800';
         item.innerHTML = `
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full ${subject.color} flex items-center justify-center text-white font-bold bg-opacity-20 text-opacity-100">
-                    ${subject.name.substring(0, 2)}
+            <div class="flex items-center space-x-3 min-w-0 flex-1">
+                <div class="w-10 h-10 rounded-full ${subject.color} flex items-center justify-center text-white font-bold bg-opacity-20 text-opacity-100 flex-shrink-0">
+                    ${escapeHtml(subject.name.substring(0, 2))}
                 </div>
-                <div>
-                    <div class="font-bold text-adaptive">${subject.name}</div>
+                <div class="min-w-0">
+                    <div class="font-bold text-adaptive">${escapeHtml(subject.name)}</div>
                     <div class="text-xs text-adaptive-muted">${hrs}h ${mins}m gelernt</div>
+                    ${topTopics.length ? `<div class="mt-2 flex flex-wrap gap-1">${topTopics.map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface border border-gray-700 text-adaptive-muted">${escapeHtml(topic)}</span>`).join('')}</div>` : ''}
                 </div>
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center flex-shrink-0">
                 <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach bearbeiten">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                 </button>
