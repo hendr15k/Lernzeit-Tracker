@@ -104,6 +104,42 @@
                         </div>
                     </div>
 
+                    <!-- Weekly Stats Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Wochenstatistik</h2>
+                            <span id="weekly-range-label" class="text-xs text-adaptive-muted"></span>
+                        </div>
+
+                        <!-- Weekly Bar Chart (Mo–So) -->
+                        <div class="flex items-end space-x-1 h-24 mb-1" id="weekly-bar-chart">
+                            <!-- Bars injected via JS -->
+                        </div>
+                        <div class="flex justify-between text-[10px] text-adaptive-muted mb-4 px-0.5" id="weekly-bar-labels">
+                            <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-primary" id="weekly-avg-day">0h</div>
+                                <div class="text-[10px] text-adaptive-muted">Ø pro Tag</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-adaptive" id="weekly-avg-subject">0h</div>
+                                <div class="text-[10px] text-adaptive-muted">Ø pro Fach</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-success" id="weekly-most-productive">—</div>
+                                <div class="text-[10px] text-adaptive-muted">Produktivster Tag</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-adaptive" id="weekly-total">0h</div>
+                                <div class="text-[10px] text-adaptive-muted">Woche gesamt</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Fach-Kacheln Widget -->
                     <div class="surface-card p-4 border border-gray-800">
                         <div class="flex justify-between items-center mb-3">

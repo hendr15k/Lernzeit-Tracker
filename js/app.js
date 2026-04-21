@@ -905,6 +905,9 @@ function updateDashboard(entries) {
     // Render Graph (Last 7 days)
     renderGraph(entries);
 
+    // Render Weekly Stats
+    renderWeeklyStats(entries);
+
     // Render Subject Tiles
     renderDashboardSubjects(entries);
 }
@@ -1279,6 +1282,107 @@ function showToast(message, type = 'success') {
             toast.remove();
         }, 300);
     }, 3000);
+}
+
+function renderWeeklyStats(entries) {
+    const chartContainer = document.getElementById('weekly-bar-chart');
+    const rangeLabel = document.getElementById('weekly-range-label');
+    const avgDayEl = document.getElementById('weekly-avg-day');
+    const avgSubjectEl = document.getElementById('weekly-avg-subject');
+    const mostProductiveEl = document.getElementById('weekly-most-productive');
+    const totalEl = document.getElementById('weekly-total');
+    if (!chartContainer) return;
+    chartContainer.innerHTML = '';
+
+    // Calculate current week (Mo–So)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    // Range label
+    if (rangeLabel) {
+        const mStr = monday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        const sStr = sunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        rangeLabel.textContent = `${mStr} – ${sStr}`;
+    }
+
+    // Build 7 day buckets (Mon=0 ... Sun=6)
+    const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const daySeconds = [0, 0, 0, 0, 0, 0, 0];
+
+    const weekEntries = entries.filter(e => {
+        const t = e.startTime;
+        return t >= monday.getTime() && t <= sunday.getTime();
+    });
+
+    weekEntries.forEach(e => {
+        const d = new Date(e.startTime);
+        let idx = d.getDay() - 1; // Mon=0, Sun=6
+        if (idx < 0) idx = 6; // Sunday
+        daySeconds[idx] += e.duration;
+    });
+
+    const totalWeekSeconds = daySeconds.reduce((a, b) => a + b, 0);
+    const maxDaySeconds = Math.max(...daySeconds, 3600); // min 1h scale
+
+    // Bar chart
+    daySeconds.forEach((secs, i) => {
+        const pct = secs > 0 ? Math.max((secs / maxDaySeconds) * 100, 5) : 0;
+        const col = document.createElement('div');
+        col.className = 'flex-1 flex flex-col justify-end group relative';
+
+        const bar = document.createElement('div');
+        bar.className = 'w-full bg-primary/30 group-hover:bg-primary transition-all rounded-t-sm relative';
+        bar.style.height = `${pct}%`;
+
+        // Tooltip
+        const hrs = Math.floor(secs / 3600);
+        const mins = Math.round((secs % 3600) / 60);
+        const tooltip = document.createElement('div');
+        tooltip.className = 'absolute -top-8 left-1/2 transform -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-gray-700 pointer-events-none text-adaptive';
+        tooltip.textContent = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+        bar.appendChild(tooltip);
+        col.appendChild(bar);
+        chartContainer.appendChild(col);
+    });
+
+    // Avg per day (7 days)
+    const avgDaySeconds = totalWeekSeconds / 7;
+    const avgDayH = (avgDaySeconds / 3600).toFixed(1);
+    if (avgDayEl) avgDayEl.textContent = `${avgDayH}h`;
+
+    // Avg per subject this week
+    const subjects = window.storageManager.getSubjects();
+    const activeSubjects = new Set(weekEntries.map(e => e.subjectId));
+    const numSubjects = activeSubjects.size || 1;
+    const avgSubjSeconds = totalWeekSeconds / numSubjects;
+    const avgSubjH = (avgSubjSeconds / 3600).toFixed(1);
+    if (avgSubjectEl) avgSubjectEl.textContent = `${avgSubjH}h`;
+
+    // Most productive day
+    const maxIdx = daySeconds.indexOf(Math.max(...daySeconds));
+    if (mostProductiveEl) {
+        if (totalWeekSeconds > 0) {
+            const maxH = Math.floor(daySeconds[maxIdx] / 3600);
+            const maxM = Math.round((daySeconds[maxIdx] % 3600) / 60);
+            mostProductiveEl.textContent = `${dayNames[maxIdx]} (${maxH > 0 ? maxH + 'h ' : ''}${maxM}m)`;
+        } else {
+            mostProductiveEl.textContent = '—';
+        }
+    }
+
+    // Total this week
+    const totalH = (totalWeekSeconds / 3600).toFixed(1);
+    if (totalEl) totalEl.textContent = `${totalH}h`;
 }
 
 function renderDashboardSubjects(entries) {
