@@ -962,6 +962,9 @@ function updateDashboard(entries) {
     // Render Weekly Stats
     renderWeeklyStats(entries);
 
+    // Render Weekly Comparison by Subject
+    renderWeeklyComparison(entries);
+
     // Render Subject Tiles
     renderDashboardSubjects(entries);
 }
