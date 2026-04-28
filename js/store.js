@@ -3,7 +3,8 @@ class StorageManager {
         this.STORAGE_KEYS = {
             ENTRIES: 'lernzeit_entries',
             SUBJECTS: 'lernzeit_subjects',
-            SETTINGS: 'lernzeit_settings'
+            SETTINGS: 'lernzeit_settings',
+            SEMESTERS: 'lernzeit_semesters'
         };
         this.init();
     }
@@ -58,6 +59,71 @@ class StorageManager {
             } catch (e) {
                 console.error('Error parsing settings during migration:', e);
             }
+        }
+    }
+
+    // ==================== SEMESTER METHODS ====================
+    getSemesters() {
+        try {
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SEMESTERS) || '[]');
+        } catch (e) {
+            console.error('Error parsing semesters:', e);
+            return [];
+        }
+    }
+
+    saveSemesters(semesters) {
+        this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+    }
+
+    addSemester(semester) {
+        const semesters = this.getSemesters();
+        semesters.push({ ...semester, id: Date.now().toString(), modules: [] });
+        this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+    }
+
+    updateSemester(updatedSemester) {
+        const semesters = this.getSemesters();
+        const index = semesters.findIndex(s => String(s.id) === String(updatedSemester.id));
+        if (index !== -1) {
+            semesters[index] = { ...semesters[index], ...updatedSemester };
+            this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+        }
+    }
+
+    deleteSemester(id) {
+        const semesters = this.getSemesters().filter(s => String(s.id) !== String(id));
+        this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+    }
+
+    addModule(semesterId, module) {
+        const semesters = this.getSemesters();
+        const semester = semesters.find(s => String(s.id) === String(semesterId));
+        if (semester) {
+            if (!semester.modules) semester.modules = [];
+            semester.modules.push({ ...module, id: Date.now().toString() });
+            this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+        }
+    }
+
+    updateModule(semesterId, updatedModule) {
+        const semesters = this.getSemesters();
+        const semester = semesters.find(s => String(s.id) === String(semesterId));
+        if (semester && semester.modules) {
+            const index = semester.modules.findIndex(m => String(m.id) === String(updatedModule.id));
+            if (index !== -1) {
+                semester.modules[index] = { ...semester.modules[index], ...updatedModule };
+                this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+            }
+        }
+    }
+
+    deleteModule(semesterId, moduleId) {
+        const semesters = this.getSemesters();
+        const semester = semesters.find(s => String(s.id) === String(semesterId));
+        if (semester && semester.modules) {
+            semester.modules = semester.modules.filter(m => String(m.id) !== String(moduleId));
+            this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
         }
     }
 

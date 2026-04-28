@@ -241,26 +241,120 @@
 
             <!-- View: Semester -->
             <div id="view-semester" class="view-section hidden animate-fade-in">
-                <h1 class="text-3xl font-bold mb-6">Gesamtstatistik</h1>
-
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
-                         <div class="text-2xl font-bold text-primary" id="semester-total-time">0h</div>
-                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Gesamtzeit</div>
+                <!-- Semester List View -->
+                <div id="semester-list-view">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold">Semester</h1>
+                        <button id="btn-add-semester" class="p-2 bg-primary rounded-full hover:bg-blue-600 transition">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
                     </div>
-                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
-                         <div class="text-2xl font-bold text-adaptive" id="semester-total-sessions">0</div>
-                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Sitzungen</div>
+                    <div id="semester-list" class="space-y-3">
+                        <!-- Dynamic Semester Cards -->
                     </div>
-                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
-                         <div class="text-2xl font-bold text-adaptive" id="semester-avg-session">0m</div>
-                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Ø Sitzung</div>
+                    <div id="semester-empty-state" class="hidden text-center py-12">
+                        <i data-lucide="graduation-cap" class="w-12 h-12 mx-auto text-adaptive-muted mb-4"></i>
+                        <p class="text-adaptive-muted">Keine Semester vorhanden</p>
+                        <p class="text-adaptive-muted text-sm">Füge dein erstes Semester hinzu</p>
                     </div>
                 </div>
 
-                <h2 class="text-lg font-semibold mb-4">Fächer Übersicht</h2>
-                <div id="semester-breakdown" class="space-y-4">
-                    <!-- Dynamic List -->
+                <!-- Module List View (hidden by default) -->
+                <div id="semester-detail-view" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="btn-back-to-semesters" class="p-2 hover:bg-surface rounded-full transition">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </button>
+                        <h1 id="semester-detail-title" class="text-xl font-bold flex-1 text-center pr-10">Semester</h1>
+                        <button id="btn-add-module" class="p-2 bg-primary rounded-full hover:bg-blue-600 transition">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div id="semester-stats" class="grid grid-cols-3 gap-3 mb-6">
+                        <!-- Stats cards -->
+                    </div>
+                    <div id="module-list" class="space-y-3">
+                        <!-- Dynamic Module Cards -->
+                    </div>
+                    <div id="module-empty-state" class="hidden text-center py-12">
+                        <i data-lucide="book-open" class="w-12 h-12 mx-auto text-adaptive-muted mb-4"></i>
+                        <p class="text-adaptive-muted">Keine Module vorhanden</p>
+                        <p class="text-adaptive-muted text-sm">Füge dein erstes Modul hinzu</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Semester Modal -->
+            <div id="add-semester-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+                <div class="flex justify-between items-center p-4">
+                    <button id="btn-add-semester-close" class="p-2 rounded-full hover:bg-surface transition">
+                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                    </button>
+                    <div id="add-semester-title" class="text-sm font-medium text-adaptive-muted">Semester hinzufügen</div>
+                    <div class="w-10"></div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Name</label>
+                        <input type="text" id="add-semester-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 3. Semester">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Startdatum</label>
+                        <input type="date" id="add-semester-start" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Enddatum</label>
+                        <input type="date" id="add-semester-end" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
+                    </div>
+                </div>
+                <div class="p-8 pb-12">
+                    <button id="btn-add-semester-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                        Speichern
+                    </button>
+                    <button id="btn-delete-semester" class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition">
+                        Semester löschen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add/Edit Module Modal -->
+            <div id="add-module-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+                <div class="flex justify-between items-center p-4">
+                    <button id="btn-add-module-close" class="p-2 rounded-full hover:bg-surface transition">
+                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                    </button>
+                    <div id="add-module-title" class="text-sm font-medium text-adaptive-muted">Modul hinzufügen</div>
+                    <div class="w-10"></div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Modulname</label>
+                        <input type="text" id="add-module-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Höhere Mathematik I">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">ECTS</label>
+                        <input type="number" id="add-module-ects" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5" min="0">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Geschätzte Stunden</label>
+                        <input type="number" id="add-module-hours" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 150" min="0">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Klausurdatum (optional)</label>
+                        <input type="date" id="add-module-klausur" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Notizen</label>
+                        <textarea id="add-module-notes" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" placeholder="Freitext..."></textarea>
+                    </div>
+                </div>
+                <div class="p-8 pb-12">
+                    <button id="btn-add-module-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                        Speichern
+                    </button>
+                    <button id="btn-delete-module" class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition">
+                        Modul löschen
+                    </button>
                 </div>
             </div>
 

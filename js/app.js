@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSubjectManagement();
     initTheme();
     initCalendarViews();
+    initSemesterHandlers();
 
     updateViews();
     lucide.createIcons();
@@ -359,6 +360,7 @@ function initSettings() {
                 entries: window.storageManager.getEntries(),
                 subjects: window.storageManager.getSubjects(),
                 settings: window.storageManager.getSettings(),
+                semesters: window.storageManager.getSemesters(),
                 exportDate: new Date().toISOString()
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
@@ -429,6 +431,9 @@ function initSettings() {
                             localStorage.setItem(window.storageManager.STORAGE_KEYS.ENTRIES, JSON.stringify(data.entries));
                             localStorage.setItem(window.storageManager.STORAGE_KEYS.SUBJECTS, JSON.stringify(data.subjects));
                             localStorage.setItem(window.storageManager.STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
+                            if (data.semesters) {
+                                localStorage.setItem(window.storageManager.STORAGE_KEYS.SEMESTERS, JSON.stringify(data.semesters));
+                            }
                             location.reload();
                         }
                     } else {
@@ -1299,71 +1304,379 @@ function updateViews() {
 }
 
 function renderSemester(entries, subjects) {
-    const totalTimeEl = document.getElementById('semester-total-time');
-    const totalSessionsEl = document.getElementById('semester-total-sessions');
-    const avgSessionEl = document.getElementById('semester-avg-session');
-    const breakdownContainer = document.getElementById('semester-breakdown');
+    renderSemesterList();
+}
 
-    // Global Stats
-    const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
-    const totalHours = (totalSeconds / 3600).toFixed(1);
-    const totalSessions = entries.length;
-    const avgSessionMinutes = totalSessions > 0 ? Math.round((totalSeconds / totalSessions) / 60) : 0;
+// ==================== SEMESTER MANAGEMENT ====================
 
-    totalTimeEl.textContent = `${totalHours}h`;
-    totalSessionsEl.textContent = totalSessions;
-    avgSessionEl.textContent = `${avgSessionMinutes}m`;
+let _currentSemesterId = null;
+let _editingSemesterId = null;
+let _editingModuleId = null;
 
-    // Breakdown
-    breakdownContainer.innerHTML = '';
+function renderSemesterList() {
+    const semesters = window.storageManager.getSemesters();
+    const container = document.getElementById('semester-list');
+    const emptyState = document.getElementById('semester-empty-state');
 
-    // Sort subjects by duration (desc)
-    const subjectStats = subjects.map(subject => {
-        const subjectEntries = entries.filter(e => e.subjectId === subject.id);
-        const duration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
-        return { ...subject, duration };
-    }).sort((a, b) => b.duration - a.duration);
+    container.innerHTML = '';
 
-    // Check for missing time (entries with deleted subjects)
-    const totalKnownDuration = subjectStats.reduce((acc, curr) => acc + curr.duration, 0);
-    const missingDuration = totalSeconds - totalKnownDuration;
+    if (semesters.length === 0) {
+        emptyState.classList.remove('hidden');
+        container.classList.add('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+        container.classList.remove('hidden');
 
-    if (missingDuration > 0) {
-        subjectStats.push({
-            name: 'Sonstige / Gelöscht',
-            color: 'bg-gray-400',
-            duration: missingDuration,
-            id: 'deleted'
+        semesters.forEach(semester => {
+            const totalEcts = (semester.modules || []).reduce((sum, m) => sum + (m.ects || 0), 0);
+            const totalHours = (semester.modules || []).reduce((sum, m) => sum + (m.hours || 0), 0);
+
+            let durationText = '';
+            if (semester.start && semester.end) {
+                const start = new Date(semester.start);
+                const end = new Date(semester.end);
+                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                durationText = days > 0 ? `${days} Tage` : '';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'surface-card p-4 border border-gray-800 cursor-pointer hover:border-gray-600 transition';
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <div class="font-bold text-lg">${semester.name}</div>
+                        <div class="text-sm text-adaptive-muted">${semester.start ? formatDateShort(semester.start) : ''}${semester.start && semester.end ? ' → ' : ''}${semester.end ? formatDateShort(semester.end) : ''}${durationText ? ' · ' + durationText : ''}</div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button class="btn-edit-semester p-1.5 hover:bg-surface rounded-lg transition" data-id="${semester.id}">
+                            <i data-lucide="pencil" class="w-4 h-4 text-adaptive-muted"></i>
+                        </button>
+                        <button class="btn-delete-semester-item p-1.5 hover:bg-surface rounded-lg transition" data-id="${semester.id}">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-4 text-sm">
+                    ${totalEcts > 0 ? `<span class="text-adaptive-muted"><span class="text-adaptive font-semibold">${totalEcts}</span> ECTS</span>` : ''}
+                    ${totalHours > 0 ? `<span class="text-adaptive-muted"><span class="text-adaptive font-semibold">${totalHours}</span> Std</span>` : ''}
+                    <span class="text-adaptive-muted"><span class="text-adaptive font-semibold">${(semester.modules || []).length}</span> Module</span>
+                </div>
+            `;
+
+            // Click card -> show modules
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.btn-edit-semester') || e.target.closest('.btn-delete-semester-item')) return;
+                showSemesterDetail(semester.id);
+            });
+
+            container.appendChild(card);
         });
-        // Re-sort
-        subjectStats.sort((a, b) => b.duration - a.duration);
+
+        // Edit buttons
+        container.querySelectorAll('.btn-edit-semester').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditSemesterModal(btn.dataset.id);
+            });
+        });
+
+        // Delete buttons
+        container.querySelectorAll('.btn-delete-semester-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Semester wirklich löschen? Alle Module gehen verloren.')) {
+                    window.storageManager.deleteSemester(btn.dataset.id);
+                    renderSemesterList();
+                }
+            });
+        });
     }
 
-    const maxDuration = subjectStats.length > 0 ? subjectStats[0].duration : 0;
+    lucide.createIcons();
+}
 
-    subjectStats.forEach(subject => {
-        if (subject.duration === 0) return; // Skip empty subjects
+function showSemesterDetail(semesterId) {
+    _currentSemesterId = semesterId;
+    document.getElementById('semester-list-view').classList.add('hidden');
+    document.getElementById('semester-detail-view').classList.remove('hidden');
+    renderModuleList(semesterId);
+}
 
-        const hrs = Math.floor(subject.duration / 3600);
-        const mins = Math.floor((subject.duration % 3600) / 60);
-        const percentage = maxDuration > 0 ? (subject.duration / maxDuration) * 100 : 0;
-        const totalPercentage = totalSeconds > 0 ? Math.round((subject.duration / totalSeconds) * 100) : 0;
+function showSemesterList() {
+    _currentSemesterId = null;
+    document.getElementById('semester-detail-view').classList.add('hidden');
+    document.getElementById('semester-list-view').classList.remove('hidden');
+    renderSemesterList();
+}
 
-        const item = document.createElement('div');
-        item.className = 'surface-card p-4 border border-gray-800';
-        item.innerHTML = `
-            <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 rounded-full ${subject.color}"></div>
-                    <div class="font-bold">${subject.name}</div>
+function renderModuleList(semesterId) {
+    const semesters = window.storageManager.getSemesters();
+    const semester = semesters.find(s => String(s.id) === String(semesterId));
+    if (!semester) return;
+
+    document.getElementById('semester-detail-title').textContent = semester.name;
+
+    const modules = semester.modules || [];
+    const totalEcts = modules.reduce((sum, m) => sum + (m.ects || 0), 0);
+    const totalHours = modules.reduce((sum, m) => sum + (m.hours || 0), 0);
+
+    const statsEl = document.getElementById('semester-stats');
+    statsEl.innerHTML = `
+        <div class="surface-card p-3 border border-gray-800 flex flex-col items-center justify-center text-center">
+            <div class="text-xl font-bold text-primary">${totalEcts}</div>
+            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">ECTS</div>
+        </div>
+        <div class="surface-card p-3 border border-gray-800 flex flex-col items-center justify-center text-center">
+            <div class="text-xl font-bold text-adaptive">${totalHours}</div>
+            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Stunden</div>
+        </div>
+        <div class="surface-card p-3 border border-gray-800 flex flex-col items-center justify-center text-center">
+            <div class="text-xl font-bold text-adaptive">${modules.length}</div>
+            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Module</div>
+        </div>
+    `;
+
+    const container = document.getElementById('module-list');
+    const emptyState = document.getElementById('module-empty-state');
+    container.innerHTML = '';
+
+    if (modules.length === 0) {
+        emptyState.classList.remove('hidden');
+        container.classList.add('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+        container.classList.remove('hidden');
+
+        modules.forEach(mod => {
+            const klausurBadge = getKlausurBadge(mod.klausur);
+
+            const card = document.createElement('div');
+            card.className = 'surface-card p-4 border border-gray-800';
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1">
+                        <div class="font-bold">${mod.name}</div>
+                        ${mod.notes ? `<div class="text-sm text-adaptive-muted mt-1 line-clamp-2">${mod.notes}</div>` : ''}
+                    </div>
+                    <div class="flex items-center gap-1 ml-2">
+                        <button class="btn-edit-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${mod.id}">
+                            <i data-lucide="pencil" class="w-4 h-4 text-adaptive-muted"></i>
+                        </button>
+                        <button class="btn-delete-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${mod.id}">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="text-sm text-adaptive-muted">${hrs}h ${mins}m (${totalPercentage}%)</div>
-            </div>
-            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div class="h-full ${subject.color} transition-all" style="width: ${percentage}%"></div>
-            </div>
-        `;
-        breakdownContainer.appendChild(item);
+                <div class="flex flex-wrap gap-2 mt-2">
+                    ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${mod.ects} ECTS</span>` : ''}
+                    ${mod.hours ? `<span class="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">${mod.hours} Std</span>` : ''}
+                    ${klausurBadge ? `<span class="text-xs ${klausurBadge.bgClass} px-2 py-0.5 rounded-full">${klausurBadge.text}</span>` : ''}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        // Edit buttons
+        container.querySelectorAll('.btn-edit-module').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditModuleModal(semesterId, btn.dataset.id);
+            });
+        });
+
+        // Delete buttons
+        container.querySelectorAll('.btn-delete-module').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Modul wirklich löschen?')) {
+                    window.storageManager.deleteModule(semesterId, btn.dataset.id);
+                    renderModuleList(semesterId);
+                }
+            });
+        });
+    }
+
+    lucide.createIcons();
+}
+
+function getKlausurBadge(klausurDate) {
+    if (!klausurDate) return null;
+    const now = new Date();
+    const exam = new Date(klausurDate);
+    const diffDays = Math.ceil((exam - now) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+        return { text: 'Bestanden', bgClass: 'bg-green-900/40 text-green-300' };
+    } else if (diffDays <= 14) {
+        return { text: `${diffDays} Tage`, bgClass: 'bg-yellow-900/40 text-yellow-300' };
+    } else {
+        return { text: formatDateShort(klausurDate), bgClass: 'bg-gray-700/60 text-gray-300' };
+    }
+}
+
+function formatDateShort(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// ==================== SEMESTER MODAL ====================
+
+function openAddSemesterModal() {
+    _editingSemesterId = null;
+    document.getElementById('add-semester-title').textContent = 'Semester hinzufügen';
+    document.getElementById('add-semester-name').value = '';
+    document.getElementById('add-semester-start').value = '';
+    document.getElementById('add-semester-end').value = '';
+    document.getElementById('btn-delete-semester').classList.add('hidden');
+    openOverlay('add-semester-overlay');
+}
+
+function openEditSemesterModal(semesterId) {
+    const semesters = window.storageManager.getSemesters();
+    const semester = semesters.find(s => String(s.id) === String(semesterId));
+    if (!semester) return;
+
+    _editingSemesterId = semesterId;
+    document.getElementById('add-semester-title').textContent = 'Semester bearbeiten';
+    document.getElementById('add-semester-name').value = semester.name || '';
+    document.getElementById('add-semester-start').value = semester.start || '';
+    document.getElementById('add-semester-end').value = semester.end || '';
+    document.getElementById('btn-delete-semester').classList.remove('hidden');
+    openOverlay('add-semester-overlay');
+}
+
+function saveSemester() {
+    const name = document.getElementById('add-semester-name').value.trim();
+    const start = document.getElementById('add-semester-start').value;
+    const end = document.getElementById('add-semester-end').value;
+
+    if (!name) {
+        showToast('Bitte gib einen Namen ein.', 'error');
+        return;
+    }
+
+    if (_editingSemesterId) {
+        window.storageManager.updateSemester({
+            id: _editingSemesterId,
+            name,
+            start,
+            end
+        });
+    } else {
+        window.storageManager.addSemester({ name, start, end });
+    }
+
+    closeOverlay('add-semester-overlay');
+    renderSemesterList();
+}
+
+// ==================== MODULE MODAL ====================
+
+function openAddModuleModal() {
+    if (!_currentSemesterId) return;
+    _editingModuleId = null;
+    document.getElementById('add-module-title').textContent = 'Modul hinzufügen';
+    document.getElementById('add-module-name').value = '';
+    document.getElementById('add-module-ects').value = '';
+    document.getElementById('add-module-hours').value = '';
+    document.getElementById('add-module-klausur').value = '';
+    document.getElementById('add-module-notes').value = '';
+    document.getElementById('btn-delete-module').classList.add('hidden');
+    openOverlay('add-module-overlay');
+}
+
+function openEditModuleModal(semesterId, moduleId) {
+    const semesters = window.storageManager.getSemesters();
+    const semester = semesters.find(s => String(s.id) === String(semesterId));
+    if (!semester) return;
+    const mod = (semester.modules || []).find(m => String(m.id) === String(moduleId));
+    if (!mod) return;
+
+    _editingModuleId = moduleId;
+    document.getElementById('add-module-title').textContent = 'Modul bearbeiten';
+    document.getElementById('add-module-name').value = mod.name || '';
+    document.getElementById('add-module-ects').value = mod.ects || '';
+    document.getElementById('add-module-hours').value = mod.hours || '';
+    document.getElementById('add-module-klausur').value = mod.klausur || '';
+    document.getElementById('add-module-notes').value = mod.notes || '';
+    document.getElementById('btn-delete-module').classList.remove('hidden');
+    openOverlay('add-module-overlay');
+}
+
+function saveModule() {
+    if (!_currentSemesterId) return;
+
+    const name = document.getElementById('add-module-name').value.trim();
+    const ects = parseInt(document.getElementById('add-module-ects').value) || 0;
+    const hours = parseInt(document.getElementById('add-module-hours').value) || 0;
+    const klausur = document.getElementById('add-module-klausur').value || '';
+    const notes = document.getElementById('add-module-notes').value.trim();
+
+    if (!name) {
+        showToast('Bitte gib einen Modulnamen ein.', 'error');
+        return;
+    }
+
+    if (_editingModuleId) {
+        window.storageManager.updateModule(_currentSemesterId, {
+            id: _editingModuleId,
+            name,
+            ects,
+            hours,
+            klausur,
+            notes
+        });
+    } else {
+        window.storageManager.addModule(_currentSemesterId, { name, ects, hours, klausur, notes });
+    }
+
+    closeOverlay('add-module-overlay');
+    renderModuleList(_currentSemesterId);
+}
+
+// ==================== OVERLAY HELPERS ====================
+
+function openOverlay(id) {
+    const overlay = document.getElementById(id);
+    if (overlay) overlay.classList.remove('translate-y-full');
+}
+
+function closeOverlay(id) {
+    const overlay = document.getElementById(id);
+    if (overlay) overlay.classList.add('translate-y-full');
+}
+
+function initSemesterHandlers() {
+    // Add Semester button
+    document.getElementById('btn-add-semester')?.addEventListener('click', openAddSemesterModal);
+    document.getElementById('btn-add-semester-close')?.addEventListener('click', () => closeOverlay('add-semester-overlay'));
+    document.getElementById('btn-add-semester-save')?.addEventListener('click', saveSemester);
+
+    // Delete semester from modal
+    document.getElementById('btn-delete-semester')?.addEventListener('click', () => {
+        if (_editingSemesterId && confirm('Semester wirklich löschen? Alle Module gehen verloren.')) {
+            window.storageManager.deleteSemester(_editingSemesterId);
+            closeOverlay('add-semester-overlay');
+            renderSemesterList();
+        }
+    });
+
+    // Back to semester list
+    document.getElementById('btn-back-to-semesters')?.addEventListener('click', showSemesterList);
+
+    // Add Module button
+    document.getElementById('btn-add-module')?.addEventListener('click', openAddModuleModal);
+    document.getElementById('btn-add-module-close')?.addEventListener('click', () => closeOverlay('add-module-overlay'));
+    document.getElementById('btn-add-module-save')?.addEventListener('click', saveModule);
+
+    // Delete module from modal
+    document.getElementById('btn-delete-module')?.addEventListener('click', () => {
+        if (_currentSemesterId && _editingModuleId && confirm('Modul wirklich löschen?')) {
+            window.storageManager.deleteModule(_currentSemesterId, _editingModuleId);
+            closeOverlay('add-module-overlay');
+            renderModuleList(_currentSemesterId);
+        }
     });
 }
 
