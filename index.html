@@ -1,413 +1,623 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lernzeit-Tracker</title>
-  <style>
-    :root { --bg: #0f1117; --surface: #1a1d27; --surface2: #242836; --border: #2e3347; --text: #e8eaf0; --text-muted: #8b8fa3; --accent: #6c8aff; --accent-hover: #8aa3ff; --danger: #ff6b6b; --success: #69db7c; --warning: #ffd43b; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-    h1 { font-size: 1.4rem; margin-bottom: 1rem; }
-    h2 { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 0.5rem; }
-    .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-    .card h2 { margin-top: 0; }
-    .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
-    .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { border-color: var(--accent); }
-    .btn-danger { background: var(--danger); color: #fff; }
-    .btn-danger:hover { opacity: 0.85; }
-    .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
-    .semester-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
-    .semester-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; cursor: pointer; transition: border-color 0.15s; }
-    .semester-card:hover { border-color: var(--accent); }
-    .semester-card.active { border-color: var(--accent); background: rgba(108,138,255,0.08); }
-    .semester-card h3 { font-size: 1rem; margin-bottom: 0.25rem; }
-    .semester-card .meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-    .semester-card .ects { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
-    .module-list { margin-top: 0.75rem; }
-    .module-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-    .module-item:hover { border-color: var(--accent); }
-    .module-info h4 { font-size: 0.95rem; margin-bottom: 0.2rem; }
-    .module-meta { display: flex; gap: 0.75rem; font-size: 0.78rem; color: var(--text-muted); flex-wrap: wrap; }
-    .module-actions { display: flex; gap: 0.3rem; align-items: center; }
-    .stats-bar { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1.25rem; flex: 1; min-width: 120px; }
-    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-    .modal h2 { margin-top: 0; }
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.3rem; }
-    .form-group input { width: 100%; padding: 0.55rem 0.75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 0.9rem; }
-    .form-group input:focus { outline: none; border-color: var(--accent); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .modal-actions-left { display: flex; gap: 0.5rem; justify-content: space-between; margin-top: 1.25rem; }
-    .empty { text-align: center; padding: 2rem; color: var(--text-muted); }
-    .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .tab-bar { display: flex; gap: 0.25rem; margin-bottom: 1rem; background: var(--surface); border-radius: 10px; padding: 0.3rem; }
-    .tab { flex: 1; padding: 0.5rem; text-align: center; border-radius: 7px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); transition: all 0.15s; }
-    .tab.active { background: var(--accent); color: #fff; }
-    #import-file { display: none; }
-    .progress-ring { width: 120px; height: 120px; margin: 0 auto 1rem; }
-    .progress-ring circle { fill: none; stroke-width: 8; }
-    .progress-ring .bg { stroke: var(--surface2); }
-    .progress-ring .fg { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.4s; }
-    .progress-text { text-anchor: middle; dominant-baseline: central; font-size: 1.1rem; font-weight: 700; fill: var(--text); }
-    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }
-    .badge-soon { background: var(--warning); color: #000; }
-    .badge-done { background: var(--success); color: #000; }
-    .badge-upcoming { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
-    .hidden { display: none !important; }
-    .back-btn { display: inline-flex; align-items: center; padding: 0.4rem 0.8rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; cursor: pointer; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; border: none; }
-    .back-btn:hover { border-color: var(--accent); color: var(--text); }
-    .semester-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-    .klausur-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 0.5rem; }
-    .klausur-row:last-child { border-bottom: none; }
-    .klausur-row .name { font-size: 0.9rem; }
-    .klausur-row .sem-name { font-size: 0.75rem; color: var(--text-muted); }
-    .empty-row { padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
-    @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } .stats-bar { flex-direction: column; } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lernzeit-Tracker — Tracke deine Lernzeiten für FH Aachen Fächer">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Lernzeit Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.473.0"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/toast.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: 'var(--color-bg)',
+                        surface: 'var(--color-surface)',
+                        primary: '#3b82f6',
+                        success: '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>Lernzeit-Tracker</h1>
-    <div class="header-actions">
-      <button class="btn btn-secondary" onclick="exportData()">Export</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Import</button>
-      <input type="file" id="import-file" accept=".json" onchange="importData(event)">
-      <button class="btn btn-primary" onclick="openSemesterModal()">+ Semester</button>
-    </div>
-  </div>
-  <div class="tab-bar">
-    <div class="tab active" id="tab-semesters" onclick="switchTab('semesters')">Semester</div>
-    <div class="tab" id="tab-dashboard" onclick="switchTab('dashboard')">Dashboard</div>
-  </div>
-  <div id="view-semesters">
-    <div class="card">
-      <h2>Semester</h2>
-      <div id="semester-list"></div>
-    </div>
-    <div id="module-section" class="hidden">
-      <button class="back-btn" onclick="state.activeSemesterId=null;render();">Zuruck</button>
-      <div class="card">
-        <div class="semester-header">
-          <h2 id="active-semester-title">Module</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModuleModal()">+ Modul</button>
+<body class="bg-dark text-adaptive font-sans antialiased pb-24">
+    <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden flex flex-col">
+
+        <!-- Top Header -->
+        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300">
+            <div class="flex items-center space-x-2">
+                <button class="p-2 rounded-full hover:bg-surface transition" aria-label="Home">
+                    <i data-lucide="home" class="w-6 h-6"></i>
+                </button>
+                <div id="header-title" class="hidden">
+                    <!-- Dynamic Title -->
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive" aria-label="Eintrag hinzufügen">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-timer-toggle" class="p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white" aria-label="Timer öffnen">
+                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                </button>
+                <button id="btn-theme" class="p-2 rounded-full bg-success hover:bg-green-600 transition text-white" aria-label="Theme wechseln">
+                    <i data-lucide="lightbulb" class="w-5 h-5 fill-current"></i>
+                </button>
+                <button id="btn-menu" class="p-2 rounded-full hover:bg-surface transition" aria-label="Menü">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="flex-1 p-4 overflow-y-auto">
+
+            <!-- View: Dashboard -->
+            <div id="view-dashboard" class="view-section animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+                <div class="grid gap-4">
+                    <!-- Daily Goal Progress Ring -->
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center">
+                        <svg id="daily-goal-ring" width="120" height="120" viewBox="0 0 120 120" class="block">
+                            <!-- Background track -->
+                            <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2937" stroke-width="8" />
+                            <!-- Progress arc -->
+                            <circle id="daily-goal-progress" cx="60" cy="60" r="52" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"
+                                stroke-dasharray="326.73" stroke-dashoffset="326.73"
+                                transform="rotate(-90 60 60)"
+                                style="transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;" />
+                            <!-- Center text -->
+                            <text id="daily-goal-time" x="60" y="55" text-anchor="middle" dominant-baseline="central"
+                                fill="currentColor" font-size="16" font-weight="bold" font-family="inherit">0m</text>
+                            <text id="daily-goal-label" x="60" y="73" text-anchor="middle" dominant-baseline="central"
+                                fill="#9ca3af" font-size="11" font-family="inherit">Ziel: 1h</text>
+                            <!-- Fire emoji when goal met -->
+                            <text id="daily-goal-fire" x="95" y="28" text-anchor="middle" dominant-baseline="central"
+                                font-size="16" opacity="0" style="transition: opacity 0.3s ease;">🔥</text>
+                        </svg>
+                    </div>
+
+                    <!-- Graph Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="h-32 flex items-end space-x-2" id="dashboard-graph">
+                            <!-- Bars injected via JS -->
+                        </div>
+                        <div class="flex justify-between items-center mt-4">
+                            <h2 class="text-lg font-semibold">Wochenübersicht</h2>
+                            <span id="dashboard-week-comparison" class="text-xs bg-green-400/10 text-green-400 px-2 py-1 rounded-full">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Streak Widget -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-3xl font-bold text-primary" id="dashboard-streak">0</div>
+                             <div class="text-xs text-adaptive-muted">Tage Streak</div>
+                        </div>
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-3xl font-bold text-success" id="dashboard-total">0h</div>
+                             <div class="text-xs text-adaptive-muted">Gesamtzeit</div>
+                        </div>
+                    </div>
+
+                    <!-- Achievements Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Achievements</h2>
+                            <span id="achievements-summary" class="text-xs text-adaptive-muted">0/8 freigeschaltet</span>
+                        </div>
+                        <div id="achievements-list" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            <!-- Dynamic achievements -->
+                        </div>
+                    </div>
+
+                    <!-- Extra Stats Widget -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-xl font-bold text-adaptive" id="dashboard-best-day">0h</div>
+                             <div class="text-xs text-adaptive-muted">Bester Tag</div>
+                        </div>
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+                             <div class="text-xl font-bold text-adaptive" id="dashboard-avg-day">0h</div>
+                             <div class="text-xs text-adaptive-muted">Ø pro Tag</div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Stats Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Wochenstatistik</h2>
+                            <span id="weekly-range-label" class="text-xs text-adaptive-muted"></span>
+                        </div>
+
+                        <!-- Weekly Bar Chart (Mo–So) -->
+                        <div class="flex items-end space-x-1 h-24 mb-1" id="weekly-bar-chart">
+                            <!-- Bars injected via JS -->
+                        </div>
+                        <div class="flex justify-between text-[10px] text-adaptive-muted mb-4 px-0.5" id="weekly-bar-labels">
+                            <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-primary" id="weekly-avg-day">0h</div>
+                                <div class="text-[10px] text-adaptive-muted">Ø pro Tag</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-adaptive" id="weekly-avg-subject">0h</div>
+                                <div class="text-[10px] text-adaptive-muted">Ø pro Fach</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-success" id="weekly-most-productive">—</div>
+                                <div class="text-[10px] text-adaptive-muted">Produktivster Tag</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-3 text-center">
+                                <div class="text-lg font-bold text-adaptive" id="weekly-total">0h</div>
+                                <div class="text-[10px] text-adaptive-muted">Woche gesamt</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wochenvergleich by Subject -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Wochenvergleich</h2>
+                            <span id="weekly-compare-range" class="text-xs text-adaptive-muted"></span>
+                        </div>
+                        <div id="weekly-compare-list" class="space-y-3">
+                            <!-- Dynamic rows -->
+                        </div>
+                    </div>
+
+                    <!-- Fach-Kacheln Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Fächer SS26</h2>
+                            <span id="dashboard-subject-summary" class="text-xs text-adaptive-muted"></span>
+                        </div>
+                        <div id="dashboard-subject-tiles" class="grid gap-3">
+                            <!-- Dynamic subject tiles -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Einheiten -->
+            <div id="view-einheiten" class="view-section hidden animate-fade-in">
+                <div class="flex flex-col space-y-4 mb-6">
+                    <div class="flex justify-between items-center">
+                        <h1 class="text-3xl font-bold">Einheiten</h1>
+                        <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm">
+                            <option value="">Alle Fächer</option>
+                            <!-- Options injected via JS -->
+                        </select>
+                    </div>
+                    <input type="text" id="history-search-input" placeholder="Suche in Notizen oder Fächern..." class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-sm">
+                </div>
+                <div id="einheiten-list" class="space-y-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- View: Fächer -->
+            <div id="view-faecher" class="view-section hidden animate-fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Fächer</h1>
+                    <button id="btn-add-subject" class="bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition" aria-label="Fach hinzufügen">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="faecher-list" class="grid gap-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- View: Kalender -->
+            <div id="view-kalender" class="view-section hidden animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Kalender</h1>
+                <div class="flex space-x-2 mb-6" id="calendar-view-controls">
+                    <button class="calendar-view-btn px-4 py-2 bg-surface rounded-full text-sm font-medium text-adaptive" data-view="day">Tagessicht</button>
+                    <button class="calendar-view-btn px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted" data-view="week">Wochensicht</button>
+                    <button class="calendar-view-btn px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted" data-view="month">Monatssicht</button>
+                </div>
+                <div id="kalender-list" class="space-y-6">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- View: Semester -->
+            <div id="view-semester" class="view-section hidden animate-fade-in">
+                <h1 class="text-3xl font-bold mb-6">Gesamtstatistik</h1>
+
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
+                         <div class="text-2xl font-bold text-primary" id="semester-total-time">0h</div>
+                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Gesamtzeit</div>
+                    </div>
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
+                         <div class="text-2xl font-bold text-adaptive" id="semester-total-sessions">0</div>
+                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Sitzungen</div>
+                    </div>
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center text-center">
+                         <div class="text-2xl font-bold text-adaptive" id="semester-avg-session">0m</div>
+                         <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Ø Sitzung</div>
+                    </div>
+                </div>
+
+                <h2 class="text-lg font-semibold mb-4">Fächer Übersicht</h2>
+                <div id="semester-breakdown" class="space-y-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe">
+            <div class="max-w-md mx-auto flex justify-between items-center px-4 py-3">
+                <button class="nav-btn active flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-dashboard">
+                    <i data-lucide="gauge" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Dashboard</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-einheiten">
+                    <i data-lucide="history" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Einheiten</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-faecher">
+                    <i data-lucide="landmark" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Fächer</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-kalender">
+                    <i data-lucide="calendar" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Kalender</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-semester">
+                    <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Semester</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Timer Overlay -->
+        <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Timer Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-timer-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Timer schließen">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-adaptive-muted">Timer</div>
+                <button class="p-2 rounded-full hover:bg-surface transition" aria-label="Timer maximieren">
+                    <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Timer Content -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-12">
+
+                <!-- Subject Selector -->
+                <div class="w-full max-w-xs">
+                     <select id="timer-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none" aria-label="Fach auswählen">
+                        <!-- Options injected via JS -->
+                     </select>
+                </div>
+
+                <!-- Thema (Topics) -->
+                <div class="w-full max-w-xs">
+                     <input type="text" id="timer-topics-input" list="timer-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" placeholder="Thema (z.B. Reihen, Folgen)">
+                     <datalist id="timer-topics-datalist"></datalist>
+                </div>
+
+                <!-- Time Display -->
+                <div class="flex flex-col items-center space-y-2">
+                    <div id="timer-ring-bg" class="w-48 h-48 rounded-full border-4 border-transparent flex items-center justify-center transition-colors duration-500">
+                        <div class="text-7xl font-mono font-bold tracking-wider" id="timer-display">
+                            00:00:00
+                        </div>
+                    </div>
+                    <div id="pomodoro-indicator" class="text-sm text-adaptive-muted"></div>
+                </div>
+
+                <!-- Notes Toggle & Textarea -->
+                <div class="w-full max-w-xs" id="timer-notes-wrapper">
+                    <button id="btn-timer-notes-toggle" class="text-sm text-adaptive-muted hover:text-adaptive transition flex items-center gap-1 mx-auto" type="button">
+                        📝 <span id="timer-notes-toggle-label">Notizen</span>
+                    </button>
+                    <div id="timer-notes-collapsed" class="hidden w-full mt-2">
+                        <textarea id="timer-notes-input" class="w-full bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm resize-none" rows="3" placeholder="Notizen zur Session..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Pomodoro Toggle -->
+                <button id="btn-pomodoro-toggle" class="text-xs bg-surface hover:bg-gray-700 px-3 py-1.5 rounded-full transition border border-gray-700">🍅 Pomodoro</button>
+
+                <!-- Controls -->
+                <div class="flex items-center space-x-6">
+                    <button id="btn-timer-start" class="w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition" aria-label="Timer starten">
+                         <i data-lucide="play" class="w-8 h-8 fill-current ml-1"></i>
+                    </button>
+                    <button id="btn-timer-pause" class="hidden w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black" aria-label="Timer pausieren">
+                         <i data-lucide="pause" class="w-8 h-8 fill-current"></i>
+                    </button>
+                    <button id="btn-timer-stop" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white" aria-label="Timer stoppen">
+                         <i data-lucide="square" class="w-6 h-6 fill-current"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Save Button (visible when stopped/paused) -->
+            <div class="p-8 pb-12">
+                <button id="btn-timer-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Sitzung speichern
+                </button>
+            </div>
         </div>
-        <div id="module-list" class="module-list"></div>
-      </div>
-    </div>
-  </div>
-  <div id="view-dashboard" class="hidden">
-    <div class="card" style="text-align:center;">
-      <svg class="progress-ring" viewBox="0 0 120 120">
-        <circle class="bg" cx="60" cy="60" r="50"/>
-        <circle class="fg" id="progress-ring-fg" cx="60" cy="60" r="50" stroke-dasharray="314.159" stroke-dashoffset="314.159"/>
-        <text class="progress-text" x="60" y="60" id="progress-text">0%</text>
-      </svg>
-      <div style="font-size:0.85rem;color:var(--text-muted);" id="progress-label">Keine Daten</div>
-    </div>
-    <div class="stats-bar" id="stats-bar"></div>
-    <div class="card">
-      <h2>Klausuren</h2>
-      <div id="klausur-list"></div>
-    </div>
-  </div>
-</div>
 
-<div class="modal-overlay hidden" id="semester-modal" onclick="if(event.target===this)closeSemesterModal()">
-  <div class="modal">
-    <h2 id="sem-modal-title">Semester hinzufugen</h2>
-    <input type="hidden" id="sem-id">
-    <div class="form-group"><label>Name (z.B. 3. Semester)</label><input type="text" id="sem-name" placeholder="3. Semester"></div>
-    <div class="form-row">
-      <div class="form-group"><label>Start</label><input type="date" id="sem-start"></div>
-      <div class="form-group"><label>Ende</label><input type="date" id="sem-end"></div>
-    </div>
-    <div class="modal-actions-left">
-      <button class="btn btn-danger hidden" id="sem-delete-btn" onclick="deleteSemester()">Loschen</button>
-      <div style="display:flex;gap:0.5rem;margin-left:auto;">
-        <button class="btn btn-secondary" onclick="closeSemesterModal()">Abbrechen</button>
-        <button class="btn btn-primary" onclick="saveSemester()">Speichern</button>
-      </div>
-    </div>
-  </div>
-</div>
+        <!-- Add Entry Overlay -->
+        <div id="add-entry-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-add-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-adaptive-muted">Eintrag hinzufügen</div>
+                <div class="w-10"></div> <!-- Spacer -->
+            </div>
 
-<div class="modal-overlay hidden" id="module-modal" onclick="if(event.target===this)closeModuleModal()">
-  <div class="modal">
-    <h2 id="mod-modal-title">Modul hinzufugen</h2>
-    <input type="hidden" id="mod-id">
-    <div class="form-group"><label>Name</label><input type="text" id="mod-name" placeholder="Hohere Mathematik I"></div>
-    <div class="form-row">
-      <div class="form-group"><label>ECTS</label><input type="number" id="mod-ects" min="0" max="30" step="0.5" placeholder="5"></div>
-      <div class="form-group"><label>Lernstunden (geschetzt)</label><input type="number" id="mod-hours" min="0" max="1000" step="1" placeholder="150"></div>
+            <!-- Content -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+
+                <!-- Subject -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Fach</label>
+                    <select id="add-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                        <!-- Options injected via JS -->
+                    </select>
+                </div>
+
+                <!-- Thema (Topics) -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Thema</label>
+                    <input type="text" id="add-topics-input" list="add-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Reihen, Folgen">
+                    <datalist id="add-topics-datalist"></datalist>
+                </div>
+
+                <!-- Date -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Datum</label>
+                    <input type="date" id="add-date-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
+                </div>
+
+                <!-- Time -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Uhrzeit</label>
+                    <input type="time" id="add-time-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
+                </div>
+
+                <!-- Duration -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Dauer (Minuten)</label>
+                    <input type="number" id="add-duration-input" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none mb-2" placeholder="z.B. 45">
+                    <div class="flex gap-2 justify-between">
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="15">15m</button>
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="30">30m</button>
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="45">45m</button>
+                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="60">60m</button>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Notizen</label>
+                    <textarea id="add-notes-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" placeholder="Zusätzliche Notizen..."></textarea>
+                </div>
+
+            </div>
+
+            <!-- Save Button -->
+            <div class="p-8 pb-12">
+                <button id="btn-add-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Speichern
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Subject Overlay -->
+        <div id="add-subject-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-add-subject-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-adaptive-muted">Fach hinzufügen</div>
+                <div class="w-10"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+
+                <!-- Name -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Name</label>
+                    <input type="text" id="add-subject-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Physik">
+                </div>
+
+                <!-- Color -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Farbe</label>
+                    <select id="add-subject-color" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                        <option value="bg-red-500">Rot</option>
+                        <option value="bg-orange-500">Orange</option>
+                        <option value="bg-yellow-500">Gelb</option>
+                        <option value="bg-green-500">Grün</option>
+                        <option value="bg-teal-500">Türkis</option>
+                        <option value="bg-blue-500">Blau</option>
+                        <option value="bg-indigo-500">Indigo</option>
+                        <option value="bg-purple-500">Lila</option>
+                        <option value="bg-pink-500">Pink</option>
+                        <option value="bg-gray-500">Grau</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <!-- Save Button -->
+            <div class="p-8 pb-12">
+                <button id="btn-add-subject-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Fach Speichern
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Overlay -->
+        <div id="settings-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4">
+                <button id="btn-settings-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
+                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                </button>
+                <div class="text-sm font-medium text-adaptive-muted">Einstellungen</div>
+                <div class="w-10"></div> <!-- Spacer -->
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-8">
+
+                <h2 class="text-2xl font-bold">Einstellungen</h2>
+
+                <!-- Daily Goal -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Tägliches Ziel (Minuten)</label>
+                    <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
+                </div>
+
+                <!-- Learning Days -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Lern-Tage pro Woche</label>
+                    <input type="number" id="settings-learning-days" min="1" max="7" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5">
+                </div>
+
+                <!-- Font Size -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Schriftgröße</label>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-adaptive-muted">A</span>
+                        <input type="range" id="settings-font-size" min="12" max="24" step="1" value="16" class="flex-1 accent-primary">
+                        <span class="text-lg text-adaptive-muted">A</span>
+                    </div>
+                    <div class="text-center text-xs text-adaptive-muted mt-1" id="settings-font-size-label">16px</div>
+                </div>
+
+                <!-- Pomodoro Settings -->
+                <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-lg font-bold mb-4">🍅 Pomodoro</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Arbeit (Min)</label>
+                            <input type="number" id="settings-pomo-work" min="1" max="120" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="25">
+                        </div>
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Kurze Pause (Min)</label>
+                            <input type="number" id="settings-pomo-short" min="1" max="60" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="5">
+                        </div>
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Lange Pause (Min)</label>
+                            <input type="number" id="settings-pomo-long" min="1" max="60" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="15">
+                        </div>
+                        <div>
+                            <label class="text-xs text-adaptive-muted mb-1 block">Lange Pause alle X</label>
+                            <input type="number" id="settings-pomo-interval" min="1" max="10" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="4">
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-pomo-auto-break" checked class="accent-primary w-4 h-4">
+                            Pause automatisch starten
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-pomo-auto-work" class="accent-primary w-4 h-4">
+                            Arbeit automatisch nach Pause starten
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Data Management -->
+                <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-lg font-bold mb-4">Datenverwaltung</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <button id="btn-settings-export" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Backup (JSON)</span>
+                        </button>
+                        <button id="btn-settings-import-trigger" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Importieren</span>
+                        </button>
+                        <button id="btn-settings-export-csv" class="col-span-2 py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Exportieren (CSV)</span>
+                        </button>
+                        <input type="file" id="settings-import-input" class="hidden" accept=".json">
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="w-full pt-4 border-t border-gray-800">
+                    <h3 class="text-red-500 font-bold mb-4">Gefahrenzone</h3>
+                    <button id="btn-settings-reset" class="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg transition font-medium">
+                        Alle Daten löschen
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Save Button -->
+            <div class="p-8 pb-12">
+                <button id="btn-settings-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                    Einstellungen Speichern
+                </button>
+            </div>
+        </div>
+
     </div>
-    <div class="form-group"><label>Klausurdatum</label><input type="date" id="mod-klausur"></div>
-    <div class="form-group"><label>Notizen</label><input type="text" id="mod-notes" placeholder="Kapitel 1-5, Formelsammlung..."></div>
-    <div class="modal-actions-left">
-      <button class="btn btn-danger hidden" id="mod-delete-btn" onclick="deleteModule()">Loschen</button>
-      <div style="display:flex;gap:0.5rem;margin-left:auto;">
-        <button class="btn btn-secondary" onclick="closeModuleModal()">Abbrechen</button>
-        <button class="btn btn-primary" onclick="saveModule()">Speichern</button>
-      </div>
+
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" class="fixed bottom-20 left-4 right-4 z-40 transform translate-y-full transition-transform duration-300 surface-card p-4 border border-gray-700 shadow-xl flex items-center justify-between gap-3 hidden">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <i data-lucide="download" class="w-5 h-5 text-primary"></i>
+            </div>
+            <div>
+                <div class="font-bold text-adaptive text-sm">App installieren</div>
+                <div class="text-xs text-adaptive-muted">Für schnelleren Zugriff auf den Homescreen</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button id="pwa-install-btn" class="px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-full transition">Installieren</button>
+            <button id="pwa-dismiss-btn" class="p-2 text-adaptive-muted hover:text-adaptive transition" aria-label="Schließen">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
     </div>
-  </div>
-</div>
 
-<script>
-var STORAGE_KEY = "lernzeit_tracker_v1";
-var state = { semesters: [], activeSemesterId: null };
-
-function load() {
-  try {
-    var s = localStorage.getItem(STORAGE_KEY);
-    state = s ? JSON.parse(s) : { semesters: [], activeSemesterId: null };
-  } catch(e) { state = { semesters: [], activeSemesterId: null }; }
-}
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-function now() { return new Date().toISOString().split("T")[0]; }
-function daysBetween(s, e) {
-  if (!s || !e) return null;
-  return Math.round((new Date(e) - new Date(s)) / 86400000);
-}
-function formatDate(d) {
-  if (!d) return "-";
-  return new Date(d + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-function klausurBadge(date) {
-  if (!date) return { cls: "", text: "" };
-  var t = now();
-  if (date < t) return { cls: "badge-done", text: "Bestanden" };
-  var daysUntil = Math.round((new Date(date) - new Date(t)) / 86400000);
-  if (daysUntil <= 14) return { cls: "badge-soon", text: daysUntil + " Tage" };
-  return { cls: "badge-upcoming", text: formatDate(date) };
-}
-function switchTab(tab) {
-  document.getElementById("tab-semesters").classList.toggle("active", tab === "semesters");
-  document.getElementById("tab-dashboard").classList.toggle("active", tab === "dashboard");
-  document.getElementById("view-semesters").classList.toggle("hidden", tab !== "semesters");
-  document.getElementById("view-dashboard").classList.toggle("hidden", tab !== "dashboard");
-}
-function selectSemester(id) {
-  state.activeSemesterId = id;
-  render();
-}
-function render() {
-  renderSemesters();
-  renderModules();
-  renderDashboard();
-}
-function renderSemesters() {
-  var el = document.getElementById("semester-list");
-  if (!state.semesters.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">&#128197;</div>Keine Semester vorhanden</div>';
-    return;
-  }
-  var html = '<div class="semester-grid">';
-  state.semesters.forEach(function(sem) {
-    var active = sem.id === state.activeSemesterId ? "active" : "";
-    var days = daysBetween(sem.start, sem.end);
-    var totalEcts = (sem.modules||[]).reduce(function(a,m){ return a + (parseFloat(m.ects)||0); }, 0);
-    var totalHours = (sem.modules||[]).reduce(function(a,m){ return a + (parseFloat(m.hours)||0); }, 0);
-    html += '<div class="semester-card ' + active + '" onclick="selectSemester(\'' + sem.id + '\')">';
-    html += '<h3>' + escHtml(sem.name||"Unbenannt") + '</h3>';
-    html += '<div class="meta">' + (sem.start||"?") + ' &rarr; ' + (sem.end||"?") + (days ? " (" + days + " Tage)" : "") + '</div>';
-    html += '<div class="ects">' + totalEcts + ' ECTS &middot; ' + totalHours + 'h</div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-function escHtml(s) {
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-function renderModules() {
-  var section = document.getElementById("module-section");
-  if (!state.activeSemesterId) { section.classList.add("hidden"); return; }
-  section.classList.remove("hidden");
-  var sem = state.semesters.find(function(s){ return s.id === state.activeSemesterId; });
-  if (!sem) return;
-  document.getElementById("active-semester-title").textContent = (sem.name||"Unbenannt") + " - Module";
-  var el = document.getElementById("module-list");
-  if (!sem.modules || !sem.modules.length) {
-    el.innerHTML = '<div class="empty-row">Keine Module vorhanden</div>';
-    return;
-  }
-  var html = "";
-  sem.modules.forEach(function(mod) {
-    var badge = klausurBadge(mod.klausur);
-    html += '<div class="module-item">';
-    html += '<div class="module-info">';
-    html += '<h4>' + escHtml(mod.name||"Unbenannt") + '</h4>';
-    html += '<div class="module-meta">';
-    html += '<span>&#127991; ' + (mod.ects||0) + ' ECTS</span>';
-    html += '<span>&#128337; ' + (mod.hours||0) + 'h</span>';
-    if (mod.klausur) html += '<span>' + formatDate(mod.klausur) + '</span>';
-    if (mod.notes) html += '<span style="font-style:italic;">' + escHtml(mod.notes) + '</span>';
-    html += '</div></div>';
-    html += '<div class="module-actions">';
-    if (badge.text) html += '<span class="badge ' + badge.cls + '">' + badge.text + '</span>';
-    html += '<button class="btn btn-secondary btn-sm" onclick="openModuleModal(\'' + mod.id + '\')">&#9998;</button>';
-    html += '</div></div>';
-  });
-  el.innerHTML = html;
-}
-function renderDashboard() {
-  var totalEcts = 0, totalHours = 0, totalKlausuren = 0, klausurenSoon = 0, done = 0;
-  var allKlausuren = [];
-  state.semesters.forEach(function(sem) {
-    var semEcts = 0, semHours = 0;
-    (sem.modules||[]).forEach(function(m) {
-      semEcts += parseFloat(m.ects)||0;
-      semHours += parseFloat(m.hours)||0;
-      if (m.klausur) {
-        totalKlausuren++;
-        var badge = klausurBadge(m.klausur);
-        if (badge.cls === "badge-done") done++;
-        if (badge.cls === "badge-soon") klausurenSoon++;
-        allKlausuren.push({ name: m.name, sem: sem.name, date: m.klausur, badge: badge });
-      }
-    });
-    totalEcts += semEcts;
-    totalHours += semHours;
-  });
-  var donePct = totalKlausuren ? Math.round(done/totalKlausuren*100) : 0;
-  var circumference = 2 * Math.PI * 50;
-  var offset = circumference - (donePct / 100) * circumference;
-  document.getElementById("progress-ring-fg").setAttribute("stroke-dashoffset", offset);
-  document.getElementById("progress-text").textContent = donePct + "%";
-  document.getElementById("progress-label").textContent = done + " von " + totalKlausuren + " Klausuren bestanden";
-  document.getElementById("stats-bar").innerHTML =
-    '<div class="stat"><div class="stat-value">' + totalEcts + '</div><div class="stat-label">Gesamt ECTS</div></div>' +
-    '<div class="stat"><div class="stat-value">' + totalHours + '</div><div class="stat-label">Lernstunden</div></div>' +
-    '<div class="stat"><div class="stat-value">' + klausurenSoon + '</div><div class="stat-label">Klausuren bald</div></div>';
-  var klausurEl = document.getElementById("klausur-list");
-  if (!allKlausuren.length) {
-    klausurEl.innerHTML = '<div class="empty-row">Keine Klausuren eingetragen</div>';
-    return;
-  }
-  allKlausuren.sort(function(a,b){ return a.date.localeCompare(b.date); });
-  var html = "";
-  allKlausuren.forEach(function(k) {
-    html += '<div class="klausur-row">';
-    html += '<div><div class="name">' + escHtml(k.name) + '</div><div class="sem-name">' + escHtml(k.sem) + '</div></div>';
-    html += '<span class="badge ' + k.badge.cls + '">' + k.badge.text + '</span>';
-    html += '</div>';
-  });
-  klausurEl.innerHTML = html;
-}
-function openSemesterModal(id) {
-  var modal = document.getElementById("semester-modal");
-  var sem = id ? state.semesters.find(function(s){ return s.id === id; }) : null;
-  document.getElementById("sem-modal-title").textContent = sem ? "Semester bearbeiten" : "Semester hinzufugen";
-  document.getElementById("sem-id").value = id||"";
-  document.getElementById("sem-name").value = sem ? sem.name : "";
-  document.getElementById("sem-start").value = sem ? sem.start : "";
-  document.getElementById("sem-end").value = sem ? sem.end : "";
-  document.getElementById("sem-delete-btn").classList.toggle("hidden", !sem);
-  modal.classList.remove("hidden");
-}
-function closeSemesterModal() { document.getElementById("semester-modal").classList.add("hidden"); }
-function saveSemester() {
-  var id = document.getElementById("sem-id").value;
-  var name = document.getElementById("sem-name").value.trim();
-  var start = document.getElementById("sem-start").value;
-  var end = document.getElementById("sem-end").value;
-  if (!name) { alert("Bitte Name eingeben"); return; }
-  if (id) {
-    var sem = state.semesters.find(function(s){ return s.id === id; });
-    if (sem) { sem.name = name; sem.start = start; sem.end = end; }
-  } else {
-    state.semesters.push({ id: uid(), name: name, start: start, end: end, modules: [] });
-  }
-  save(); closeSemesterModal(); render();
-}
-function deleteSemester() {
-  if (!confirm("Semester wirklich loschen?")) return;
-  var id = document.getElementById("sem-id").value;
-  state.semesters = state.semesters.filter(function(s){ return s.id !== id; });
-  if (state.activeSemesterId === id) state.activeSemesterId = null;
-  save(); closeSemesterModal(); render();
-}
-function openModuleModal(id) {
-  var modal = document.getElementById("module-modal");
-  var sem = state.semesters.find(function(s){ return s.id === state.activeSemesterId; });
-  if (!sem) return;
-  var mod = id ? sem.modules.find(function(m){ return m.id === id; }) : null;
-  document.getElementById("mod-modal-title").textContent = mod ? "Modul bearbeiten" : "Modul hinzufugen";
-  document.getElementById("mod-id").value = id||"";
-  document.getElementById("mod-name").value = mod ? mod.name : "";
-  document.getElementById("mod-ects").value = mod ? mod.ects : "";
-  document.getElementById("mod-hours").value = mod ? mod.hours : "";
-  document.getElementById("mod-klausur").value = mod ? mod.klausur : "";
-  document.getElementById("mod-notes").value = mod ? mod.notes : "";
-  document.getElementById("mod-delete-btn").classList.toggle("hidden", !mod);
-  modal.classList.remove("hidden");
-}
-function closeModuleModal() { document.getElementById("module-modal").classList.add("hidden"); }
-function saveModule() {
-  var id = document.getElementById("mod-id").value;
-  var name = document.getElementById("mod-name").value.trim();
-  var ects = parseFloat(document.getElementById("mod-ects").value) || 0;
-  var hours = parseFloat(document.getElementById("mod-hours").value) || 0;
-  var klausur = document.getElementById("mod-klausur").value;
-  var notes = document.getElementById("mod-notes").value.trim();
-  if (!name) { alert("Bitte Name eingeben"); return; }
-  var sem = state.semesters.find(function(s){ return s.id === state.activeSemesterId; });
-  if (!sem) return;
-  if (!sem.modules) sem.modules = [];
-  if (id) {
-    var mod = sem.modules.find(function(m){ return m.id === id; });
-    if (mod) { mod.name = name; mod.ects = ects; mod.hours = hours; mod.klausur = klausur; mod.notes = notes; }
-  } else {
-    sem.modules.push({ id: uid(), name: name, ects: ects, hours: hours, klausur: klausur, notes: notes });
-  }
-  save(); closeModuleModal(); render();
-}
-function deleteModule() {
-  if (!confirm("Modul wirklich loschen?")) return;
-  var id = document.getElementById("mod-id").value;
-  var sem = state.semesters.find(function(s){ return s.id === state.activeSemesterId; });
-  if (sem) sem.modules = sem.modules.filter(function(m){ return m.id !== id; });
-  save(); closeModuleModal(); render();
-}
-function exportData() {
-  var blob = new Blob([JSON.stringify(state, null, 2)], {type: "application/json"});
-  var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = "lernzeit-tracker-backup-" + now() + ".json"; a.click();
-}
-function importData(event) {
-  var file = event.target.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var imported = JSON.parse(e.target.result);
-      if (imported.semesters) {
-        state = imported;
-        save(); render();
-        alert("Import erfolgreich!");
-      } else {
-        alert("Ungultige Datei");
-      }
-    } catch(err) { alert("Fehler beim Lesen: " + err.message); }
-  };
-  reader.readAsText(file);
-  event.target.value = "";
-}
-load();
-render();
-
-</script>
+    <!-- Scripts -->
+    <script src="js/store.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>
