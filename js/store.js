@@ -67,6 +67,38 @@ class StorageManager {
         const storedSemesters = localStorage.getItem(this.STORAGE_KEYS.SEMESTERS);
         if (!storedSemesters || JSON.parse(storedSemesters).length === 0) {
             this.initDefaultSemester();
+        } else {
+            // Migration: Add subjectId to modules if missing
+            this.migrateModulesSubjectId();
+        }
+    }
+
+    migrateModulesSubjectId() {
+        const semesters = this.getSemesters();
+        const subjects = this.getSubjects();
+        let needsUpdate = false;
+
+        semesters.forEach(semester => {
+            (semester.modules || []).forEach(mod => {
+                if (!mod.subjectId && mod.name) {
+                    // Try to match by name
+                    const matched = subjects.find(s => {
+                        const sName = s.name.toLowerCase();
+                        const mName = mod.name.toLowerCase();
+                        return sName.includes(mName) || mName.includes(sName) ||
+                            (sName === 'get2' && mName.includes('elektrotechnik')) ||
+                            (sName.includes('hm') && mName.includes('mathematik'));
+                    });
+                    if (matched) {
+                        mod.subjectId = matched.id;
+                        needsUpdate = true;
+                    }
+                }
+            });
+        });
+
+        if (needsUpdate) {
+            this.saveSemesters(semesters);
         }
     }
 
@@ -84,6 +116,7 @@ class StorageManager {
             modules: [
                 {
                     id: (Date.now() + 1).toString(),
+                    subjectId: '1',
                     name: 'Höhere Mathematik 2 für ET',
                     code: '52111',
                     ects: 5,
@@ -93,6 +126,7 @@ class StorageManager {
                 },
                 {
                     id: (Date.now() + 2).toString(),
+                    subjectId: '2',
                     name: 'Grundgebiete der Elektrotechnik 2',
                     code: '52102',
                     ects: 7,
@@ -102,6 +136,7 @@ class StorageManager {
                 },
                 {
                     id: (Date.now() + 3).toString(),
+                    subjectId: '3',
                     name: 'Physik',
                     code: '52103',
                     ects: 7,
@@ -111,6 +146,7 @@ class StorageManager {
                 },
                 {
                     id: (Date.now() + 4).toString(),
+                    subjectId: '4',
                     name: 'Bauelemente und Grundschaltungen',
                     code: '52112',
                     ects: 7,
@@ -120,6 +156,7 @@ class StorageManager {
                 },
                 {
                     id: (Date.now() + 5).toString(),
+                    subjectId: '5',
                     name: 'Digitaltechnik',
                     code: '52107',
                     ects: 4,

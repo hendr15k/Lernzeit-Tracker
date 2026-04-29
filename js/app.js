@@ -1431,7 +1431,14 @@ function renderModuleList(semesterId) {
 
     const modules = semester.modules || [];
     const totalEcts = modules.reduce((sum, m) => sum + (m.ects || 0), 0);
-    const totalHours = modules.reduce((sum, m) => sum + (m.hours || 0), 0);
+    const totalEstimatedHours = modules.reduce((sum, m) => sum + (m.hours || 0), 0);
+    const entries = window.storageManager.getEntries();
+    const subjectIds = modules.map(m => m.subjectId).filter(Boolean);
+    const totalSpentSeconds = entries
+        .filter(e => subjectIds.includes(e.subjectId))
+        .reduce((acc, e) => acc + e.duration, 0);
+    const totalSpentHours = (totalSpentSeconds / 3600).toFixed(1);
+    const overallProgress = totalEstimatedHours > 0 ? Math.min((totalSpentSeconds / 3600 / totalEstimatedHours) * 100, 100) : 0;
 
     const statsEl = document.getElementById('semester-stats');
     statsEl.innerHTML = `
@@ -1440,8 +1447,8 @@ function renderModuleList(semesterId) {
             <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">ECTS</div>
         </div>
         <div class="surface-card p-3 border border-gray-800 flex flex-col items-center justify-center text-center">
-            <div class="text-xl font-bold text-adaptive">${totalHours}</div>
-            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">Stunden</div>
+            <div class="text-xl font-bold ${overallProgress >= 100 ? 'text-success' : overallProgress >= 50 ? 'text-primary' : 'text-yellow-400'}">${totalSpentHours}h</div>
+            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mt-1">von ${totalEstimatedHours}h</div>
         </div>
         <div class="surface-card p-3 border border-gray-800 flex flex-col items-center justify-center text-center">
             <div class="text-xl font-bold text-adaptive">${modules.length}</div>
@@ -1462,6 +1469,14 @@ function renderModuleList(semesterId) {
 
         modules.forEach(mod => {
             const klausurBadge = getKlausurBadge(mod.klausur);
+            const entries = window.storageManager.getEntries();
+            const spentSeconds = entries
+                .filter(e => String(e.subjectId) === String(mod.subjectId))
+                .reduce((acc, e) => acc + e.duration, 0);
+            const spentHours = (spentSeconds / 3600).toFixed(1);
+            const estimatedHours = mod.hours || 0;
+            const progress = estimatedHours > 0 ? Math.min((spentSeconds / 3600 / estimatedHours) * 100, 100) : 0;
+            const progressColor = progress >= 100 ? 'bg-success' : progress >= 50 ? 'bg-primary' : 'bg-yellow-500';
 
             const card = document.createElement('div');
             card.className = 'surface-card p-4 border border-gray-800';
@@ -1481,9 +1496,21 @@ function renderModuleList(semesterId) {
                         </button>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-2 mt-2">
+                ${mod.subjectId && estimatedHours > 0 ? `
+                <div class="mb-2">
+                    <div class="flex justify-between text-xs text-adaptive-muted mb-1">
+                        <span>${spentHours}h gesamt</span>
+                        <span>${progress.toFixed(0)}%</span>
+                    </div>
+                    <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full ${progressColor} transition-all rounded-full" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="text-[10px] text-adaptive-muted mt-1">geschätzt: ${estimatedHours}h</div>
+                </div>
+                ` : ''}
+                <div class="flex flex-wrap gap-2">
                     ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${mod.ects} ECTS</span>` : ''}
-                    ${mod.hours ? `<span class="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">${mod.hours} Std</span>` : ''}
+                    ${mod.hours ? `<span class="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">${mod.hours}h</span>` : ''}
                     ${klausurBadge ? `<span class="text-xs ${klausurBadge.bgClass} px-2 py-0.5 rounded-full">${klausurBadge.text}</span>` : ''}
                 </div>
             `;
@@ -1587,6 +1614,15 @@ function saveSemester() {
 
 // ==================== MODULE MODAL ====================
 
+function populateModuleSubjectSelect(selectedId) {
+    const select = document.getElementById('add-module-subject');
+    if (!select) return;
+    const subjects = window.storageManager.getSubjects();
+    select.innerHTML = '<option value="">— Kein Fach —</option>' +
+        subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    if (selectedId) select.value = selectedId;
+}
+
 function openAddModuleModal() {
     if (!_currentSemesterId) return;
     _editingModuleId = null;
@@ -1598,6 +1634,7 @@ function openAddModuleModal() {
     document.getElementById('add-module-klausur').value = '';
     document.getElementById('add-module-notes').value = '';
     document.getElementById('btn-delete-module').classList.add('hidden');
+    populateModuleSubjectSelect();
     openOverlay('add-module-overlay');
 }
 
@@ -1617,6 +1654,7 @@ function openEditModuleModal(semesterId, moduleId) {
     document.getElementById('add-module-klausur').value = mod.klausur || '';
     document.getElementById('add-module-notes').value = mod.notes || '';
     document.getElementById('btn-delete-module').classList.remove('hidden');
+    populateModuleSubjectSelect(mod.subjectId);
     openOverlay('add-module-overlay');
 }
 
@@ -1625,6 +1663,7 @@ function saveModule() {
 
     const name = document.getElementById('add-module-name').value.trim();
     const code = document.getElementById('add-module-code').value.trim();
+    const subjectId = document.getElementById('add-module-subject').value;
     const ects = parseInt(document.getElementById('add-module-ects').value) || 0;
     const hours = parseInt(document.getElementById('add-module-hours').value) || 0;
     const klausur = document.getElementById('add-module-klausur').value || '';
@@ -1640,13 +1679,14 @@ function saveModule() {
             id: _editingModuleId,
             name,
             code,
+            subjectId: subjectId || null,
             ects,
             hours,
             klausur,
             notes
         });
     } else {
-        window.storageManager.addModule(_currentSemesterId, { name, code, ects, hours, klausur, notes });
+        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, klausur, notes });
     }
 
     closeOverlay('add-module-overlay');
