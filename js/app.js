@@ -502,7 +502,7 @@ function initAddEntry() {
                 document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag bearbeiten';
 
                 // Check if subject exists in select (it might have been deleted)
-                const exists = Array.from(subjectSelect.options).some(opt => opt.value === entry.subjectId);
+                const exists = Array.from(subjectSelect.options).some(opt => opt.value == entry.subjectId);
                 if (!exists) {
                     const tempOption = document.createElement('option');
                     tempOption.value = entry.subjectId;
@@ -788,9 +788,17 @@ function initTimer() {
     }
 
     // Restore Timer State
-    const savedState = localStorage.getItem('timer_state');
-    if (savedState) {
-        const state = JSON.parse(savedState);
+    let state = null;
+    try {
+        const savedState = localStorage.getItem('timer_state');
+        if (savedState) {
+            state = JSON.parse(savedState);
+        }
+    } catch (e) {
+        console.error('Error parsing timer state:', e);
+        localStorage.removeItem('timer_state');
+    }
+    if (state) {
         // Restore pomodoro state
         if (state.pomodoroMode) {
             pomodoroMode = true;
@@ -805,9 +813,8 @@ function initTimer() {
             const elapsedSinceSave = Math.floor((now - state.timestamp) / 1000);
             timerSeconds = state.seconds + elapsedSinceSave;
             isTimerRunning = true;
-            // Ensure value exists before setting, or just set it (browser handles missing value)
-            subjectSelect.value = state.subjectId;
-            updateTimerTopicsDatalist(state.subjectId);
+            if (subjectSelect) subjectSelect.value = state.subjectId || '';
+            if (subjectSelect) updateTimerTopicsDatalist(state.subjectId);
 
             btnStart.classList.add('hidden');
             btnPause.classList.remove('hidden');
@@ -826,8 +833,8 @@ function initTimer() {
             requestWakeLock();
         } else {
             timerSeconds = state.seconds;
-            subjectSelect.value = state.subjectId;
-            updateTimerTopicsDatalist(state.subjectId);
+            if (subjectSelect) subjectSelect.value = state.subjectId || '';
+            if (subjectSelect) updateTimerTopicsDatalist(state.subjectId);
             updateDisplay();
             // Restore notes even if paused
             const savedNotes = localStorage.getItem('timer_notes');
@@ -1026,6 +1033,12 @@ function initTimer() {
 
             const timerNotes = notesInput ? notesInput.value.trim() : '';
             const topicsVal = topicsInput ? topicsInput.value.trim() : '';
+
+            if (!subjectSelect.value) {
+                showToast('Bitte wählen Sie ein Fach aus.', 'error');
+                return;
+            }
+
             const entry = {
                 subjectId: subjectSelect.value,
                 duration: timerSeconds,
