@@ -80,6 +80,13 @@ class StorageManager {
 
         semesters.forEach(semester => {
             (semester.modules || []).forEach(mod => {
+                // Migrate klausur to examPeriod
+                if (mod.klausur && !mod.examPeriod) {
+                    mod.examPeriod = mod.klausur;
+                    delete mod.klausur;
+                    needsUpdate = true;
+                }
+
                 if (!mod.subjectId && mod.name) {
                     // Try to match by name
                     const matched = subjects.find(s => {
@@ -121,7 +128,7 @@ class StorageManager {
                     code: '52111',
                     ects: 5,
                     hours: 150,
-                    klausur: '',
+                    examPeriod: '2026-07-20',
                     notes: 'Differenzial- und Integralrechnung mehrerer Veränderlicher, Differenzialgleichungen, Fourier- und Laplace-Transformation, Grundlagen der Wahrscheinlichkeitsrechnung und Statistik'
                 },
                 {
@@ -131,7 +138,7 @@ class StorageManager {
                     code: '52102',
                     ects: 7,
                     hours: 210,
-                    klausur: '',
+                    examPeriod: '2026-07-20',
                     notes: 'Elektrisches Feld, Magnetisches Feld, Induktionsgesetz, Wechselstrom'
                 },
                 {
@@ -141,7 +148,7 @@ class StorageManager {
                     code: '52103',
                     ects: 7,
                     hours: 210,
-                    klausur: '',
+                    examPeriod: '2026-09-21',
                     notes: 'Mechanik, Thermodynamik, Elektrodynamik, Optik, Festkörperphysik'
                 },
                 {
@@ -151,7 +158,7 @@ class StorageManager {
                     code: '52112',
                     ects: 7,
                     hours: 210,
-                    klausur: '',
+                    examPeriod: '2026-09-21',
                     notes: 'Halbleiter, Dioden, Transistoren, Operationsverstärker'
                 },
                 {
@@ -161,7 +168,7 @@ class StorageManager {
                     code: '52107',
                     ects: 4,
                     hours: 120,
-                    klausur: '',
+                    examPeriod: '2026-07-20',
                     notes: 'Boolesche Algebra, Karnaugh-Veitch-Diagramm, Flip-Flops, Schaltnetze, Schaltwerke'
                 }
             ]

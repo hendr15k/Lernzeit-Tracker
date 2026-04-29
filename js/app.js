@@ -1468,7 +1468,7 @@ function renderModuleList(semesterId) {
         container.classList.remove('hidden');
 
         modules.forEach(mod => {
-            const klausurBadge = getKlausurBadge(mod.klausur);
+            const examBadge = getExamBadge(mod.examPeriod);
             const entries = window.storageManager.getEntries();
             const spentSeconds = entries
                 .filter(e => String(e.subjectId) === String(mod.subjectId))
@@ -1499,19 +1499,17 @@ function renderModuleList(semesterId) {
                 ${mod.subjectId && estimatedHours > 0 ? `
                 <div class="mb-2">
                     <div class="flex justify-between text-xs text-adaptive-muted mb-1">
-                        <span>${spentHours}h gesamt</span>
+                        <span>${spentHours}h / ${estimatedHours}h</span>
                         <span>${progress.toFixed(0)}%</span>
                     </div>
                     <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div class="h-full ${progressColor} transition-all rounded-full" style="width: ${progress}%"></div>
                     </div>
-                    <div class="text-[10px] text-adaptive-muted mt-1">geschätzt: ${estimatedHours}h</div>
                 </div>
                 ` : ''}
                 <div class="flex flex-wrap gap-2">
                     ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${mod.ects} ECTS</span>` : ''}
-                    ${mod.hours ? `<span class="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">${mod.hours}h</span>` : ''}
-                    ${klausurBadge ? `<span class="text-xs ${klausurBadge.bgClass} px-2 py-0.5 rounded-full">${klausurBadge.text}</span>` : ''}
+                    ${examBadge ? `<span class="text-xs ${examBadge.bgClass} px-2 py-0.5 rounded-full">📝 ${examBadge.text}</span>` : ''}
                 </div>
             `;
             container.appendChild(card);
@@ -1540,18 +1538,27 @@ function renderModuleList(semesterId) {
     lucide.createIcons();
 }
 
-function getKlausurBadge(klausurDate) {
-    if (!klausurDate) return null;
+function getExamBadge(examPeriod) {
+    if (!examPeriod) return null;
     const now = new Date();
-    const exam = new Date(klausurDate);
+    const exam = new Date(examPeriod);
     const diffDays = Math.ceil((exam - now) / (1000 * 60 * 60 * 24));
 
+    const periodNames = {
+        '2026-03-30': 'Mär/Apr 2026',
+        '2026-07-20': 'Jul 2026',
+        '2026-09-21': 'Sep 2026',
+        '2027-02-01': 'Jan/Feb 2027'
+    };
+
+    const periodName = periodNames[examPeriod] || formatDateShort(examPeriod);
+
     if (diffDays < 0) {
-        return { text: 'Bestanden', bgClass: 'bg-green-900/40 text-green-300' };
+        return { text: `Bestanden (${periodName})`, bgClass: 'bg-green-900/40 text-green-300' };
     } else if (diffDays <= 14) {
-        return { text: `${diffDays} Tage`, bgClass: 'bg-yellow-900/40 text-yellow-300' };
+        return { text: `${diffDays} Tage (${periodName})`, bgClass: 'bg-yellow-900/40 text-yellow-300' };
     } else {
-        return { text: formatDateShort(klausurDate), bgClass: 'bg-gray-700/60 text-gray-300' };
+        return { text: periodName, bgClass: 'bg-red-900/40 text-red-300' };
     }
 }
 
@@ -1631,7 +1638,7 @@ function openAddModuleModal() {
     document.getElementById('add-module-code').value = '';
     document.getElementById('add-module-ects').value = '';
     document.getElementById('add-module-hours').value = '';
-    document.getElementById('add-module-klausur').value = '';
+    document.getElementById('add-module-exam-period').value = '';
     document.getElementById('add-module-notes').value = '';
     document.getElementById('btn-delete-module').classList.add('hidden');
     populateModuleSubjectSelect();
@@ -1651,7 +1658,7 @@ function openEditModuleModal(semesterId, moduleId) {
     document.getElementById('add-module-code').value = mod.code || '';
     document.getElementById('add-module-ects').value = mod.ects || '';
     document.getElementById('add-module-hours').value = mod.hours || '';
-    document.getElementById('add-module-klausur').value = mod.klausur || '';
+    document.getElementById('add-module-exam-period').value = mod.examPeriod || '';
     document.getElementById('add-module-notes').value = mod.notes || '';
     document.getElementById('btn-delete-module').classList.remove('hidden');
     populateModuleSubjectSelect(mod.subjectId);
@@ -1666,7 +1673,7 @@ function saveModule() {
     const subjectId = document.getElementById('add-module-subject').value;
     const ects = parseInt(document.getElementById('add-module-ects').value) || 0;
     const hours = parseInt(document.getElementById('add-module-hours').value) || 0;
-    const klausur = document.getElementById('add-module-klausur').value || '';
+    const examPeriod = document.getElementById('add-module-exam-period').value || '';
     const notes = document.getElementById('add-module-notes').value.trim();
 
     if (!name) {
@@ -1682,11 +1689,11 @@ function saveModule() {
             subjectId: subjectId || null,
             ects,
             hours,
-            klausur,
+            examPeriod,
             notes
         });
     } else {
-        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, klausur, notes });
+        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, examPeriod, notes });
     }
 
     closeOverlay('add-module-overlay');
