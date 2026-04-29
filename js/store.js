@@ -60,6 +60,74 @@ class StorageManager {
                 console.error('Error parsing settings during migration:', e);
             }
         }
+
+        // Semesters — seed default FH Aachen ET 2. Semester if empty
+        const storedSemesters = localStorage.getItem(this.STORAGE_KEYS.SEMESTERS);
+        if (!storedSemesters || JSON.parse(storedSemesters).length === 0) {
+            this.initDefaultSemester();
+        }
+    }
+
+    initDefaultSemester() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const ssStart = `${year}-04-01`;
+        const ssEnd = `${year}-09-30`;
+
+        const semester = {
+            id: Date.now().toString(),
+            name: `2. Semester (Kernstudium) - ${year}`,
+            start: ssStart,
+            end: ssEnd,
+            modules: [
+                {
+                    id: (Date.now() + 1).toString(),
+                    name: 'Höhere Mathematik 2 für ET',
+                    code: '52111',
+                    ects: 5,
+                    hours: 150,
+                    klausur: '',
+                    notes: 'Differenzial- und Integralrechnung mehrerer Veränderlicher, Differenzialgleichungen, Fourier- und Laplace-Transformation, Grundlagen der Wahrscheinlichkeitsrechnung und Statistik'
+                },
+                {
+                    id: (Date.now() + 2).toString(),
+                    name: 'Grundgebiete der Elektrotechnik 2',
+                    code: '52102',
+                    ects: 7,
+                    hours: 210,
+                    klausur: '',
+                    notes: 'Elektrisches Feld, Magnetisches Feld, Induktionsgesetz, Wechselstrom'
+                },
+                {
+                    id: (Date.now() + 3).toString(),
+                    name: 'Physik',
+                    code: '52103',
+                    ects: 7,
+                    hours: 210,
+                    klausur: '',
+                    notes: 'Mechanik, Thermodynamik, Elektrodynamik, Optik, Festkörperphysik'
+                },
+                {
+                    id: (Date.now() + 4).toString(),
+                    name: 'Bauelemente und Grundschaltungen',
+                    code: '52112',
+                    ects: 7,
+                    hours: 210,
+                    klausur: '',
+                    notes: 'Halbleiter, Dioden, Transistoren, Operationsverstärker'
+                },
+                {
+                    id: (Date.now() + 5).toString(),
+                    name: 'Digitaltechnik',
+                    code: '52107',
+                    ects: 4,
+                    hours: 120,
+                    klausur: '',
+                    notes: 'Boolesche Algebra, Karnaugh-Veitch-Diagramm, Flip-Flops, Schaltnetze, Schaltwerke'
+                }
+            ]
+        };
+        this._save(this.STORAGE_KEYS.SEMESTERS, [semester]);
     }
 
     // ==================== SEMESTER METHODS ====================

@@ -1469,6 +1469,7 @@ function renderModuleList(semesterId) {
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex-1">
                         <div class="font-bold">${mod.name}</div>
+                        ${mod.code ? `<div class="text-xs text-adaptive-muted">Code: ${mod.code}</div>` : ''}
                         ${mod.notes ? `<div class="text-sm text-adaptive-muted mt-1 line-clamp-2">${mod.notes}</div>` : ''}
                     </div>
                     <div class="flex items-center gap-1 ml-2">
@@ -1591,6 +1592,7 @@ function openAddModuleModal() {
     _editingModuleId = null;
     document.getElementById('add-module-title').textContent = 'Modul hinzufügen';
     document.getElementById('add-module-name').value = '';
+    document.getElementById('add-module-code').value = '';
     document.getElementById('add-module-ects').value = '';
     document.getElementById('add-module-hours').value = '';
     document.getElementById('add-module-klausur').value = '';
@@ -1609,6 +1611,7 @@ function openEditModuleModal(semesterId, moduleId) {
     _editingModuleId = moduleId;
     document.getElementById('add-module-title').textContent = 'Modul bearbeiten';
     document.getElementById('add-module-name').value = mod.name || '';
+    document.getElementById('add-module-code').value = mod.code || '';
     document.getElementById('add-module-ects').value = mod.ects || '';
     document.getElementById('add-module-hours').value = mod.hours || '';
     document.getElementById('add-module-klausur').value = mod.klausur || '';
@@ -1621,6 +1624,7 @@ function saveModule() {
     if (!_currentSemesterId) return;
 
     const name = document.getElementById('add-module-name').value.trim();
+    const code = document.getElementById('add-module-code').value.trim();
     const ects = parseInt(document.getElementById('add-module-ects').value) || 0;
     const hours = parseInt(document.getElementById('add-module-hours').value) || 0;
     const klausur = document.getElementById('add-module-klausur').value || '';
@@ -1635,13 +1639,14 @@ function saveModule() {
         window.storageManager.updateModule(_currentSemesterId, {
             id: _editingModuleId,
             name,
+            code,
             ects,
             hours,
             klausur,
             notes
         });
     } else {
-        window.storageManager.addModule(_currentSemesterId, { name, ects, hours, klausur, notes });
+        window.storageManager.addModule(_currentSemesterId, { name, code, ects, hours, klausur, notes });
     }
 
     closeOverlay('add-module-overlay');
