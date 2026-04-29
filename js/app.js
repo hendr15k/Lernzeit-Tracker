@@ -579,6 +579,18 @@ function initAddEntry() {
         const topicsVal = topicsInput ? topicsInput.value.trim() : '';
         const editId = overlay.getAttribute('data-edit-id');
 
+        if (!subjectId) {
+            showToast('Bitte wählen Sie ein Fach aus.', 'error');
+            return;
+        }
+
+        const subjects = window.storageManager.getSubjects();
+        const subjectExists = subjects.some(s => String(s.id) === String(subjectId));
+        if (!subjectExists) {
+            showToast('Das ausgewählte Fach existiert nicht mehr.', 'error');
+            return;
+        }
+
         if (subjectId && dateVal && durationMin > 0) {
             if (durationMin > 1440) { // 24 hours
                 showToast('Dauer kann nicht länger als 24 Stunden sein.', 'error');
@@ -916,7 +928,13 @@ function initTimer() {
                 btnPause.classList.add('hidden');
                 btnStart.classList.remove('hidden');
                 releaseWakeLock();
-                showToast('Pause beendet — bereit für nächsten Pomodoro!', 'success');
+                showToast('Pause beendet — klicke Start für nächsten Pomodoro!', 'success');
+            } else {
+                isTimerRunning = true;
+                startInterval();
+                requestWakeLock();
+                btnPause.classList.remove('hidden');
+                btnStart.classList.add('hidden');
             }
         }
         updatePomodoroIndicator();
@@ -1924,7 +1942,7 @@ function renderCalendar(entries) {
         const days = {};
         entries.forEach(entry => {
             const date = new Date(entry.startTime);
-            const dateKey = date.toLocaleDateString('de-DE');
+            const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             if (!days[dateKey]) days[dateKey] = { duration: 0, count: 0, date: date };
             days[dateKey].duration += entry.duration;
             days[dateKey].count++;
