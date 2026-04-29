@@ -312,6 +312,20 @@ class StorageManager {
     deleteSubject(id) {
         const subjects = this.getSubjects().filter(s => String(s.id) !== String(id));
         this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
+
+        const semesters = this.getSemesters();
+        let needsUpdate = false;
+        semesters.forEach(semester => {
+            (semester.modules || []).forEach(mod => {
+                if (String(mod.subjectId) === String(id)) {
+                    mod.subjectId = null;
+                    needsUpdate = true;
+                }
+            });
+        });
+        if (needsUpdate) {
+            this.saveSemesters(semesters);
+        }
     }
 
     getSettings() {

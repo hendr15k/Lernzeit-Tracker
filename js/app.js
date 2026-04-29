@@ -231,14 +231,16 @@ function initSubjectManagement() {
             const subject = subjects.find(s => String(s.id) === String(editSubjectId));
             if (subject) {
                 overlay.setAttribute('data-edit-id', subject.id);
-                document.querySelector('#add-subject-overlay .text-sm.font-medium').textContent = 'Fach bearbeiten';
+                const titleEl = document.querySelector('#add-subject-overlay .text-sm.font-medium');
+                if (titleEl) titleEl.textContent = 'Fach bearbeiten';
                 nameInput.value = subject.name;
                 colorInput.value = subject.color;
                 weeklyGoalInput.value = subject.weeklyGoal || '';
             }
         } else {
             overlay.removeAttribute('data-edit-id');
-            document.querySelector('#add-subject-overlay .text-sm.font-medium').textContent = 'Fach hinzufügen';
+            const titleEl2 = document.querySelector('#add-subject-overlay .text-sm.font-medium');
+            if (titleEl2) titleEl2.textContent = 'Fach hinzufügen';
             nameInput.value = '';
             colorInput.value = 'bg-blue-500';
             weeklyGoalInput.value = '';
@@ -505,10 +507,11 @@ function initAddEntry() {
             const entry = entries.find(e => String(e.id) === String(editEntryId));
             if (entry) {
                 overlay.setAttribute('data-edit-id', entry.id);
-                document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag bearbeiten';
+                const titleEl = document.querySelector('#add-entry-overlay .text-sm.font-medium');
+                if (titleEl) titleEl.textContent = 'Eintrag bearbeiten';
 
                 // Check if subject exists in select (it might have been deleted)
-                const exists = Array.from(subjectSelect.options).some(opt => opt.value == entry.subjectId);
+                const exists = Array.from(subjectSelect.options).some(opt => opt.value === entry.subjectId);
                 if (!exists) {
                     const tempOption = document.createElement('option');
                     tempOption.value = entry.subjectId;
@@ -536,7 +539,8 @@ function initAddEntry() {
             }
         } else {
             overlay.removeAttribute('data-edit-id');
-            document.querySelector('#add-entry-overlay .text-sm.font-medium').textContent = 'Eintrag hinzufügen';
+            const titleEl2 = document.querySelector('#add-entry-overlay .text-sm.font-medium');
+            if (titleEl2) titleEl2.textContent = 'Eintrag hinzufügen';
             // Default to today (local)
             const d = new Date();
             const yyyy = d.getFullYear();
@@ -1449,15 +1453,19 @@ function renderSemesterList() {
 
 function showSemesterDetail(semesterId) {
     _currentSemesterId = semesterId;
-    document.getElementById('semester-list-view').classList.add('hidden');
-    document.getElementById('semester-detail-view').classList.remove('hidden');
+    const listView = document.getElementById('semester-list-view');
+    const detailView = document.getElementById('semester-detail-view');
+    if (listView) listView.classList.add('hidden');
+    if (detailView) detailView.classList.remove('hidden');
     renderModuleList(semesterId);
 }
 
 function showSemesterList() {
     _currentSemesterId = null;
-    document.getElementById('semester-detail-view').classList.add('hidden');
-    document.getElementById('semester-list-view').classList.remove('hidden');
+    const listView = document.getElementById('semester-list-view');
+    const detailView = document.getElementById('semester-detail-view');
+    if (detailView) detailView.classList.add('hidden');
+    if (listView) listView.classList.remove('hidden');
     renderSemesterList();
 }
 
@@ -1624,11 +1632,16 @@ function formatDateShort(dateStr) {
 
 function openAddSemesterModal() {
     _editingSemesterId = null;
-    document.getElementById('add-semester-title').textContent = 'Semester hinzufügen';
-    document.getElementById('add-semester-name').value = '';
-    document.getElementById('add-semester-start').value = '';
-    document.getElementById('add-semester-end').value = '';
-    document.getElementById('btn-delete-semester').classList.add('hidden');
+    const titleEl = document.getElementById('add-semester-title');
+    if (titleEl) titleEl.textContent = 'Semester hinzufügen';
+    const nameEl = document.getElementById('add-semester-name');
+    if (nameEl) nameEl.value = '';
+    const startEl = document.getElementById('add-semester-start');
+    if (startEl) startEl.value = '';
+    const endEl = document.getElementById('add-semester-end');
+    if (endEl) endEl.value = '';
+    const delBtn = document.getElementById('btn-delete-semester');
+    if (delBtn) delBtn.classList.add('hidden');
     openOverlay('add-semester-overlay');
 }
 
@@ -1638,11 +1651,16 @@ function openEditSemesterModal(semesterId) {
     if (!semester) return;
 
     _editingSemesterId = semesterId;
-    document.getElementById('add-semester-title').textContent = 'Semester bearbeiten';
-    document.getElementById('add-semester-name').value = semester.name || '';
-    document.getElementById('add-semester-start').value = semester.start || '';
-    document.getElementById('add-semester-end').value = semester.end || '';
-    document.getElementById('btn-delete-semester').classList.remove('hidden');
+    const titleEl = document.getElementById('add-semester-title');
+    if (titleEl) titleEl.textContent = 'Semester bearbeiten';
+    const nameEl = document.getElementById('add-semester-name');
+    if (nameEl) nameEl.value = semester.name || '';
+    const startEl = document.getElementById('add-semester-start');
+    if (startEl) startEl.value = semester.start || '';
+    const endEl = document.getElementById('add-semester-end');
+    if (endEl) endEl.value = semester.end || '';
+    const delBtn = document.getElementById('btn-delete-semester');
+    if (delBtn) delBtn.classList.remove('hidden');
     openOverlay('add-semester-overlay');
 }
 
@@ -1690,15 +1708,24 @@ function populateModuleSubjectSelect(selectedId) {
 function openAddModuleModal() {
     if (!_currentSemesterId) return;
     _editingModuleId = null;
-    document.getElementById('add-module-title').textContent = 'Modul hinzufügen';
-    document.getElementById('add-module-name').value = '';
-    document.getElementById('add-module-code').value = '';
-    document.getElementById('add-module-ects').value = '';
-    document.getElementById('add-module-hours').value = '';
-    document.getElementById('add-module-exam-period').value = '';
-    document.getElementById('add-module-grade').value = '';
-    document.getElementById('add-module-notes').value = '';
-    document.getElementById('btn-delete-module').classList.add('hidden');
+    const titleEl = document.getElementById('add-module-title');
+    if (titleEl) titleEl.textContent = 'Modul hinzufügen';
+    const nameEl = document.getElementById('add-module-name');
+    if (nameEl) nameEl.value = '';
+    const codeEl = document.getElementById('add-module-code');
+    if (codeEl) codeEl.value = '';
+    const ectsEl = document.getElementById('add-module-ects');
+    if (ectsEl) ectsEl.value = '';
+    const hoursEl = document.getElementById('add-module-hours');
+    if (hoursEl) hoursEl.value = '';
+    const examEl = document.getElementById('add-module-exam-period');
+    if (examEl) examEl.value = '';
+    const gradeEl = document.getElementById('add-module-grade');
+    if (gradeEl) gradeEl.value = '';
+    const notesEl = document.getElementById('add-module-notes');
+    if (notesEl) notesEl.value = '';
+    const delBtn = document.getElementById('btn-delete-module');
+    if (delBtn) delBtn.classList.add('hidden');
     populateModuleSubjectSelect();
     openOverlay('add-module-overlay');
 }
@@ -1711,15 +1738,24 @@ function openEditModuleModal(semesterId, moduleId) {
     if (!mod) return;
 
     _editingModuleId = moduleId;
-    document.getElementById('add-module-title').textContent = 'Modul bearbeiten';
-    document.getElementById('add-module-name').value = mod.name || '';
-    document.getElementById('add-module-code').value = mod.code || '';
-    document.getElementById('add-module-ects').value = mod.ects || '';
-    document.getElementById('add-module-hours').value = mod.hours || '';
-    document.getElementById('add-module-exam-period').value = mod.examPeriod || '';
-    document.getElementById('add-module-grade').value = mod.grade || '';
-    document.getElementById('add-module-notes').value = mod.notes || '';
-    document.getElementById('btn-delete-module').classList.remove('hidden');
+    const titleEl = document.getElementById('add-module-title');
+    if (titleEl) titleEl.textContent = 'Modul bearbeiten';
+    const nameEl = document.getElementById('add-module-name');
+    if (nameEl) nameEl.value = mod.name || '';
+    const codeEl = document.getElementById('add-module-code');
+    if (codeEl) codeEl.value = mod.code || '';
+    const ectsEl = document.getElementById('add-module-ects');
+    if (ectsEl) ectsEl.value = mod.ects || '';
+    const hoursEl = document.getElementById('add-module-hours');
+    if (hoursEl) hoursEl.value = mod.hours || '';
+    const examEl = document.getElementById('add-module-exam-period');
+    if (examEl) examEl.value = mod.examPeriod || '';
+    const gradeEl = document.getElementById('add-module-grade');
+    if (gradeEl) gradeEl.value = mod.grade || '';
+    const notesEl = document.getElementById('add-module-notes');
+    if (notesEl) notesEl.value = mod.notes || '';
+    const delBtn = document.getElementById('btn-delete-module');
+    if (delBtn) delBtn.classList.remove('hidden');
     populateModuleSubjectSelect(mod.subjectId);
     openOverlay('add-module-overlay');
 }
@@ -1809,14 +1845,16 @@ function initSemesterHandlers() {
 function updateDashboard(entries) {
     // Calculate Streak
     const streak = calculateStreak(entries);
-    document.getElementById('dashboard-streak').textContent = streak;
+    const streakEl = document.getElementById('dashboard-streak');
+    if (streakEl) streakEl.textContent = streak;
 
     renderAchievements(entries);
 
     // Calculate Total Time
     const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
     const totalHours = (totalSeconds / 3600).toFixed(1);
-    document.getElementById('dashboard-total').textContent = `${totalHours}h`;
+    const totalEl = document.getElementById('dashboard-total');
+    if (totalEl) totalEl.textContent = `${totalHours}h`;
 
     // Best Day
     const dayTotals = {};
@@ -1826,13 +1864,15 @@ function updateDashboard(entries) {
     });
     const maxDaySeconds = Object.values(dayTotals).length > 0 ? Math.max(...Object.values(dayTotals)) : 0;
     const maxDayHours = (maxDaySeconds / 3600).toFixed(1);
-    document.getElementById('dashboard-best-day').textContent = `${maxDayHours}h`;
+    const bestDayEl = document.getElementById('dashboard-best-day');
+    if (bestDayEl) bestDayEl.textContent = `${maxDayHours}h`;
 
     // Average per Active Day
     const activeDaysCount = Object.keys(dayTotals).length;
     const avgSeconds = activeDaysCount > 0 ? totalSeconds / activeDaysCount : 0;
     const avgHours = (avgSeconds / 3600).toFixed(1);
-    document.getElementById('dashboard-avg-day').textContent = `${avgHours}h`;
+    const avgDayEl = document.getElementById('dashboard-avg-day');
+    if (avgDayEl) avgDayEl.textContent = `${avgHours}h`;
 
     // Weekly comparison badge
     updateWeeklyComparison(entries);
