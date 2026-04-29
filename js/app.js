@@ -1539,6 +1539,7 @@ function renderModuleList(semesterId) {
                 <div class="flex flex-wrap gap-2">
                     ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${mod.ects} ECTS</span>` : ''}
                     ${examBadge ? `<span class="text-xs ${examBadge.bgClass} px-2 py-0.5 rounded-full">📝 ${examBadge.text}</span>` : ''}
+                    ${mod.grade ? `<span class="text-xs ${getGradeBadgeClass(mod.grade)} px-2 py-0.5 rounded-full">${mod.grade}</span>` : ''}
                 </div>
             `;
             container.appendChild(card);
@@ -1589,6 +1590,18 @@ function getExamBadge(examPeriod) {
     } else {
         return { text: periodName, bgClass: 'bg-red-900/40 text-red-300' };
     }
+}
+
+function getGradeBadgeClass(grade) {
+    if (!grade) return 'bg-gray-700/60 text-gray-300';
+    if (grade === 'B') return 'bg-green-900/40 text-green-300';
+    if (grade === 'NB') return 'bg-red-900/40 text-red-300';
+    const numGrade = parseFloat(grade);
+    if (!isNaN(numGrade)) {
+        if (numGrade <= 4.0) return 'bg-green-900/40 text-green-300';
+        if (numGrade > 4.0) return 'bg-red-900/40 text-red-300';
+    }
+    return 'bg-blue-900/40 text-blue-300';
 }
 
 function formatDateShort(dateStr) {
@@ -1673,6 +1686,7 @@ function openAddModuleModal() {
     document.getElementById('add-module-ects').value = '';
     document.getElementById('add-module-hours').value = '';
     document.getElementById('add-module-exam-period').value = '';
+    document.getElementById('add-module-grade').value = '';
     document.getElementById('add-module-notes').value = '';
     document.getElementById('btn-delete-module').classList.add('hidden');
     populateModuleSubjectSelect();
@@ -1693,6 +1707,7 @@ function openEditModuleModal(semesterId, moduleId) {
     document.getElementById('add-module-ects').value = mod.ects || '';
     document.getElementById('add-module-hours').value = mod.hours || '';
     document.getElementById('add-module-exam-period').value = mod.examPeriod || '';
+    document.getElementById('add-module-grade').value = mod.grade || '';
     document.getElementById('add-module-notes').value = mod.notes || '';
     document.getElementById('btn-delete-module').classList.remove('hidden');
     populateModuleSubjectSelect(mod.subjectId);
@@ -1708,6 +1723,7 @@ function saveModule() {
     const ects = Math.max(0, parseInt(document.getElementById('add-module-ects').value) || 0);
     const hours = Math.max(0, parseInt(document.getElementById('add-module-hours').value) || 0);
     const examPeriod = document.getElementById('add-module-exam-period').value || '';
+    const grade = document.getElementById('add-module-grade').value || '';
     const notes = document.getElementById('add-module-notes').value.trim();
 
     if (!name) {
@@ -1724,10 +1740,11 @@ function saveModule() {
             ects,
             hours,
             examPeriod,
+            grade,
             notes
         });
     } else {
-        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, examPeriod, notes });
+        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, examPeriod, grade, notes });
     }
 
     closeOverlay('add-module-overlay');
