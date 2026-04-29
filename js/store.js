@@ -65,11 +65,20 @@ class StorageManager {
 
         // Semesters — seed default FH Aachen ET 2. Semester if empty
         const storedSemesters = localStorage.getItem(this.STORAGE_KEYS.SEMESTERS);
-        if (!storedSemesters || JSON.parse(storedSemesters).length === 0) {
+        if (!storedSemesters) {
             this.initDefaultSemester();
         } else {
-            // Migration: Add subjectId to modules if missing
-            this.migrateModulesSubjectId();
+            try {
+                const parsed = JSON.parse(storedSemesters);
+                if (!Array.isArray(parsed) || parsed.length === 0) {
+                    this.initDefaultSemester();
+                } else {
+                    this.migrateModulesSubjectId();
+                }
+            } catch (e) {
+                console.error('Corrupted semester data, reseeding:', e);
+                this.initDefaultSemester();
+            }
         }
     }
 

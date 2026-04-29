@@ -995,6 +995,10 @@ function initTimer() {
     // Timer Controls
     btnStart.addEventListener('click', () => {
         if (!isTimerRunning) {
+            if (!subjectSelect.value) {
+                showToast('Bitte wählen Sie zuerst ein Fach aus.', 'error');
+                return;
+            }
             isTimerRunning = true;
             btnStart.classList.add('hidden');
             btnPause.classList.remove('hidden');
@@ -1017,7 +1021,11 @@ function initTimer() {
 
     btnStop.addEventListener('click', () => {
         if (timerSeconds > 0) {
-            if (!confirm('Timer stoppen? Die aktuelle Sitzung wird nicht gespeichert.')) {
+            const action = prompt('Timer stoppen?\n1 = Speichern\n2 = Verwerfen\n(leer = Abbrechen)', '1');
+            if (action === '1') {
+                btnSave.click();
+                return;
+            } else if (action !== '2') {
                 return;
             }
         }
@@ -1462,9 +1470,9 @@ function renderModuleList(semesterId) {
     const totalEcts = modules.reduce((sum, m) => sum + (m.ects || 0), 0);
     const totalEstimatedHours = modules.reduce((sum, m) => sum + (m.hours || 0), 0);
     const entries = window.storageManager.getEntries();
-    const subjectIds = modules.map(m => m.subjectId).filter(Boolean);
+    const uniqueSubjectIds = [...new Set(modules.map(m => m.subjectId).filter(Boolean))];
     const totalSpentSeconds = entries
-        .filter(e => subjectIds.includes(e.subjectId))
+        .filter(e => uniqueSubjectIds.includes(e.subjectId))
         .reduce((acc, e) => acc + e.duration, 0);
     const totalSpentHours = (totalSpentSeconds / 3600).toFixed(1);
     const overallProgress = totalEstimatedHours > 0 ? Math.min((totalSpentSeconds / 3600 / totalEstimatedHours) * 100, 100) : 0;
