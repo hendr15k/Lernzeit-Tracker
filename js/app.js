@@ -2083,7 +2083,7 @@ function calculateStreak(entries) {
     return streak;
 }
 
-function showToast(message, type = 'success') {
+window.showToast = function(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
