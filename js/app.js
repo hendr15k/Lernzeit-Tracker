@@ -214,6 +214,7 @@ function initSubjectManagement() {
     const btnSave = document.getElementById('btn-add-subject-save');
     const nameInput = document.getElementById('add-subject-name');
     const colorInput = document.getElementById('add-subject-color');
+    const weeklyGoalInput = document.getElementById('add-subject-weekly-goal');
 
     // Open
     if (btnAdd) {
@@ -233,12 +234,14 @@ function initSubjectManagement() {
                 document.querySelector('#add-subject-overlay .text-sm.font-medium').textContent = 'Fach bearbeiten';
                 nameInput.value = subject.name;
                 colorInput.value = subject.color;
+                weeklyGoalInput.value = subject.weeklyGoal || '';
             }
         } else {
             overlay.removeAttribute('data-edit-id');
             document.querySelector('#add-subject-overlay .text-sm.font-medium').textContent = 'Fach hinzufügen';
             nameInput.value = '';
-            colorInput.value = 'bg-blue-500'; // Default
+            colorInput.value = 'bg-blue-500';
+            weeklyGoalInput.value = '';
         }
         overlay.classList.remove('translate-y-full');
     };
@@ -259,14 +262,15 @@ function initSubjectManagement() {
     btnSave.addEventListener('click', () => {
         const name = nameInput.value.trim();
         const color = colorInput.value;
+        const weeklyGoal = parseFloat(weeklyGoalInput.value) || 0;
         const editId = overlay.getAttribute('data-edit-id');
 
         if (name) {
             if (editId) {
-                 window.storageManager.updateSubject({ id: editId, name, color });
+                 window.storageManager.updateSubject({ id: editId, name, color, weeklyGoal });
                  showToast(`Fach "${name}" aktualisiert!`, 'success');
             } else {
-                 window.storageManager.addSubject({ name, color });
+                 window.storageManager.addSubject({ name, color, weeklyGoal });
                  showToast(`Fach "${name}" hinzugefügt!`, 'success');
             }
             overlay.classList.add('translate-y-full');
@@ -609,49 +613,46 @@ function initAddEntry() {
         const month = parseInt(dateParts[1]) - 1; // Months are 0-indexed
         const day = parseInt(dateParts[2]);
 
-            // Handle Time
-            let hours = 0;
-            let minutes = 0;
-            if (timeVal) {
-                const timeParts = timeVal.split(':');
-                hours = parseInt(timeParts[0]) || 0;
-                minutes = parseInt(timeParts[1]) || 0;
-            }
-
-            const startTimeDate = new Date(year, month, day, hours, minutes);
-
-            if (startTimeDate > new Date()) {
-                showToast('Datum/Uhrzeit kann nicht in der Zukunft liegen.', 'error');
-                return;
-            }
-
-            const entryData = {
-                subjectId: subjectId,
-                duration: durationMin * 60,
-                startTime: startTimeDate.getTime(),
-                endTime: startTimeDate.getTime() + (durationMin * 60 * 1000),
-                notes: notesVal,
-                topics: topicsVal
-            };
-
-            if (editId) {
-                window.storageManager.updateEntry({ ...entryData, id: editId });
-            } else {
-                window.storageManager.addEntry(entryData);
-            }
-
-            checkAchievements(window.storageManager.getEntries(), { showToasts: true });
-
-            // Reset and close
-            durationInput.value = '';
-            notesInput.value = '';
-            if (topicsInput) topicsInput.value = '';
-            overlay.classList.add('translate-y-full');
-            updateViews();
-            showToast('Eintrag gespeichert!', 'success');
-        } else {
-            showToast('Bitte füllen Sie alle Felder korrekt aus.', 'error');
+        // Handle Time
+        let hours = 0;
+        let minutes = 0;
+        if (timeVal) {
+            const timeParts = timeVal.split(':');
+            hours = parseInt(timeParts[0]) || 0;
+            minutes = parseInt(timeParts[1]) || 0;
         }
+
+        const startTimeDate = new Date(year, month, day, hours, minutes);
+
+        if (startTimeDate > new Date()) {
+            showToast('Datum/Uhrzeit kann nicht in der Zukunft liegen.', 'error');
+            return;
+        }
+
+        const entryData = {
+            subjectId: subjectId,
+            duration: durationMin * 60,
+            startTime: startTimeDate.getTime(),
+            endTime: startTimeDate.getTime() + (durationMin * 60 * 1000),
+            notes: notesVal,
+            topics: topicsVal
+        };
+
+        if (editId) {
+            window.storageManager.updateEntry({ ...entryData, id: editId });
+        } else {
+            window.storageManager.addEntry(entryData);
+        }
+
+        checkAchievements(window.storageManager.getEntries(), { showToasts: true });
+
+        // Reset and close
+        durationInput.value = '';
+        notesInput.value = '';
+        if (topicsInput) topicsInput.value = '';
+        overlay.classList.add('translate-y-full');
+        updateViews();
+        showToast('Eintrag gespeichert!', 'success');
     });
 }
 
@@ -987,6 +988,7 @@ function initTimer() {
     // Open/Close Overlay
     btnToggle.addEventListener('click', () => {
         timerOverlay.classList.remove('translate-y-full');
+        updateStudyRecommendation();
     });
     btnClose.addEventListener('click', () => {
         timerOverlay.classList.add('translate-y-full');
@@ -1849,6 +1851,9 @@ function updateDashboard(entries) {
 
     // Render Subject Tiles
     renderDashboardSubjects(entries);
+
+    // Render Exam Countdown
+    renderExamCountdown();
 }
 
 function renderHistory(entries, subjects) {
@@ -2712,4 +2717,140 @@ function updateWeeklyComparison(entries) {
             badge.className = 'text-xs bg-red-400/10 text-red-400 px-2 py-1 rounded-full';
         }
     }
+}
+
+function renderExamCountdown() {
+    const container = document.getElementById('exam-countdown-list');
+    const summaryEl = document.getElementById('exam-countdown-summary');
+    if (!container) return;
+
+    const semesters = window.storageManager.getSemesters();
+    const subjects = window.storageManager.getSubjects();
+    const now = new Date();
+
+    const examModules = [];
+    semesters.forEach(semester => {
+        (semester.modules || []).forEach(mod => {
+            if (mod.examPeriod && !mod.grade) {
+                const examDate = new Date(mod.examPeriod);
+                const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
+                const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
+                examModules.push({
+                    name: mod.name,
+                    subjectName: subject ? subject.name : 'Unbekannt',
+                    subjectColor: subject ? subject.color : 'bg-gray-500',
+                    examPeriod: mod.examPeriod,
+                    diffDays: diffDays,
+                    ects: mod.ects || 0
+                });
+            }
+        });
+    });
+
+    examModules.sort((a, b) => a.diffDays - b.diffDays);
+
+    if (examModules.length === 0) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted">Keine Prüfungen geplant</div>';
+        if (summaryEl) summaryEl.textContent = '';
+        return;
+    }
+
+    if (summaryEl) summaryEl.textContent = `${examModules.length} Prüfungen`;
+
+    const periodNames = {
+        '2026-03-30': 'Mär/Apr 26',
+        '2026-07-20': 'Jul 26',
+        '2026-09-21': 'Sep 26',
+        '2027-02-01': 'Jan/Feb 27'
+    };
+
+    container.innerHTML = examModules.slice(0, 5).map(mod => {
+        const urgencyClass = mod.diffDays <= 14 ? 'border-l-yellow-500' : mod.diffDays <= 60 ? 'border-l-blue-500' : 'border-l-gray-600';
+        const badgeClass = mod.diffDays <= 14 ? 'bg-yellow-900/40 text-yellow-300' : mod.diffDays <= 60 ? 'bg-blue-900/40 text-blue-300' : 'bg-gray-700/60 text-gray-300';
+        const timeText = mod.diffDays <= 0 ? 'Bald' : mod.diffDays === 1 ? 'Morgen!' : `${mod.diffDays} Tage`;
+
+        return `
+            <div class="flex items-center gap-3 p-2 border-l-4 ${urgencyClass}">
+                <div class="w-8 h-8 rounded-full ${mod.subjectColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    ${mod.subjectName.substring(0, 2)}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate">${mod.name}</div>
+                    <div class="text-xs text-adaptive-muted">${periodNames[mod.examPeriod] || mod.examPeriod} · ${mod.ects} ECTS</div>
+                </div>
+                <span class="text-xs ${badgeClass} px-2 py-0.5 rounded-full flex-shrink-0">${timeText}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateStudyRecommendation() {
+    const recEl = document.getElementById('study-recommendation');
+    if (!recEl) return;
+
+    const semesters = window.storageManager.getSemesters();
+    const subjects = window.storageManager.getSubjects();
+    const entries = window.storageManager.getEntries();
+    const now = new Date();
+
+    const recommendations = [];
+    semesters.forEach(semester => {
+        (semester.modules || []).forEach(mod => {
+            if (!mod.subjectId) return;
+            const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
+            if (!subject) return;
+
+            const subjectEntries = entries.filter(e => String(e.subjectId) === String(mod.subjectId));
+            const spentSeconds = subjectEntries.reduce((acc, e) => acc + e.duration, 0);
+            const spentHours = spentSeconds / 3600;
+            const estimatedHours = mod.hours || 1;
+            const progress = spentHours / estimatedHours;
+
+            let priority = 0;
+            let reason = '';
+
+            if (mod.examPeriod) {
+                const examDate = new Date(mod.examPeriod);
+                const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
+                if (diffDays > 0) {
+                    priority += Math.max(0, 100 - diffDays);
+                    if (diffDays <= 14) reason = `Prüfung in ${diffDays} Tagen!`;
+                    else if (diffDays <= 60) reason = `Prüfung bald (${diffDays} Tage)`;
+                    else reason = `Prüfung in ${diffDays} Tagen`;
+                }
+            }
+
+            const hoursMissing = Math.max(0, estimatedHours - spentHours);
+            priority += hoursMissing * 2;
+
+            if (progress < 0.5) priority += 30;
+            else if (progress < 0.8) priority += 15;
+
+            recommendations.push({
+                id: mod.subjectId,
+                name: subject.name,
+                color: subject.color,
+                priority: priority,
+                reason: reason,
+                progress: progress
+            });
+        });
+    });
+
+    recommendations.sort((a, b) => b.priority - a.priority);
+    const top = recommendations[0];
+
+    if (!top || top.priority <= 0) {
+        recEl.innerHTML = '<span class="text-green-400">✓ Alle Fächer gut vorbereitet!</span>';
+        return;
+    }
+
+    recEl.innerHTML = `
+        <div class="flex items-center justify-center gap-2">
+            <span class="text-xs text-adaptive-muted">Tipp:</span>
+            <span class="w-6 h-6 rounded-full ${top.color} flex items-center justify-center text-white text-xs font-bold">${top.name.substring(0, 2)}</span>
+            <span class="text-sm text-adaptive">${top.name}</span>
+            ${top.reason ? `<span class="text-xs text-yellow-400">${top.reason}</span>` : ''}
+        </div>
+    `;
 }

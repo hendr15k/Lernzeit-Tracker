@@ -124,6 +124,17 @@
                         </div>
                     </div>
 
+                    <!-- Exam Countdown Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Nächste Prüfungen</h2>
+                            <span id="exam-countdown-summary" class="text-xs text-adaptive-muted"></span>
+                        </div>
+                        <div id="exam-countdown-list" class="space-y-2">
+                            <!-- Dynamic exam countdowns -->
+                        </div>
+                    </div>
+
                     <!-- Extra Stats Widget -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
@@ -444,6 +455,9 @@
                      </select>
                 </div>
 
+                <!-- Recommendation -->
+                <div id="study-recommendation" class="w-full max-w-xs text-center text-sm text-adaptive-muted"></div>
+
                 <!-- Thema (Topics) -->
                 <div class="w-full max-w-xs">
                      <input type="text" id="timer-topics-input" list="timer-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" placeholder="Thema (z.B. Reihen, Folgen)">
@@ -599,6 +613,12 @@
                         <option value="bg-pink-500">Pink</option>
                         <option value="bg-gray-500">Grau</option>
                     </select>
+                </div>
+
+                <!-- Weekly Goal -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Wochenziel (Stunden)</label>
+                    <input type="number" id="add-subject-weekly-goal" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5" min="0" max="50">
                 </div>
 
             </div>

@@ -36,11 +36,11 @@ class StorageManager {
 
         if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
             const defaultSubjects = [
-                { id: '1', name: 'Höhere Mathematik 2', color: 'bg-blue-500' },
-                { id: '2', name: 'GET2', color: 'bg-green-500' },
-                { id: '3', name: 'Physik', color: 'bg-purple-500' },
-                { id: '4', name: 'Bauelemente', color: 'bg-orange-500' },
-                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500' }
+                { id: '1', name: 'Höhere Mathematik 2', color: 'bg-blue-500', weeklyGoal: 6 },
+                { id: '2', name: 'GET2', color: 'bg-green-500', weeklyGoal: 8 },
+                { id: '3', name: 'Physik', color: 'bg-purple-500', weeklyGoal: 8 },
+                { id: '4', name: 'Bauelemente', color: 'bg-orange-500', weeklyGoal: 8 },
+                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500', weeklyGoal: 5 }
             ];
             this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
         }
