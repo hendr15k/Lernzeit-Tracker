@@ -65,8 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add Search Listener
     const searchInput = document.getElementById('history-search-input');
     if (searchInput) {
+        let searchTimeout;
         searchInput.addEventListener('input', () => {
-            updateViews();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => updateViews(), 300);
         });
     }
 
@@ -591,17 +593,21 @@ function initAddEntry() {
             return;
         }
 
-        if (subjectId && dateVal && durationMin > 0) {
-            if (durationMin > 1440) { // 24 hours
-                showToast('Dauer kann nicht länger als 24 Stunden sein.', 'error');
-                return;
-            }
+        if (isNaN(durationMin) || durationMin <= 0) {
+            showToast('Bitte geben Sie eine gültige Dauer (> 0) ein.', 'error');
+            return;
+        }
 
-            // Create local date object to avoid UTC offsets
-            const dateParts = dateVal.split('-');
-            const year = parseInt(dateParts[0]);
-            const month = parseInt(dateParts[1]) - 1; // Months are 0-indexed
-            const day = parseInt(dateParts[2]);
+        if (durationMin > 1440) { // 24 hours
+            showToast('Dauer kann nicht länger als 24 Stunden sein.', 'error');
+            return;
+        }
+
+        // Create local date object to avoid UTC offsets
+        const dateParts = dateVal.split('-');
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // Months are 0-indexed
+        const day = parseInt(dateParts[2]);
 
             // Handle Time
             let hours = 0;
@@ -613,6 +619,11 @@ function initAddEntry() {
             }
 
             const startTimeDate = new Date(year, month, day, hours, minutes);
+
+            if (startTimeDate > new Date()) {
+                showToast('Datum/Uhrzeit kann nicht in der Zukunft liegen.', 'error');
+                return;
+            }
 
             const entryData = {
                 subjectId: subjectId,
@@ -1622,6 +1633,11 @@ function saveSemester() {
         return;
     }
 
+    if (start && end && new Date(end) < new Date(start)) {
+        showToast('Enddatum muss nach Startdatum liegen.', 'error');
+        return;
+    }
+
     if (_editingSemesterId) {
         window.storageManager.updateSemester({
             id: _editingSemesterId,
@@ -2406,7 +2422,7 @@ function renderWeeklyComparison(entries) {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2';
         row.innerHTML = `
-            <div class="w-10 text-xs font-bold text-adaptive truncate flex-shrink-0" title="${subject.name}">${subject.name.substring(0, 5)}</div>
+            <div class="w-14 text-xs font-bold text-adaptive truncate flex-shrink-0" title="${subject.name}">${subject.name.substring(0, 8)}</div>
             <div class="flex-1 min-w-0 space-y-1">
                 <div class="flex items-center gap-1.5">
                     <div class="h-2 bg-primary/60 rounded-full" style="width: ${subject.thisWeekSeconds > 0 ? thisBarPct : 0}%"></div>
