@@ -596,8 +596,8 @@ function initAddEntry() {
             let minutes = 0;
             if (timeVal) {
                 const timeParts = timeVal.split(':');
-                hours = parseInt(timeParts[0]);
-                minutes = parseInt(timeParts[1]);
+                hours = parseInt(timeParts[0]) || 0;
+                minutes = parseInt(timeParts[1]) || 0;
             }
 
             const startTimeDate = new Date(year, month, day, hours, minutes);
@@ -1671,8 +1671,8 @@ function saveModule() {
     const name = document.getElementById('add-module-name').value.trim();
     const code = document.getElementById('add-module-code').value.trim();
     const subjectId = document.getElementById('add-module-subject').value;
-    const ects = parseInt(document.getElementById('add-module-ects').value) || 0;
-    const hours = parseInt(document.getElementById('add-module-hours').value) || 0;
+    const ects = Math.max(0, parseInt(document.getElementById('add-module-ects').value) || 0);
+    const hours = Math.max(0, parseInt(document.getElementById('add-module-hours').value) || 0);
     const examPeriod = document.getElementById('add-module-exam-period').value || '';
     const notes = document.getElementById('add-module-notes').value.trim();
 
