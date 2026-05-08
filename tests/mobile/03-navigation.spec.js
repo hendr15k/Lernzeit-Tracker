@@ -10,7 +10,7 @@ test.describe('Navigation Tests', () => {
 
     const navButtons = page.locator('.nav-btn');
     const count = await navButtons.count();
-    expect(count).toBe(5);
+    expect(count).toBe(8);
 
     for (const btn of await navButtons.all()) {
       await expect(btn).toBeVisible();

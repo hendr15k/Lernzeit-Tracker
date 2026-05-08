@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initTouchGestures();
     initTodoWidget();
+    initGoalsHandlers();
+    initExportHandlers();
 
     updateViews();
     lucide.createIcons();
@@ -478,12 +480,323 @@ window.updateViews = updateViews;
 window.checkAchievements = checkAchievements;
 window.renderAchievements = renderAchievementsDisplay;
 window.renderAchievementsDisplay = renderAchievementsDisplay;
+window.renderAchievementsPage = renderAchievementsPage;
+window.renderGoals = renderGoals;
+window.loadGoals = loadGoals;
+saveGoals;
+openAddGoalModal;
+closeAddGoalModal;
+saveGoal;
+initGoalsHandlers;
+initExportHandlers;
+initStatisticsHandlers;
+filterEntriesForExport;
+exportFilteredCSV;
+exportFilteredJSON;
+exportFilteredJSON;
 window.updateStudyRecommendation = updateStudyRecommendation;
 window.exportExamToICS = exportExamToICS;
 window.showToast = showToast;
 window.getTodos = getTodos;
 window.saveTodos = saveTodos;
 window.renderTodos = renderTodos;
+
+
+// ==================== GOALS MANAGEMENT ====================
+
+function loadGoals() {
+    try {
+        return JSON.parse(localStorage.getItem('lernzeit_goals') || '[]');
+    } catch (e) {
+        console.error('Error parsing goals:', e);
+        return [];
+    }
+}
+
+function saveGoals(goals) {
+    localStorage.setItem('lernzeit_goals', JSON.stringify(goals));
+}
+
+function calculateGoalProgress(goal) {
+    const entries = window.storageManager.getEntries();
+    const startDate = new Date(goal.startDate);
+    const endDate = new Date(goal.endDate);
+    let relevantEntries = entries.filter(e => {
+        const entryDate = new Date(e.startTime);
+        return entryDate >= startDate && entryDate <= endDate;
+    });
+    if (goal.subjectId) {
+        relevantEntries = relevantEntries.filter(e => String(e.subjectId) === String(goal.subjectId));
+    }
+    const totalSeconds = relevantEntries.reduce((acc, e) => acc + e.duration, 0);
+    const hoursLearned = totalSeconds / 3600;
+    const targetHours = goal.targetHours;
+    const progress = targetHours > 0 ? Math.min((hoursLearned / targetHours) * 100, 100) : 0;
+    return {
+        hoursLearned: Math.round(hoursLearned * 10) / 10,
+        targetHours,
+        progress: Math.round(progress)
+    };
+}
+
+function getGoalStatusBadge(goal, progress) {
+    const endDate = new Date(goal.endDate);
+    const now = new Date();
+    if (progress >= 100) return { label: 'Abgeschlossen', cls: 'bg-green-900/40 text-green-300' };
+    if (endDate < now) return { label: 'Verpasst', cls: 'bg-red-900/40 text-red-300' };
+    if (progress >= 70) return { label: 'Aktiv', cls: 'bg-blue-900/40 text-blue-300' };
+    if (progress >= 40) return { label: 'Aktiv', cls: 'bg-yellow-900/40 text-yellow-300' };
+    return { label: 'Aktiv', cls: 'bg-orange-900/40 text-orange-300' };
+}
+
+function renderGoals() {
+    const goals = loadGoals();
+    const container = document.getElementById('goals-list');
+    const emptyState = document.getElementById('goals-empty-state');
+    if (!container) return;
+    container.innerHTML = '';
+    if (goals.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+    if (emptyState) emptyState.classList.add('hidden');
+    const subjects = window.storageManager.getSubjects();
+    goals.forEach(goal => {
+        const progress = calculateGoalProgress(goal);
+        const badge = getGoalStatusBadge(goal, progress.progress);
+        const subject = goal.subjectId ? subjects.find(s => String(s.id) === String(goal.subjectId)) : null;
+        const subjectName = subject ? subject.name : 'Alle Fächer';
+        const subjectColor = subject ? subject.color : 'bg-gray-500';
+        const remainingDays = Math.ceil((new Date(goal.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+        const daysLabel = remainingDays < 0 ? Math.abs(remainingDays) + ' Tage überschritten' : remainingDays === 0 ? 'Heute' : remainingDays + ' Tage übrig';
+        const progressColor = progress.progress >= 100 ? 'bg-green-500' : progress.progress >= 70 ? 'bg-blue-500' : progress.progress >= 40 ? 'bg-yellow-500' : 'bg-orange-500';
+        const daysColor = remainingDays < 0 ? 'text-red-400' : remainingDays <= 7 ? 'text-yellow-400 font-medium' : 'text-adaptive-muted';
+        const card = document.createElement('div');
+        card.className = 'surface-card p-4 border border-gray-800';
+        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + subjectColor + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + subjectName.substring(0, 2) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + goal.id + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
+        container.appendChild(card);
+    });
+    container.querySelectorAll('.btn-delete-goal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('Dieses Lernziel wirklich loeschen?')) {
+                const goals2 = loadGoals().filter(g => g.id !== btn.dataset.goalId);
+                saveGoals(goals2);
+                renderGoals();
+                showToast('Lernziel geloescht', 'info');
+            }
+        });
+    });
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function openAddGoalModal() {
+    const overlay = document.getElementById('add-goal-overlay');
+    if (!overlay) return;
+    document.getElementById('add-goal-name').value = '';
+    document.getElementById('add-goal-target-hours').value = '';
+    const subjects = window.storageManager.getSubjects();
+    const subjectSelect = document.getElementById('add-goal-subject');
+    subjectSelect.innerHTML = '<option value="">— Alle Faetcher —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+    const today = new Date();
+    document.getElementById('add-goal-start-date').value = today.toISOString().split('T')[0];
+    const defEnd = new Date(today);
+    defEnd.setDate(defEnd.getDate() + 30);
+    document.getElementById('add-goal-end-date').value = defEnd.toISOString().split('T')[0];
+    overlay.classList.remove('translate-y-full');
+}
+
+function closeAddGoalModal() {
+    const overlay = document.getElementById('add-goal-overlay');
+    if (overlay) overlay.classList.add('translate-y-full');
+}
+
+function saveGoal() {
+    const name = document.getElementById('add-goal-name').value.trim();
+    const subjectId = document.getElementById('add-goal-subject').value || null;
+    const targetHours = parseInt(document.getElementById('add-goal-target-hours').value);
+    const startDate = document.getElementById('add-goal-start-date').value;
+    const endDate = document.getElementById('add-goal-end-date').value;
+    if (!name) { showToast('Bitte gib einen Zielnamen ein.', 'error'); return; }
+    if (!targetHours || targetHours < 1) { showToast('Bitte gib gueltige Ziel-Stunden ein.', 'error'); return; }
+    if (!startDate || !endDate) { showToast('Bitte Start- und Enddatum angeben.', 'error'); return; }
+    if (new Date(endDate) <= new Date(startDate)) { showToast('Das Enddatum muss nach dem Startdatum liegen.', 'error'); return; }
+    const goals = loadGoals();
+    goals.push({ id: Date.now().toString(), name, subjectId, targetHours, startDate, endDate, createdAt: new Date().toISOString().split('T')[0] });
+    saveGoals(goals);
+    closeAddGoalModal();
+    renderGoals();
+    showToast('Lernziel gespeichert!', 'success');
+}
+
+function initGoalsHandlers() {
+    document.getElementById('btn-add-goal')?.addEventListener('click', openAddGoalModal);
+    document.getElementById('btn-add-goal-close')?.addEventListener('click', closeAddGoalModal);
+    document.getElementById('btn-add-goal-save')?.addEventListener('click', saveGoal);
+    document.getElementById('add-goal-overlay')?.addEventListener('click', (e) => { if (e.target.id === 'add-goal-overlay') closeAddGoalModal(); });
+}
+
+// ==================== EXPORT WITH FILTERS ====================
+
+function filterEntriesForExport(startDate, endDate, subjectId) {
+    let entries = window.storageManager.getEntries();
+    if (startDate) entries = entries.filter(e => new Date(e.startTime) >= new Date(startDate));
+    if (endDate) entries = entries.filter(e => new Date(e.startTime) <= new Date(endDate + 'T23:59:59'));
+    if (subjectId) entries = entries.filter(e => String(e.subjectId) === String(subjectId));
+    entries.sort((a, b) => b.startTime - a.startTime);
+    return entries;
+}
+
+function padZero2(n) { return String(n).padStart(2, '0'); }
+
+function needsQuoting2(val, sep) { const s = String(val); return s.includes(sep) || s.includes('"') || s.includes('\n') || s.includes('\r'); }
+
+function exportFilteredCSV(entries, sep) {
+    const subjects = window.storageManager.getSubjects();
+    const sepChar = sep === 'comma' ? ',' : ';';
+    const BOM = '\uFEFF';
+    const headers = ['Datum', 'Von', 'Bis', 'Fach', 'Thema', 'Dauer (Min)', 'Dauer (h:mm)', 'Notizen'];
+    let csvContent = BOM + headers.join(sepChar) + '\n';
+    entries.forEach(entry => {
+        const date = new Date(entry.startTime);
+        const endDate2 = new Date(entry.endTime);
+        const dateStr = padZero2(date.getDate()) + '.' + padZero2(date.getMonth() + 1) + '.' + date.getFullYear();
+        const startTimeStr = padZero2(date.getHours()) + ':' + padZero2(date.getMinutes());
+        const endTimeStr2 = padZero2(endDate2.getHours()) + ':' + padZero2(endDate2.getMinutes());
+        const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
+        const subjectName = subject ? subject.name : 'Unbekannt';
+        const durationMinutes = Math.round(entry.duration / 60);
+        const hours2 = Math.floor(entry.duration / 3600);
+        const mins2 = Math.round((entry.duration % 3600) / 60);
+        const durationHm = padZero2(hours2) + ':' + padZero2(mins2);
+        const notes2 = entry.notes ? '"' + entry.notes.replace(/"/g, '""') + '"' : '';
+        const fields = [dateStr, startTimeStr, endTimeStr2, subjectName, entry.topics || '', durationMinutes.toString(), durationHm, notes2];
+        const row = fields.map(f => needsQuoting2(f, sepChar) ? '"' + String(f).replace(/"/g, '""') + '"' : f).join(sepChar);
+        csvContent += row + '\n';
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'lernzeit-export-' + new Date().toISOString().split('T')[0].replace(/-/g, '') + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    showToast('Export abgeschlossen: ' + entries.length + ' Eintraege!', 'success');
+}
+
+function exportFilteredJSON(entries) {
+    const subjects = window.storageManager.getSubjects();
+    const data = { exportDate: new Date().toISOString(), entryCount: entries.length, entries: entries.map(entry => {
+        const date = new Date(entry.startTime);
+        const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
+        const endTime2 = new Date(entry.endTime);
+        return { id: entry.id, datum: date.toISOString().split('T')[0], von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : 'Unbekannt', fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
+    })};
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'lernzeit-export-' + new Date().toISOString().split('T')[0].replace(/-/g, '') + '.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    showToast('JSON-Export abgeschlossen: ' + entries.length + ' Eintraege!', 'success');
+}
+
+function updateExportPreview() {
+    const fromVal = document.getElementById('export-date-from')?.value || '';
+    const toVal = document.getElementById('export-date-to')?.value || '';
+    const subjectId = document.getElementById('export-subject-filter')?.value || '';
+    const filtered = filterEntriesForExport(fromVal, toVal, subjectId);
+    const countEl = document.getElementById('export-preview-count');
+    const rangeEl = document.getElementById('export-preview-range');
+    if (countEl) countEl.textContent = filtered.length;
+    const totalSec = filtered.reduce((a, b) => a + b.duration, 0);
+    const h2 = Math.floor(totalSec / 3600);
+    const m2 = String(Math.round((totalSec % 3600) / 60)).padStart(2, '0');
+    if (rangeEl) {
+        const from = fromVal ? new Date(fromVal + 'T00:00:00').toLocaleDateString('de-DE') : '...';
+        const to = toVal ? new Date(toVal + 'T23:59:59').toLocaleDateString('de-DE') : '...';
+        rangeEl.textContent = from + ' - ' + to + ' | Gesamt: ' + h2 + 'h ' + m2 + 'm';
+    }
+}
+
+function selectExportFormat2(fmt) {
+    const csvBtn = document.getElementById('export-format-csv');
+    const jsonBtn = document.getElementById('export-format-json');
+    const csvOpts = document.getElementById('export-csv-options');
+    if (fmt === 'csv') {
+        if (csvBtn) { csvBtn.className = 'export-format-btn py-3 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium'; }
+        if (jsonBtn) { jsonBtn.className = 'export-format-btn py-3 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive'; }
+        if (csvOpts) csvOpts.classList.remove('hidden');
+    } else {
+        if (csvBtn) { csvBtn.className = 'export-format-btn py-3 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive'; }
+        if (jsonBtn) { jsonBtn.className = 'export-format-btn py-3 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium'; }
+        if (csvOpts) csvOpts.classList.add('hidden');
+    }
+}
+
+function selectExportSep(sep) {
+    const semiBtn = document.getElementById('export-sep-semicolon');
+    const commaBtn = document.getElementById('export-sep-comma');
+    if (sep === 'semicolon') {
+        if (semiBtn) semiBtn.className = 'export-sep-btn py-2 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium';
+        if (commaBtn) commaBtn.className = 'export-sep-btn py-2 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive';
+    } else {
+        if (semiBtn) semiBtn.className = 'export-sep-btn py-2 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive';
+        if (commaBtn) commaBtn.className = 'export-sep-btn py-2 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium';
+    }
+}
+
+function initExportHandlers() {
+    document.getElementById('btn-export-open')?.addEventListener('click', () => {
+        const overlay = document.getElementById('export-overlay');
+        if (!overlay) return;
+        document.getElementById('export-date-from').value = '';
+        document.getElementById('export-date-to').value = '';
+        document.getElementById('export-favorites-only').checked = false;
+        const subjects = window.storageManager.getSubjects();
+        const select = document.getElementById('export-subject-filter');
+        if (select) select.innerHTML = '<option value="">Alle Faetcher</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+        selectExportFormat2('csv');
+        selectExportSep('semicolon');
+        overlay.classList.remove('translate-y-full');
+        updateExportPreview();
+    });
+    document.getElementById('btn-export-close')?.addEventListener('click', () => closeOverlay('export-overlay'));
+    document.getElementById('btn-export-cancel')?.addEventListener('click', () => closeOverlay('export-overlay'));
+    document.getElementById('export-format-csv')?.addEventListener('click', () => selectExportFormat2('csv'));
+    document.getElementById('export-format-json')?.addEventListener('click', () => selectExportFormat2('json'));
+    document.getElementById('export-sep-semicolon')?.addEventListener('click', () => selectExportSep('semicolon'));
+    document.getElementById('export-sep-comma')?.addEventListener('click', () => selectExportSep('comma'));
+    document.getElementById('export-date-from')?.addEventListener('change', updateExportPreview);
+    document.getElementById('export-date-to')?.addEventListener('change', updateExportPreview);
+    document.getElementById('export-subject-filter')?.addEventListener('change', updateExportPreview);
+    document.getElementById('btn-export-preview')?.addEventListener('click', () => {
+        const fromVal = document.getElementById('export-date-from').value;
+        const toVal = document.getElementById('export-date-to').value;
+        const subjectId = document.getElementById('export-subject-filter').value;
+        const entries = filterEntriesForExport(fromVal, toVal, subjectId);
+        showToast(entries.length + ' Eintraege gefunden', 'info');
+    });
+    document.getElementById('btn-export-download')?.addEventListener('click', () => {
+        const fmt = document.getElementById('export-format-csv')?.classList.contains('text-primary') ? 'csv' : 'json';
+        const sep = document.getElementById('export-sep-semicolon')?.classList.contains('text-primary') ? 'semicolon' : 'comma';
+        const fromVal = document.getElementById('export-date-from').value;
+        const toVal = document.getElementById('export-date-to').value;
+        const subjectId = document.getElementById('export-subject-filter').value;
+        const entries = filterEntriesForExport(fromVal, toVal, subjectId);
+        if (entries.length === 0) { showToast('Keine Eintraege zum Exportieren.', 'error'); return; }
+        if (fmt === 'csv') exportFilteredCSV(entries, sep);
+        else exportFilteredJSON(entries);
+        closeOverlay('export-overlay');
+    });
+}
+
+function initStatisticsHandlers() {}
 
 // ==================== THEME MANAGEMENT ====================
 
@@ -1645,8 +1958,10 @@ function updateViews() {
     renderFaecher(entries, subjects);
     renderSemesterList();
     checkAchievements(entries);
+    renderAchievementsPage();
     renderHeatmap(entries);
     renderGraph(entries);
+    if (typeof window.updateStatisticsView === "function") window.updateStatisticsView();
 }
 
 /**
