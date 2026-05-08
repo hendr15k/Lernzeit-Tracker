@@ -135,3 +135,17 @@ function safeJsonParse(jsonString, fallback = null) {
         return fallback;
     }
 }
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        debounce,
+        isValidPositiveNumber,
+        isValidDateFormat,
+        isValidTimeFormat,
+        sanitizeInput,
+        isValidDuration,
+        isValidDateRange,
+        createLazyInitializer,
+        generateId,
+        safeJsonParse
+    };
+}
