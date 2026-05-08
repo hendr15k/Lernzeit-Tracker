@@ -23,6 +23,7 @@ class StorageManager {
             SETTINGS: 'lernzeit_settings',
             SEMESTERS: 'lernzeit_semesters'
         };
+        this._entriesCache = null;
         this.init();
     }
 
@@ -33,6 +34,9 @@ class StorageManager {
      * @private
      */
     _save(key, data) {
+        if (key === this.STORAGE_KEYS.ENTRIES) {
+            this._entriesCache = data;
+        }
         try {
             localStorage.setItem(key, JSON.stringify(data));
         } catch (e) {
@@ -371,8 +375,12 @@ class StorageManager {
      * @returns {Array} Array of entry objects
      */
     getEntries() {
+        if (this._entriesCache !== null) {
+            return this._entriesCache;
+        }
         try {
-            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]');
+            this._entriesCache = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]');
+            return this._entriesCache;
         } catch (e) {
             console.error('Error parsing entries:', e);
             return [];
