@@ -1,0 +1,34 @@
+{
+  "name": "lernzeit-tracker",
+  "version": "1.0.0",
+  "description": "Ein moderner Lernzeit-Tracker, der als Progressive Web App (PWA) konzipiert ist. Er ermöglicht es Studierenden und Lernenden, ihre Lernzeiten zu erfassen, zu visualisieren und zu analysieren.",
+  "main": "sw.js",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "serve": "^14.2.6"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:mobile": "playwright test --project=iPhone",
+    "test:android": "playwright test --project=Android",
+    "test:viewport": "playwright test tests/mobile/00-viewports.spec.js",
+    "test:dashboard": "playwright test tests/mobile/01-dashboard.spec.js",
+    "test:timer": "playwright test tests/mobile/02-timer.spec.js",
+    "test:nav": "playwright test tests/mobile/03-navigation.spec.js",
+    "test:themes": "playwright test tests/mobile/04-themes.spec.js",
+    "test:heatmap": "playwright test tests/mobile/05-heatmap.spec.js",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hendr15k/Lernzeit-Tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hendr15k/Lernzeit-Tracker/issues"
+  },
+  "homepage": "https://github.com/hendr15k/Lernzeit-Tracker#readme"
+}
