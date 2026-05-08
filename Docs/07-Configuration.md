@@ -2,6 +2,16 @@
 
 Dieses Dokument beschreibt alle Konfigurationsdateien des Lernzeit-Tracker Projekts.
 
+## Inhaltsverzeichnis
+
+1. [package.json](#1-packagejson)
+2. [manifest.json](#2-manifestjson)
+3. [playwright.config.js](#3-playwrightconfigjs)
+4. [sw.js Service Worker](#4-swjs-service-worker)
+5. [style.css](#5-stylecss)
+6. [css/toast.css](#6-csstoastcss)
+7. [GitHub Actions Workflow](#7-github-actions-workflow)
+
 ---
 
 ## 1. package.json
@@ -47,15 +57,28 @@ Die zentrale Konfigurationsdatei für Node.js-Projekte. Enthält Metadaten, Abh�
 
 ### Abschnitte
 
-- **dependencies/devDependencies**: Definiert externe Pakete. `@playwright/test` für End-to-End-Tests, `serve` für lokale Entwicklung.
-- **scripts**: NPM-Skripte für verschiedene Test-Szenarien (mobile, Android, spezifische Features).
-- **main**: Gibt den Einstiegspunkt an (`sw.js` als Service Worker).
+| Abschnitt | Beschreibung |
+|-----------|--------------|
+| `dependencies` | Externe Pakete für die Anwendung |
+| `devDependencies` | Entwicklungsabhängigkeiten (`@playwright/test` für E2E-Tests, `serve` für lokale Server) |
+| `scripts` | NPM-Skripte für verschiedene Test-Szenarien |
+| `main` | Einstiegspunkt der Anwendung (`sw.js` als Service Worker) |
+
+### Verfügbare NPM-Skripte
+
+| Skript | Beschreibung |
+|--------|--------------|
+| `test` | Alle Playwright-Tests ausführen |
+| `test:mobile` | Tests nur für iPhone-Emulation |
+| `test:android` | Tests nur für Android-Emulation |
+| `test:headed` | Tests mit sichtbarem Browser (Debugging) |
+| `test:ui` | Playwright UI-Modus starten |
 
 ---
 
 ## 2. manifest.json
 
-Konfigurationsdatei für die Progressive Web App (PWA).
+Konfigurationsdatei für die Progressive Web App (PWA). Ermöglicht die Installation der App auf dem Home-Bildschirm.
 
 ```json
 {
@@ -85,19 +108,21 @@ Konfigurationsdatei für die Progressive Web App (PWA).
 
 | Eigenschaft | Beschreibung |
 |------------|--------------|
-| `name` | Vollständiger App-Name |
-| `short_name` | Kurzname für den Home-Bildschirm |
-| `start_url` | URL beim Starten der App |
-| `display` | Anzeigemodus (`standalone` = ohne Browser-Chrome) |
-| `background_color` | Hintergrundfarbe beim Laden |
-| `theme_color` | Farbe der Statusleiste |
-| `icons` | App-Symbole in verschiedenen Größen |
+| `name` | Vollständiger App-Name (wird im App-Info-Dialog angezeigt) |
+| `short_name` | Kurzname (max. 12 Zeichen, für den Home-Bildschirm) |
+| `start_url` | URL, die beim Starten der installierten App geöffnet wird |
+| `display` | Anzeigemodus. Mögliche Werte: `standalone`, `fullscreen`, `minimal-ui`, `browser` |
+| `background_color` | Hintergrundfarbe während des Ladevorgangs (Dark Mode: `#0f172a`) |
+| `theme_color` | Farbe der Statusleiste und Adressleiste (`#3b82f6` = Blau) |
+| `icons` | App-Symbole für verschiedene Geräte und Auflösungen |
+
+> **Hinweis**: Die beiden Icon-Größen werden für verschiedene Display-Dichten verwendet. 192×192 für Standard-Displays, 512×512 für hochauflösende Displays (Retina).
 
 ---
 
 ## 3. playwright.config.js
 
-Playwright-Testkonfiguration für End-to-End-Tests.
+Playwright-Testkonfiguration für End-to-End-Tests. Definiert mobile Testumgebungen mit verschiedenen Viewport-Größen.
 
 ```javascript
 const { defineConfig, devices } = require('@playwright/test');
@@ -146,17 +171,31 @@ module.exports = defineConfig({
 
 ### Konfigurationsoptionen
 
-- **testDir**: Verzeichnis mit Testdateien
-- **fullyParallel**: Parallele Testausführung
-- **forbidOnly**: Verhindert `test.only()` in CI
-- **retries**: Wiederholungen bei Fehlern (CI: 2, lokal: 0)
-- **projects**: Definition verschiedener mobiler Viewports (Pixel 5, kleine und große Bildschirme)
+| Option | Beschreibung |
+|--------|--------------|
+| `testDir` | Verzeichnis mit Testdateien (`./tests`) |
+| `fullyParallel` | Alle Tests parallel ausführen |
+| `forbidOnly` | Verhindert `test.only()` in CI-Umgebungen |
+| `retries` | Wiederholungen bei Fehlern (CI: 2, lokal: 0) |
+| `workers` | Anzahl paralleler Worker (CI: 1, lokal: alle verfügbaren) |
+| `reporter` | Ausgabeformat der Testergebnisse |
+| `baseURL` | Basis-URL für alle Tests (`file://...`) |
+| `trace` | Trace-Sammlung bei ersten Retry |
+| `screenshot` | Screenshots nur bei Testfehlern |
+
+### Definierte Testprojekte
+
+| Projekt | Viewport | Gerät |
+|---------|----------|-------|
+| `chromium-mobile` | Pixel 5 (393×851) | Android Smartphone |
+| `chromium-mobile-small` | 360×640 | Kleine Android-Geräte |
+| `chromium-mobile-large` | 414×896 | iPhone (Large) |
 
 ---
 
 ## 4. sw.js (Service Worker)
 
-Service Worker für Offline-Funktionalität und Caching-Strategien.
+Service Worker für Offline-Funktionalität und Caching-Strategien. Ermöglicht der App, auch ohne Internetverbindung zu funktionieren.
 
 ```javascript
 const CACHE_NAME = 'lernzeit-tracker-v6';
@@ -210,20 +249,40 @@ self.addEventListener('message', (e) => {
 });
 ```
 
+### Lebenszyklus-Events
+
+| Event | Beschreibung |
+|-------|--------------|
+| `install` | Wird beim erstmaligen Laden des Service Workers ausgeführt. Cacht alle definierten Assets vor. |
+| `activate` | Wird nach der Installation ausgeführt. Bereinigt alte Cache-Versionen. |
+| `fetch` | Wird bei jedem Netzwerk-Request ausgeführt. Implementiert die Cache-First-Strategie. |
+| `message` | Empfängt Nachrichten von der App (z.B. für manuelle Update-Auslösung). |
+
 ### Caching-Strategie
 
 Der Service Worker implementiert eine **Cache-First**-Strategie:
 
-1. **install**: Pre-Caching aller definierten Assets
-2. **activate**: Bereinigung alter Cache-Versionen
-3. **fetch**: Cache zuerst prüfen, dann Netzwerk
-4. **message**: Steuerung für Update-Auslösung
+1. **Install** (Zeile 14-17): Pre-Caching aller definierten Assets
+2. **Activate** (Zeile 19-27): Bereinigung alter Cache-Versionen
+3. **Fetch** (Zeile 29-35): Prüft zuerst den Cache, dann das Netzwerk
+4. **Message** (Zeile 37-41): Ermöglicht Steuerung für Update-Auslösung via `postMessage`
+
+### Cache-Versionierung
+
+Bei Änderungen muss `CACHE_NAME` aktualisiert werden (`v6` → `v7`), damit der `activate`-Handler alte Caches löscht.
+
+### Externe Abhängigkeiten
+
+| URL | Verwendung |
+|-----|------------|
+| `cdn.tailwindcss.com` | Tailwind CSS für Styling |
+| `unpkg.com/lucide` | Lucide Icons (Bibliothek für SVG-Icons) |
 
 ---
 
 ## 5. style.css
 
-Hauptstylesheet mit CSS Custom Properties für Theming.
+Hauptstylesheet mit CSS Custom Properties für Theming. Unterstützt sowohl Light- als auch Dark-Mode mit automatischen Übergängen.
 
 ```css
 :root {
@@ -289,20 +348,34 @@ body {
 
 ### Theming-Variablen
 
+Diese CSS-Variablen ermöglichen ein konsistentes Farbschema und einfaches Theming:
+
 | Variable | Light Mode | Dark Mode | Verwendung |
 |----------|------------|-----------|------------|
 | `--color-bg` | `#f3f4f6` | `#0f0f11` | Seitenhintergrund |
-| `--color-surface` | `#ffffff` | `#1c1c1e` | Karten/Oberflächen |
-| `--color-text` | `#111827` | `#ffffff` | Haupttext |
-| `--color-text-muted` | `#6b7280` | `#a1a1aa` | Gedämpfter Text |
-| `--color-primary` | `#3b82f6` | `#3b82f6` | Akzentfarbe |
+| `--color-surface` | `#ffffff` | `#1c1c1e` | Karten und Oberflächenelemente |
+| `--color-text` | `#111827` | `#ffffff` | Haupttextfarbe |
+| `--color-text-muted` | `#6b7280` | `#a1a1aa` | Gedämpfter Text (Sekundärtext) |
+| `--color-primary` | `#3b82f6` | `#3b82f6` | Akzentfarbe (Buttons, Links) |
 | `--color-success` | `#22c55e` | `#22c55e` | Erfolgsindikatoren |
+
+### Heatmap-Level
+
+Die Aktivitäts-Heatmap verwendet 5 Intensitätsstufen:
+
+| Level | Dark Mode | Light Mode | Bedeutung |
+|-------|-----------|------------|-----------|
+| 0 | `--color-surface` | `#e5e7eb` | Keine Aktivität |
+| 1 | `#064e3b` | `#a7f3d0` | Geringe Aktivität |
+| 2 | `#047857` | `#6ee7b7` | Leichte Aktivität |
+| 3 | `#059669` | `#34d399` | Mittlere Aktivität |
+| 4 | `#34d399` | `#10b981` | Hohe Aktivität |
 
 ---
 
 ## 6. css/toast.css
 
-Toast-Benachrichtigungsstile.
+Toast-Benachrichtigungsstile für Benachrichtigungen am unteren Bildschirmrand.
 
 ```css
 #toast-container {
@@ -353,15 +426,25 @@ Toast-Benachrichtigungsstile.
 
 ### Toast-Varianten
 
-- **Standard**: Pill-förmig, zentriert am unteren Bildschirmrand
-- **toast-success**: Grüner linker Rand (`#22c55e`)
-- **toast-error**: Roter linker Rand (`#ef4444`)
+| Variante | Klasse | Farbe | Verwendung |
+|----------|--------|-------|------------|
+| Standard | `.toast` | Surface-Farbe | Allgemeine Meldungen |
+| Erfolg | `.toast-success` | Grüner Rand (`#22c55e`) | Erfolgreiche Aktionen |
+| Fehler | `.toast-error` | Roter Rand (`#ef4444`) | Fehlermeldungen |
+
+### Animationsverhalten
+
+- **Eingeblendet**: Slide-Up + Fade-In (0.3s)
+- **Ausgeblendet**: Slide-Down + Fade-Out
+- **Position**: Zentriert am unteren Bildschirmrand (24px Abstand)
 
 ---
 
-## 7. .github/workflows/validate.yml
+## 7. GitHub Actions Workflow
 
-CI-Workflow für GitHub Actions.
+CI-Workflow für automatisierte Validierung bei jedem Push und Pull Request.
+
+### Datei: `.github/workflows/validate.yml`
 
 ```yaml
 name: Validate
@@ -380,11 +463,16 @@ jobs:
 
 ### Workflow-Details
 
-- **Trigger**: Bei jedem Push und Pull Request
-- **Runner**: Ubuntu Latest
-- **Validierung**: 
-  - Prüfung auf `index.html`
-  - Syntax-Prüfung aller JavaScript-Dateien mit `node --check`
+| Eigenschaft | Wert | Beschreibung |
+|------------|------|--------------|
+| **Trigger** | `push`, `pull_request` | Wird bei jedem Push und PR ausgeführt |
+| **Runner** | `ubuntu-latest` | Ubuntu 24.04 (Latest) |
+| **Checkout** | `actions/checkout@v4` | Repository auschecken |
+
+### Validierungsschritte
+
+1. **HTML-Prüfung**: Verifiziert, dass `index.html` existiert
+2. **JavaScript-Syntax**: Prüft alle JS-Dateien mit `node --check` auf syntaktische Korrektheit
 
 ---
 
@@ -392,12 +480,12 @@ jobs:
 
 Die Konfigurationsdateien des Lernzeit-Trackers ermöglichen:
 
-| Datei | Zweck |
-|-------|-------|
-| `package.json` | Projektmetriken und npm-Skripte |
-| `manifest.json` | PWA-Konfiguration für Installation |
-| `playwright.config.js` | E2E-Test-Setup mit mobilen Viewports |
-| `sw.js` | Offline-Unterstützung via Service Worker |
-| `style.css` | Dynamisches Theming mit CSS-Variablen |
-| `css/toast.css` | Toast-Benachrichtigungskomponenten |
-| `.github/workflows/validate.yml` | Automatisierte Validierung in CI |
+| Datei | Zweck | Schlüsselfunktion |
+|-------|-------|-------------------|
+| `package.json` | Projektmetriken und npm-Skripte | Testautomatisierung |
+| `manifest.json` | PWA-Konfiguration für Installation | Installation auf Home-Bildschirm |
+| `playwright.config.js` | E2E-Test-Setup mit mobilen Viewports | Responsive Testing |
+| `sw.js` | Offline-Unterstützung via Service Worker | Funktionalität ohne Internet |
+| `style.css` | Dynamisches Theming mit CSS-Variablen | Light/Dark Mode |
+| `css/toast.css` | Toast-Benachrichtigungskomponenten | Benutzerfeedback |
+| `.github/workflows/validate.yml` | Automatisierte Validierung in CI | Code-Qualitätssicherung |

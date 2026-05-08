@@ -31,11 +31,11 @@ Der Timer ist das zentrale Feature der App und ermöglicht das punktgenaue Erfas
 
 **Timer-Steuerung:**
 - **Start/Pause:** Timer starten oder pausieren
-- **Stopp:** Timer anhalten (弹出菜单: Speichern oder Verwerfen)
+- **Stopp:** Timer anhalten (Popup-Menü: Speichern oder Verwerfen)
 - **Speichern:** Lernsitzung speichern und Overlay schließen
 
 **Timer-Anzeige:**
-- Das große Display zeigt die elapsed Zeit im Format `HH:MM:SS`
+- Das große Display zeigt die verstrichene Zeit im Format `HH:MM:SS`
 - Der Timer-Ring wechselt die Farbe basierend auf dem Modus (Blau für Arbeit)
 
 **Bildschirm aktiv halten (Wake Lock):**
@@ -103,7 +103,7 @@ Für vergangene Lernzeiten, die nicht live getrackt wurden:
 - Themen werden als Badges in der Einheiten-Historie angezeigt
 
 **Notizen:**
-- Freitextfeld für任意 Zusatzinformationen
+- Freitextfeld für beliebige Zusatzinformationen
 - Wird pro Sitzung gespeichert und bleibt zwischen Timer-Sessions erhalten
 - Optional ausklappbar (versteckt standardmäßig für Übersichtlichkeit)
 
@@ -127,9 +127,9 @@ Für vergangene Lernzeiten, die nicht live getrackt wurden:
 - Speichere mit dem Speichern-Button
 
 **Fach löschen:**
-- Klicke auf den Papierkorb-Icon
-- Bestätige die Löschung
-- Hinweis: Bestehende Lernsitzungen bleiben erhalten, verlieren aber die Fachzuordnung
+- Klicke auf das Papierkorb-Icon
+- Bestätige die Löschung im Dialog
+- **Hinweis:** Bestehende Lernsitzungen bleiben erhalten, verlieren aber die Fachzuordnung
 
 ### 2.2 Fächer-Farben
 
@@ -175,6 +175,7 @@ Folgende Farben stehen zur Auswahl:
 **Semester bearbeiten/löschen:**
 - Bearbeiten: Stift-Icon in der Semesterkarte
 - Löschen: Papierkorb-Icon (mit Bestätigungsdialog)
+- **Hinweis:** Das Löschen eines Semesters entfernt auch alle zugehörigen Module
 
 **Semester-Details:**
 - Angezeigt werden: Gesamt-ECTS, Gesamtstunden, Anzahl Module
@@ -199,7 +200,8 @@ Folgende Farben stehen zur Auswahl:
 - Alle Felder sind editierbar
 
 **Modul löschen:**
-- Papierkorb-Icon mit Bestätigung
+- Papierkorb-Icon mit Bestätigungsdialog
+- **Hinweis:** Zugehörige Lernsitzungen bleiben erhalten
 
 ### 3.3 Prüfungstracking
 
@@ -267,7 +269,7 @@ Vordefinierte Prüfungszeiträume:
 
 **Wochenziel-Berechnung:**
 - Wochenziel = Tagesziel × Lern-Tage pro Woche
-- Standard: 60 Minuten × 5 Tage = 5 Stunden/Woche
+- **Beispiel:** 60 Minuten × 5 Tage = 5 Stunden/Woche
 
 ### 4.3 Monatssicht
 
@@ -277,7 +279,7 @@ Vordefinierte Prüfungszeiträume:
 - Fortschritt zum Monatsziel
 
 **Monatsziel-Berechnung:**
-- Monatsziel = Tagesziel × (Tage im Monat / 7 × Lern-Tage)
+- Monatsziel = Tagesziel × (Tage im Monat / 7) × Lern-Tage pro Woche
 - Dynamische Berechnung basierend auf tatsächlichen Tagen
 
 ---
@@ -298,7 +300,8 @@ Vordefinierte Prüfungszeiträume:
 
 **Streak-Anzeige:**
 - Anzahl Tage in Folge mit mindestens einer Lernsitzung
-- Berücksichtigt heute und gestern für laufenden Streak
+- Berücksichtigt heute und gestern für den aktuellen Streak
+- Der Streak bleibt erhalten, wenn heute noch nicht gelernt wurde
 
 **Gesamtzeit:**
 - Kumulative Lernzeit aller Sitzungen
@@ -329,7 +332,7 @@ Vordefinierte Prüfungszeiträume:
 
 **Aggregation:**
 - Gesamtzeile am Ende für übergreifenden Vergleich
-- Legende zur Farbunterscheidung
+- Farb-Legende zur Unterscheidung dieser vs. Vorwoche
 
 ### 5.4 Lern-Trends
 
@@ -378,6 +381,7 @@ Vordefinierte Prüfungszeiträume:
 - Countdown in Tagen
 - Farbcodierung nach Dringlichkeit
 - ICS-Export-Button pro Prüfung
+- Klick auf Prüfung öffnet die Modul-Detailansicht
 
 ### 5.7 Streak-Berechnung
 
@@ -460,20 +464,20 @@ Datum,Uhrzeit,Fach,Dauer (Min),Notizen
 - Importierbar in Excel, Google Sheets
 - UTF-8 BOM für deutsche Umlaute
 
-### 7.3 Wochenbericht (TXT)
+### 7.3 Wochenbericht
 
 **Exportieren:**
-- Einstellungen → Datenverwaltung → "Wochen-PDF"
+- Einstellungen → Datenverwaltung → "Wochenbericht"
 
 **Inhalt:**
-- Berichtszeitraum (Kalenderwoche)
+- Berichtszeitraum (Kalenderwoche und Jahr)
 - Zusammenfassung (Gesamtzeit, Anzahl Sessions)
-- Tägliche Übersicht (Mo-So)
+- Tägliche Übersicht (Montag–Sonntag)
 - Aufschlüsselung nach Fach
 - Generierungsdatum
 
 **Format:**
-- Plain-Text (.txt) statt PDF
+- Plain-Text (.txt) Datei
 - Einfach zu drucken oder weiterzuleiten
 
 ### 7.4 ICS-Export für Prüfungen
@@ -525,23 +529,25 @@ END:VCALENDAR
 - App ist vollständig funktionsfähig
 - Alle Daten werden in localStorage gespeichert
 - Keine serverseitige Komponente erforderlich
+- Bereits besuchte Seiten werden aus dem Cache geladen
 
 ### 8.2 Installierbare App
 
 **Install-Banner:**
 - Erscheint automatisch nach 5 Sekunden
-- Kann vom Benutzer dismissed werden
-- Wird nicht mehr angezeigt nach Installation oder Ablehnung
+- Kann vom Benutzer verworfen werden
+- Wird nach Installation oder Ablehnung nicht mehr angezeigt
 
 **Installation:**
 - Klick auf "Installieren" im Banner
 - Oder browser-spezifisches Install-Menü
 
 **Vorteile der Installation:**
-- Eigenes App-Icon auf Homescreen
+- Eigenes App-Icon auf dem Homescreen
 - Eigenständiges Fenster (kein Browser-Chrome)
 - Bessere Performance
-- Push-Benachrichtigungen (zukünftig)
+- Schnellerer App-Start
+- Push-Benachrichtigungen (zukünftig geplant)
 
 ### 8.3 Automatische Updates
 
@@ -634,3 +640,4 @@ Beim ersten Start werden folgende Fächer angelegt:
 
 **Standard-Semester:**
 Beinhaltet Module für das aktuelle Sommersemester mit Prüfungsdaten der FH Aachen.
+Module sind mit vordefinierten Fächern verknüpft für automatisiertes Tracking.

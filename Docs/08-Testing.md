@@ -1,24 +1,27 @@
 # Testing Dokumentation
 
+> **Voraussetzungen**: Node.js und npm müssen installiert sein. Führe `npm install` aus, bevor du Tests ausführst.
+
 ## Test Framework
 
-Das Projekt verwendet [Playwright](https://playwright.dev/) als Test-Framework. Playwright ermöglicht zuverlässige End-to-End-Tests für moderne Web-Anwendungen mit Unterstützung für:
+Das Projekt verwendet [Playwright](https://playwright.dev/) als End-to-End-Test-Framework. Playwright ermöglicht zuverlässige Tests für moderne Web-Anwendungen mit Unterstützung für:
 
-- Automatisiertes Browsing (Chromium, Firefox, WebKit)
-- Mobile Geräte-Emulation
-- Headless und Headed-Modus
-- Intelligentes Warten auf DOM-Änderungen
+- **Browser-Automatisierung**: Chromium, Firefox, WebKit
+- **Mobile Emulation**: Gerätespezifische Viewports und Touch-Events
+- **Modi**: Headless (Standard) und Headed (mit Browser-GUI)
+- **Smart Waiting**: Automatisches Warten auf DOM-Änderungen
+- **Debugging**: Trace-Aufzeichnungen und interaktive Test-Entwicklung
 
 ## Projektstruktur
 
 ```
 tests/
 ├── mobile/
-│   ├── 00-viewports.spec.js      # Viewport-Tests
+│   ├── 00-viewports.spec.js     # Viewport-Tests
 │   ├── 01-dashboard.spec.js      # Dashboard-Tests
 │   ├── 02-timer.spec.js          # Timer-Tests
 │   ├── 03-navigation.spec.js     # Navigation-Tests
-│   ├── 04-themes.spec.js        # Theme-Tests
+│   ├── 04-themes.spec.js         # Theme-Tests
 │   └── 05-heatmap.spec.js        # Heatmap-Tests
 ├── helpers.js                    # Hilfsfunktionen
 ├── index.js                      # Test-Index
@@ -99,41 +102,42 @@ npm test
 ### Spezifische Kategorie testen
 
 ```bash
-# Viewport-Tests
+# Viewport-Tests (responsive Layouts)
 npm run test:viewport
 
-# Dashboard-Tests
+# Dashboard-Tests (Widgets und Charts)
 npm run test:dashboard
 
-# Timer-Tests
+# Timer-Tests (Timer-Overlay und Pomodoro)
 npm run test:timer
 
-# Navigations-Tests
+# Navigations-Tests (Navigation und Overlays)
 npm run test:nav
 
-# Theme-Tests
+# Theme-Tests (Dark/Light Mode)
 npm run test:themes
 
-# Heatmap-Tests
+# Heatmap-Tests (Lernstatistik-Visualisierung)
 npm run test:heatmap
 ```
 
 ### Mobile-spezifische Tests
 
 ```bash
+# Mobile-Tests (alle Viewports)
 npm run test:mobile
+
+# Android-spezifische Tests
 npm run test:android
 ```
 
-### Headed-Modus (mit Browser-GUI)
+### Spezielle Modi
 
 ```bash
+# Headed-Modus: Browser-GUI wird angezeigt (empfohlen für Debugging)
 npm run test:headed
-```
 
-### UI-Modus (interaktive Test-Entwicklung)
-
-```bash
+# UI-Modus: Interaktive Test-Entwicklung mit Playwright UI
 npm run test:ui
 ```
 
@@ -142,6 +146,7 @@ npm run test:ui
 Die Konfiguration befindet sich in `playwright.config.js`:
 
 ```javascript
+const path = require('path');
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
@@ -185,17 +190,19 @@ module.exports = defineConfig({
 
 ### Konfigurationsoptionen
 
-| Option | Beschreibung |
-|--------|--------------|
-| `testDir` | Verzeichnis mit Test-Dateien |
-| `fullyParallel` | Parallele Test-Ausführung |
-| `forbidOnly` | Verbot von `test.only` (aktiv im CI) |
-| `retries` | Wiederholungen bei Fehlern (CI: 2, lokal: 0) |
-| `workers` | Parallel-Worker (CI: 1, lokal: automatisch) |
-| `reporter` | Test-Reporter ('list') |
-| `baseURL` | Basis-URL für Tests |
-| `trace` | Trace-Aufzeichnung bei erstem Retry |
-| `screenshot` | Screenshots nur bei Fehlern |
+| Option | Beschreibung | Standard |
+|--------|--------------|----------|
+| `testDir` | Verzeichnis mit Test-Dateien | `./tests` |
+| `fullyParallel` | Parallele Test-Ausführung | `true` |
+| `forbidOnly` | Verbot von `test.only` (aktiv im CI) | `true` in CI |
+| `retries` | Wiederholungen bei Fehlern | `0` lokal, `2` in CI |
+| `workers` | Anzahl paralleler Worker | `undefined` (auto) |
+| `reporter` | Test-Reporter Format | `list` |
+| `baseURL` | Basis-URL für `page.goto()` | - |
+| `trace` | Trace-Aufzeichnung | `on-first-retry` |
+| `screenshot` | Screenshots bei Fehlern | `only-on-failure` |
+
+**Trace-Aufzeichnungen** erfassen alle DOM-Interaktionen, Screenshots und Netzwerk-Anfragen. Siehe [Trace ansehen](#trace-ansehen).
 
 ### Projekt-Konfigurationen
 
@@ -224,15 +231,22 @@ Dies ermöglicht das Laden von gespeichertem State für authentifizierte Tests.
 
 ## Hilfsfunktionen
 
-Die Datei `tests/helpers.js` stellt nützliche Funktionen bereit:
+Die Datei `tests/helpers.js` (importiert aus `./helpers`) stellt nützliche Funktionen bereit:
 
 ```javascript
 const { getFileUrl } = require('../helpers');
 
-// Beispiel: URL für index.html erstellen
-const url = getFileUrl(); // file:///path/to/index.html
-const url = getFileUrl('subpage.html'); // file:///path/to/subpage.html
+// URL für index.html erstellen
+const url = getFileUrl();                       // file:///path/to/index.html
+const url = getFileUrl('subpage.html');         // file:///path/to/subpage.html
+
+// Weitere Hilfsfunktionen in helpers.js:
+// - date utilities
+// - DOM manipulation helpers
+// - Data generation helpers
 ```
+
+**Tipp**: `getFileUrl()` ist die empfohlene Methode, um URLs für Tests zu erstellen, da sie plattformunabhängig funktioniert.
 
 ## CI-Workflow
 
@@ -267,26 +281,40 @@ jobs:
 
 ```javascript
 const { test, expect } = require('@playwright/test');
+const { getFileUrl } = require('../helpers');
 
-test('Beschreibung des Tests', async ({ page }) => {
+test('Timer-Overlay lässt sich öffnen und schließen', async ({ page }) => {
   await page.goto(getFileUrl());
-  await expect(page.locator('#element')).toBeVisible();
+  
+  // Auf FAB klicken
+  const fab = page.locator('#timer-fab');
+  await fab.click();
+  
+  // Timer-Overlay prüfen
+  await expect(page.locator('#timer-overlay')).toBeVisible();
 });
 ```
 
 ### Viewport-Tests
 
 ```javascript
+const { test, expect } = require('@playwright/test');
+const { getFileUrl } = require('../helpers');
+
 const viewports = [
   { name: 'iPhone SE', width: 375, height: 667 },
+  { name: 'iPhone 12', width: 390, height: 844 },
 ];
 
-test.describe('Beispiel-Tests', () => {
+test.describe('Responsive Layout Tests', () => {
   for (const vp of viewports) {
-    test(`${vp.name} - Testname`, async ({ page }) => {
+    test(`${vp.name} - Layout ohne horizontalen Overflow`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(getFileUrl());
-      // Test-Logik
+      
+      // Kein horizontaler Scroll nötig
+      const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(vp.width);
     });
   }
 });
@@ -298,50 +326,95 @@ test.describe('Beispiel-Tests', () => {
 // Sichtbarkeit
 await expect(locator).toBeVisible();
 await expect(locator).toBeHidden();
+await expect(locator).toHaveCount(5);
 
-// Klassen
+// Klassen und Attribute
 await expect(locator).toHaveClass(/active/);
+await expect(locator).toHaveAttribute('data-theme', 'dark');
 
 // Inhalt
-await expect(locator).toContainText('Text');
+await expect(locator).toContainText('Lernzeit');
+await expect(locator).toHaveText('2 Stunden');
 
-// Anzahl
-const count = await locator.count();
-expect(count).toBe(5);
+// Interaktionen
+await expect(locator).toBeChecked();
+await expect(locator).toBeEnabled();
+```
+
+### Test überspringen
+
+```javascript
+test.skip('Wird übersprungen', async ({ page }) => {
+  // ...
+});
+
+test.fixme('Muss noch implementiert werden', async ({ page }) => {
+  // ...
+});
 ```
 
 ## Troubleshooting
 
-### Playwright installieren
+### Erste Einrichtung
 
 ```bash
+# Playwright und Browser installieren
 npx playwright install
-```
 
-### Browser aktualisieren
-
-```bash
+# Browser aktualisieren
 npx playwright install chromium
 ```
 
-### Debug-Modus
+### Debugging
 
 ```bash
+# Headed-Modus: Browser-GUI anzeigen
 npm run test:headed
+
+# Interaktiver UI-Modus
+npm run test:ui
+
+# Bestimmten Test debuggen
+npx playwright test tests/mobile/02-timer.spec.js --headed
 ```
 
 ### Trace ansehen
 
-Traces werden automatisch im `test-results` Verzeichnis gespeichert:
+Traces werden automatisch bei Retry-Versuchen im `test-results/` Verzeichnis gespeichert:
 
 ```bash
+# Trace öffnen
 npx playwright show-trace test-results/trace.zip
+
+# Trace in HTML exportieren
+npx playwright show-trace --open test-results/trace.zip
 ```
+
+### Häufige Probleme
+
+| Problem | Lösung |
+|---------|--------|
+| `getFileUrl is not defined` | Importiere `getFileUrl` aus `../helpers` |
+| Browser startet nicht | Führe `npx playwright install` aus |
+| Tests schlagen zufällig fehl | Erhöhe `retries` in der Konfiguration |
+| Timeout-Fehler | Prüfe ob das Element auf `.toBeVisible()` wartet |
 
 ## Best Practices
 
-1. **Viewport-Tests**: Teste immer mehrere Viewports für responsive Designs
-2. **Screenhots**: Werden automatisch bei Fehlern erstellt
-3. **Traces**: Nützlich für das Debugging von Fehlschlägen
-4. **Parallelisierung**: Lokal voll parallel, CI mit einzelnem Worker
-5. **Naming**: Beschreibende Testnamen mit Viewport-Angabe
+### Test-Organisation
+- **Viewport-Tests**: Teste immer mehrere Viewports für responsive Designs
+- **Beschreibende Namen**: Testnamen sollten das erwartete Verhalten beschreiben (z.B. `"Timer-Overlay lässt sich schließen"`)
+
+### Debugging
+- **Screenshots**: Werden automatisch bei Fehlern erstellt (`test-results/`)
+- **Traces**: Nützlich für das Debugging von Fehlschlägen
+- **Headed-Modus**: Nutze `npm run test:headed` für visuelles Debugging
+
+### Performance
+- **Parallelisierung**: Lokal voll parallel, CI mit einzelnem Worker für Stabilität
+- **CI-Optimierungen**: 2 Retries, 1 Worker, `forbidOnly` aktiviert
+
+### Wartbarkeit
+- Nutze `helpers.js` für wiederverwendbare Funktionen
+- Verwende `test.skip()` für temporär deaktivierte Tests
+- Führe regelmäßig `npm run test` aus, um sicherzustellen dass alle Tests bestehen

@@ -2,7 +2,7 @@
 
 ## Lokale Entwicklung
 
-### Entwicklungserver starten
+### Entwicklungsserver starten
 
 ```bash
 npx serve -p 8080
@@ -18,6 +18,8 @@ Einige PWA-Features erfordern HTTPS. Für lokale Tests kann ein selbstsigniertes
 npx serve -p 8080 --ssl-cert cert.pem --ssl-key key.pem
 ```
 
+> **Hinweis:** Nach dem Öffnen der HTTPS-URL zeigt der Browser eine Sicherheitswarnung an. Diese kann für lokale Tests ignoriert werden (Zertifikat vertrauen /weitermahren).
+
 ---
 
 ## PWA-Installation
@@ -26,15 +28,15 @@ npx serve -p 8080 --ssl-cert cert.pem --ssl-key key.pem
 
 Die App erfüllt die Mindestanforderungen für PWA-Installation:
 
-- `manifest.json` mit App-Metadaten
-- Service Worker registriert
-- HTTPS-Verbindung (oder localhost)
-- Icon in zwei Größen (192x192 und 512x512)
+- `manifest.json` mit App-Metadaten (Name, Icons, Start-URL, Display-Modus)
+- Service Worker registriert und aktiv
+- HTTPS-Verbindung (oder `localhost` für lokale Entwicklung)
+- Icons in zwei Größen (192×192 px und 512×512 px)
 
 ### Installationsprozess
 
 1. Website im Browser öffnen
-2. Browser zeigt automatisch Installationsbanner an
+2. Browser zeigt automatisch Installationsbanner an (sofern verfügbar)
 3. Auf "Zum Startbildschirm hinzufügen" klicken
 4. App wird als eigenständige Anwendung installiert
 
@@ -42,9 +44,11 @@ Die App erfüllt die Mindestanforderungen für PWA-Installation:
 
 | Browser | Installationsmethode |
 |---------|---------------------|
-| Chrome/Edge | Automatisches Banner oder Menü > "App installieren" |
+| Chrome / Edge | Automatisches Banner oder Menü > "App installieren" |
 | Safari (iOS) | Teilen-Menü > "Zum Home-Bildschirm" |
 | Firefox | Menü > "Seite installieren" |
+
+> **iOS-Besonderheit:** Safari auf iOS unterstützt nicht alle PWA-Features (z.B. Background Sync). Die App bleibt jedoch funktional.
 
 ---
 
@@ -64,7 +68,9 @@ Der Service Worker verwendet eine automatisierte Update-Strategie:
 ```javascript
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistration().then(reg => {
-        reg.update();
+        if (reg) {
+            reg.update();
+        }
     });
 }
 ```
@@ -77,13 +83,15 @@ Die Service-Worker-Version wird in `sw.js` verwaltet. Bei Änderungen an gecacht
 const CACHE_VERSION = 'v2.0.0';
 ```
 
+> **Tipp:** Bei Problemen nach einem Update: Browser-Cache leeren und Service Worker in DevTools deregistrieren.
+
 ---
 
 ## Offline-Fähigkeiten
 
 ### Caching-Strategie
 
-Die App implementiert einen Cache-First-Ansatz:
+Die App implementiert einen Cache-First-Ansatz (Stale-While-Revalidate):
 
 - Statische Ressourcen werden beim ersten Besuch gecacht
 - Seitenanfragen bedienen sich aus dem Cache
@@ -91,9 +99,9 @@ Die App implementiert einen Cache-First-Ansatz:
 
 ### Verfügbare Offline-Funktionen
 
-- Timer-Funktionalität (lokal gespeichert)
+- Timer-Funktionalität (lokal gespeichert via localStorage)
 - Dashboard-Ansicht mit zuvor geladenen Daten
-- Alle core UI-Komponenten
+- Alle Core-UI-Komponenten
 
 ### Offline-Einschränkungen
 
@@ -101,17 +109,21 @@ Die App implementiert einen Cache-First-Ansatz:
 - Echtzeit-Synchronisation deaktiviert
 - Lokale Daten bleiben vollständig funktionsfähig
 
-### Cache leeren
+### Cache manuell leeren
 
 ```javascript
 navigator.serviceWorker.getRegistration().then(reg => {
-    reg.unregister().then(() => {
-        caches.keys().then(names => {
-            names.forEach(name => caches.delete(name));
+    if (reg) {
+        reg.unregister().then(() => {
+            caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+            });
         });
-    });
+    }
 });
 ```
+
+> **Hinweis:** Nach dem Leeren des Caches werden alle Ressourcen beim nächsten Besuch neu heruntergeladen.
 
 ---
 
@@ -123,10 +135,12 @@ navigator.serviceWorker.getRegistration().then(reg => {
 |---------|---------|-------------|
 | Chrome | 90+ | Vollständig |
 | Firefox | 88+ | Vollständig |
-| Safari | 14.1+ | Eingeschränkt |
+| Safari | 14.1+ | Eingeschränkt* |
 | Edge | 90+ | Vollständig |
 | Samsung Internet | 14+ | Vollständig |
 | Opera | 76+ | Vollständig |
+
+*iOS Safari unterstützt: Installation, Offline-Nutzung, lokales Caching. Nicht unterstützt: Background Sync, Push-Benachrichtigungen.
 
 ### Mobile Browser
 
@@ -145,7 +159,7 @@ Die App verwendet progressive Verbesserung. Ältere Browser zeigen die Kernfunkt
 
 ### First Contentful Paint (FCP)
 
-Durch Service-Worker-Caching wird der FCP nach dem ersten Besuch deutlich verbessert.
+Durch Service-Worker-Caching wird der FCP nach dem ersten Besuch deutlich verbessert. Bei wiederholten Besuchen werden Inhalte instant aus dem Cache geladen.
 
 ### Bundle-Größe
 
@@ -153,19 +167,21 @@ Die App ist als Single-Page-Application konzipiert mit minimaler Abhängigkeit. 
 
 ### Caching-Strategie optimieren
 
-| Ressource | Cache-Dauer |
-|-----------|-------------|
-| HTML | Variiert (Update bei neuem SW) |
-| CSS/JS | 1 Jahr (versioniert) |
-| Bilder | 1 Jahr |
-| API-Daten | Cache-Control Header |
+| Ressource | Cache-Dauer | Hinweis |
+|-----------|-------------|---------|
+| HTML | Variabel | Update bei neuer Service-Worker-Version |
+| CSS/JS | 1 Jahr | Versionierung im Dateinamen empfohlen |
+| Bilder | 1 Jahr | |
+| API-Daten | Via Cache-Control Header | |
 
 ### Lighthouse-Empfehlungen
 
-- PWA-Validierung bestehen
-- Performance-Score über 90
-- Accessibility-Score über 95
-- Best Practices einhalten
+Die App sollte folgende Scores erreichen:
+
+- PWA-Validierung: Bestanden
+- Performance-Score: ≥ 90
+- Accessibility-Score: ≥ 95
+- Best Practices: Bestanden
 
 ### Service-Worker-Registrierung
 
@@ -174,7 +190,9 @@ Die Registrierung erfolgt asynchron, um die initiale Seitenladung nicht zu block
 ```javascript
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js');
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registriert:', reg.scope))
+            .catch(err => console.error('SW Registrierung fehlgeschlagen:', err));
     });
 }
 ```
@@ -189,15 +207,17 @@ if ('serviceWorker' in navigator) {
 - Netlify
 - Vercel
 - Cloudflare Pages
-- Jeder statische Webserver
+- Jeder statische Webserver (Apache, Nginx)
 
-### Anforderungen an Hosting
+### Hosting-Anforderungen
 
-- HTTPS obligatorisch
-- `.well-known`-Pfad für AppLinks (optional)
-- Korrekte MIME-Types für manifest.json und sw.js
+- **HTTPS obligatorisch** (PWA-Installation erfordert sichere Verbindung)
+- `.well-known`-Pfad für AppLinks (optional, für Android Deep Links)
+- Korrekte MIME-Types für:
+  - `manifest.json` → `application/manifest+json`
+  - `sw.js` → `application/javascript`
 
-### Build-Prozess
+### Verzeichnisstruktur
 
 Die App benötigt keinen Build-Prozess. Alle Dateien sind produktionsfertig:
 
@@ -209,10 +229,18 @@ Die App benötigt keinen Build-Prozess. Alle Dateien sind produktionsfertig:
 ├── js/
 │   ├── app.js
 │   └── store.js
+├── css/
+│   └── styles.css
 └── icons/
     ├── icon-192.png
     └── icon-512.png
 ```
+
+### GitHub Pages Deployment
+
+1. Repository auf GitHub erstellen
+2. Settings > Pages > Source: `main` / `root`
+3. Nach kurzer Zeit unter `https://username.github.io/repository-name` verfügbar
 
 ---
 
@@ -220,18 +248,27 @@ Die App benötigt keinen Build-Prozess. Alle Dateien sind produktionsfertig:
 
 ### App wird nicht installiert
 
-- Prüfe HTTPS-Konfiguration
-- Prüfe manifest.json auf Vollständigkeit
-- Prüfe Service-Worker-Registrierung in DevTools
+1. **HTTPS prüfen:** Ist die Seite über HTTPS erreichbar?
+2. **manifest.json prüfen:** Vollständige Felder vorhanden (name, icons, start_url, display)?
+3. **Service Worker prüfen:** In DevTools > Application > Service Workers: Registriert und aktiv?
+4. **Console prüfen:** Fehlermeldungen auf Service-Worker-Fehler untersuchen
 
 ### Offline funktioniert nicht
 
-- Öffne DevTools > Application > Service Workers
-- Prüfe Cache-Storage auf vorhandene Dateien
-- Prüfe Konsole auf Service-Worker-Fehler
+1. DevTools öffnen (F12) > Application > Service Workers
+2. Status prüfen: "Activated and is running"
+3. Application > Cache Storage: Dateien vorhanden?
+4. Console auf Fehler prüfen
 
 ### Service Worker aktualisiert nicht
 
-- Browser-Cache leeren
-- `update()` manuell aufrufen
-- Service Worker in DevTools abbrechen und erneut registrieren
+1. Browser-Cache leeren (STRG+SHIFT+R / CMD+SHIFT+R)
+2. In DevTools > Application > Service Workers: "Update on reload" aktivieren
+3. `update()` manuell aufrufen (siehe oben)
+4. Service Worker in DevTools abbrechen und Seite neu laden
+
+### HTTPS-Fehler trotz Zertifikat
+
+- Zertifikat muss für die Domain gültig sein (keine Wildcards für localhost)
+- Für lokale Tests: `localhost` verwenden (kein HTTPS erforderlich)
+- Zertifikat正确 konfiguriert (nicht abgelaufen, korrekte Chain)
