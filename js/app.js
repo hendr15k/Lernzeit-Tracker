@@ -1533,9 +1533,9 @@ function renderModuleList(semesterId) {
     const totalEcts = modules.reduce((sum, m) => sum + (m.ects || 0), 0);
     const totalEstimatedHours = modules.reduce((sum, m) => sum + (m.hours || 0), 0);
     const entries = window.storageManager.getEntries();
-    const uniqueSubjectIds = [...new Set(modules.map(m => m.subjectId).filter(Boolean))];
+    const uniqueSubjectIds = new Set(modules.map(m => m.subjectId).filter(Boolean));
     const totalSpentSeconds = entries
-        .filter(e => uniqueSubjectIds.includes(e.subjectId))
+        .filter(e => uniqueSubjectIds.has(e.subjectId))
         .reduce((acc, e) => acc + e.duration, 0);
     const totalSpentHours = (totalSpentSeconds / 3600).toFixed(1);
     const overallProgress = totalEstimatedHours > 0 ? Math.min((totalSpentSeconds / 3600 / totalEstimatedHours) * 100, 100) : 0;
