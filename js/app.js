@@ -2206,6 +2206,9 @@ function updateDashboard(entries) {
 
     // Render Trends
     renderTrends(entries);
+
+    // Render Exam Countdown
+    renderExamCountdown();
 }
 
 function renderTrends(entries) {
