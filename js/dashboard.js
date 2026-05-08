@@ -7,7 +7,7 @@
  * @param {Array} entries - Array of learning entries
  * @returns {number} Number of consecutive days
  */
-export function calculateStreak(entries) {
+function calculateStreak(entries) {
     if (!entries || !entries.length) return 0;
 
     const entryDates = new Set();
@@ -48,7 +48,7 @@ export function calculateStreak(entries) {
  * @param {Date} date - Reference date
  * @returns {Date} Monday of that week
  */
-export function getWeekStart(date) {
+function getWeekStart(date) {
     const d = new Date(date);
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -62,7 +62,7 @@ export function getWeekStart(date) {
  * @param {number} seconds - Duration in seconds
  * @returns {string} Formatted duration string
  */
-export function formatDuration(seconds) {
+function formatDuration(seconds) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {
@@ -76,7 +76,7 @@ export function formatDuration(seconds) {
  * @param {string} dateStr - Date string
  * @returns {string} Formatted date
  */
-export function formatDateShort(dateStr) {
+function formatDateShort(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -86,7 +86,7 @@ export function formatDateShort(dateStr) {
  * Renders the main dashboard view
  * @param {Array} entries - Learning entries
  */
-export function updateDashboard(entries) {
+function updateDashboard(entries) {
     const subjects = window.storageManager.getSubjects();
     const streak = calculateStreak(entries);
     
@@ -600,7 +600,7 @@ function renderDonutChart(entries, subjects) {
  * Updates the daily goal progress ring with animation
  * @param {Array} entries - Learning entries
  */
-export function updateDailyGoalRing(entries) {
+function updateDailyGoalRing(entries) {
     const settings = window.storageManager.getSettings();
     const dailyGoalMinutes = settings.dailyGoal || 60;
     const dailyGoalSeconds = dailyGoalMinutes * 60;
@@ -644,7 +644,7 @@ export function updateDailyGoalRing(entries) {
  * Updates the weekly comparison badge
  * @param {Array} entries - Learning entries
  */
-export function updateWeeklyComparison(entries) {
+function updateWeeklyComparison(entries) {
     const badge = document.getElementById('dashboard-week-comparison');
     if (!badge) return;
 
@@ -692,7 +692,7 @@ export function updateWeeklyComparison(entries) {
  * Renders the 7-day bar graph
  * @param {Array} entries - Learning entries
  */
-export function renderGraph(entries) {
+function renderGraph(entries) {
     const graphContainer = document.getElementById('dashboard-graph');
     if (!graphContainer) return;
     graphContainer.innerHTML = '';
@@ -747,7 +747,7 @@ export function renderGraph(entries) {
  * Renders weekly statistics
  * @param {Array} entries - Learning entries
  */
-export function renderWeeklyStats(entries) {
+function renderWeeklyStats(entries) {
     const chartContainer = document.getElementById('weekly-bar-chart');
     const rangeLabel = document.getElementById('weekly-range-label');
     const avgDayEl = document.getElementById('weekly-avg-day');
@@ -847,7 +847,7 @@ export function renderWeeklyStats(entries) {
  * Renders weekly comparison by subject
  * @param {Array} entries - Learning entries
  */
-export function renderWeeklyComparison(entries) {
+function renderWeeklyComparison(entries) {
     const container = document.getElementById('weekly-compare-list');
     const rangeEl = document.getElementById('weekly-compare-range');
     if (!container) return;
@@ -1014,7 +1014,7 @@ export function renderWeeklyComparison(entries) {
  * Renders subject tiles on dashboard
  * @param {Array} entries - Learning entries
  */
-export function renderDashboardSubjects(entries) {
+function renderDashboardSubjects(entries) {
     const subjects = window.storageManager.getSubjects();
     const container = document.getElementById('dashboard-subject-tiles');
     const summary = document.getElementById('dashboard-subject-summary');
@@ -1071,7 +1071,7 @@ export function renderDashboardSubjects(entries) {
  * Renders learning trends
  * @param {Array} entries - Learning entries
  */
-export function renderTrends(entries) {
+function renderTrends(entries) {
     const bestTimeEl = document.getElementById('trend-best-time');
     const avgSessionEl = document.getElementById('trend-avg-session');
     const trendDirEl = document.getElementById('trend-direction');
@@ -1170,7 +1170,7 @@ export function renderTrends(entries) {
 /**
  * Renders exam countdown
  */
-export function renderExamCountdown() {
+function renderExamCountdown() {
     const container = document.getElementById('exam-countdown-list');
     const summaryEl = document.getElementById('exam-countdown-summary');
     if (!container) return;

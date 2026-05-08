@@ -20,7 +20,7 @@ const audioContext = typeof window !== 'undefined' ? (window.AudioContext || win
  * Requests a wake lock to prevent screen from sleeping
  * @returns {Promise<void>}
  */
-export async function requestWakeLock() {
+async function requestWakeLock() {
     if ('wakeLock' in navigator) {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
@@ -38,7 +38,7 @@ export async function requestWakeLock() {
  * Releases the wake lock
  * @returns {Promise<void>}
  */
-export async function releaseWakeLock() {
+async function releaseWakeLock() {
     if (wakeLock) {
         try {
             await wakeLock.release();
@@ -55,7 +55,7 @@ export async function releaseWakeLock() {
  * @param {number} duration - Duration in milliseconds
  * @param {number} count - Number of beeps
  */
-export function playBeep(freq = 800, duration = 200, count = 2) {
+function playBeep(freq = 800, duration = 200, count = 2) {
     try {
         if (!audioContext) return;
         const ctx = new audioContext();
@@ -80,7 +80,7 @@ export function playBeep(freq = 800, duration = 200, count = 2) {
  * Gets Pomodoro settings from storage
  * @returns {Object} Pomodoro configuration
  */
-export function getPomodoroSettings() {
+function getPomodoroSettings() {
     const settings = window.storageManager.getSettings();
     return {
         work: (settings.pomoWork || 25) * 60,
@@ -95,7 +95,7 @@ export function getPomodoroSettings() {
 /**
  * Updates the Pomodoro indicator display
  */
-export function updatePomodoroIndicator() {
+function updatePomodoroIndicator() {
     const indicator = document.getElementById('pomodoro-indicator');
     const modeToggle = document.getElementById('btn-pomodoro-toggle');
     if (!pomodoroMode) {
@@ -357,7 +357,7 @@ function restoreState() {
 /**
  * Initializes the timer functionality
  */
-export function initTimer() {
+function initTimer() {
     const timerOverlay = document.getElementById('timer-overlay');
     const btnToggle = document.getElementById('btn-timer-toggle');
     const btnClose = document.getElementById('btn-timer-close');
@@ -559,7 +559,7 @@ export function initTimer() {
 /**
  * Initializes the floating action button
  */
-export function initFAB() {
+function initFAB() {
     const fab = document.getElementById('fab-main');
     const btnToggle = document.getElementById('btn-timer-toggle');
     const timerOverlay = document.getElementById('timer-overlay');
@@ -614,7 +614,7 @@ if (typeof document !== 'undefined') {
 }
 
 // Export timer state getters for external use
-export function getTimerState() {
+function getTimerState() {
     return {
         isRunning: isTimerRunning,
         seconds: timerSeconds,

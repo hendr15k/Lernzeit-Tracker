@@ -505,16 +505,13 @@ class StorageManager {
 
 // Initialize storage manager in browser environment
 if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.storageManager = new StorageManager();
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    window.storageManager = new StorageManager();
+});
 }
 
-// Export for both CommonJS (Node.js testing) and ES modules (browser)
-if (typeof module !== 'undefined' && module.exports) {
+// Export for Node.js testing
+if (typeof module !== 'undefined') {
     module.exports = StorageManager;
-} else if (typeof window !== 'undefined') {
-    window.StorageManager = StorageManager;
 }
 
-export default StorageManager;

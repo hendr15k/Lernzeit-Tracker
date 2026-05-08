@@ -9,7 +9,7 @@ let currentCalendarView = 'day';
  * @param {Date} d - Date object
  * @returns {Object} Object with year and week number
  */
-export function getWeekNumber(d) {
+function getWeekNumber(d) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -21,7 +21,7 @@ export function getWeekNumber(d) {
  * Sets the current calendar view
  * @param {string} view - View type ('day', 'week', 'month')
  */
-export function setCalendarView(view) {
+function setCalendarView(view) {
     currentCalendarView = view;
 }
 
@@ -29,7 +29,7 @@ export function setCalendarView(view) {
  * Gets the current calendar view
  * @returns {string} Current view type
  */
-export function getCalendarView() {
+function getCalendarView() {
     return currentCalendarView;
 }
 
@@ -37,7 +37,7 @@ export function getCalendarView() {
  * Renders the calendar view
  * @param {Array} entries - Learning entries
  */
-export function renderCalendar(entries) {
+function renderCalendar(entries) {
     const container = document.getElementById('kalender-list');
     if (!container) return;
     container.innerHTML = '';
@@ -173,7 +173,7 @@ export function renderCalendar(entries) {
 /**
  * Initializes calendar view toggle buttons
  */
-export function initCalendarViews() {
+function initCalendarViews() {
     const buttons = document.querySelectorAll('.calendar-view-btn');
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -199,7 +199,7 @@ export function initCalendarViews() {
  * @param {number} maxSeconds - Maximum duration for scaling
  * @returns {number} Heatmap level (0-4)
  */
-export function getHeatmapLevel(seconds, maxSeconds) {
+function getHeatmapLevel(seconds, maxSeconds) {
     if (seconds === 0) return 0;
     const ratio = seconds / maxSeconds;
     if (ratio < 0.25) return 1;
@@ -212,7 +212,7 @@ export function getHeatmapLevel(seconds, maxSeconds) {
  * Renders the activity heatmap with optimized DOM operations
  * @param {Array} entries - Learning entries
  */
-export function renderHeatmap(entries) {
+function renderHeatmap(entries) {
     const container = document.getElementById('heatmap-grid');
     if (!container) return;
 
@@ -317,7 +317,7 @@ function formatDuration(seconds) {
  * @param {string} topics - Comma-separated topics
  * @returns {string} HTML string for topic badges
  */
-export function renderTopicBadges(topics) {
+function renderTopicBadges(topics) {
     if (!topics) return '';
 
     return topics
@@ -333,7 +333,7 @@ export function renderTopicBadges(topics) {
  * @param {Array} entries - Learning entries
  * @param {Array} subjects - Subject list
  */
-export function renderHistory(entries, subjects) {
+function renderHistory(entries, subjects) {
     const container = document.getElementById('einheiten-list');
     if (!container) return;
     container.innerHTML = '';
@@ -449,7 +449,7 @@ export function renderHistory(entries, subjects) {
  * @param {Array} entries - Learning entries
  * @param {Array} subjects - Subject list
  */
-export function renderFaecher(entries, subjects) {
+function renderFaecher(entries, subjects) {
     const container = document.getElementById('faecher-list');
     if (!container) return;
     container.innerHTML = '';
@@ -528,7 +528,7 @@ export function renderFaecher(entries, subjects) {
  * @param {string} examDate - Exam date string
  * @param {string} moduleName - Module name
  */
-export function exportExamToICS(examDate, moduleName) {
+function exportExamToICS(examDate, moduleName) {
     if (!examDate) {
         window.showToast('Kein Prüfungsdatum verfügbar', 'error');
         return;

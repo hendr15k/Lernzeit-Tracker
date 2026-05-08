@@ -3,11 +3,6 @@
  * @description Imports and initializes all modules, sets up navigation and event handlers
  */
 
-import { initTimer, initFAB } from './timer.js';
-import { updateDashboard } from './dashboard.js';
-import { initCalendarViews, renderCalendar, renderHeatmap, renderHistory, renderFaecher } from './calendar.js';
-import { checkAchievements, renderAchievementsDisplay } from './achievements.js';
-import { debounce, isValidDuration, isValidDateFormat, isValidTimeFormat, isValidDateRange } from './utils.js';
 
 /**
  * PWA Install State
@@ -45,6 +40,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initNotifications();
     initKeyboardShortcuts();
     initVoiceInput();
+    function initTodoHandlers() {
+    // TODO handlers - implement when Todo UI is fully integrated
+}
+
+function initNotifications() {
+    // Notification handlers - basic permission request (deferred to user interaction)
+}
+
+function initKeyboardShortcuts() {
+    // Keyboard shortcut handlers
+}
+
+function initVoiceInput() {
+    // Voice input handlers
+}
+
     initTouchGestures();
     initTodoWidget();
 

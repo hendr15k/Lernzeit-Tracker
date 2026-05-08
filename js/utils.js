@@ -8,7 +8,7 @@
  * @param {number} wait - Delay in milliseconds
  * @returns {Function} Debounced function
  */
-export function debounce(func, wait) {
+function debounce(func, wait) {
     let timeoutId = null;
     return function debounced(...args) {
         clearTimeout(timeoutId);
@@ -23,7 +23,7 @@ export function debounce(func, wait) {
  * @param {*} value - Value to validate
  * @returns {boolean} True if valid positive number
  */
-export function isValidPositiveNumber(value) {
+function isValidPositiveNumber(value) {
     const num = parseFloat(value);
     return !isNaN(num) && num > 0 && isFinite(num);
 }
@@ -33,7 +33,7 @@ export function isValidPositiveNumber(value) {
  * @param {string} dateStr - Date string to validate
  * @returns {boolean} True if valid format
  */
-export function isValidDateFormat(dateStr) {
+function isValidDateFormat(dateStr) {
     if (!dateStr || typeof dateStr !== 'string') return false;
     const regex = /^\d{4}-\d{2}-\d{2}$/;
     if (!regex.test(dateStr)) return false;
@@ -46,7 +46,7 @@ export function isValidDateFormat(dateStr) {
  * @param {string} timeStr - Time string to validate
  * @returns {boolean} True if valid format
  */
-export function isValidTimeFormat(timeStr) {
+function isValidTimeFormat(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return false;
     const regex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return regex.test(timeStr);
@@ -57,7 +57,7 @@ export function isValidTimeFormat(timeStr) {
  * @param {string} value - Value to sanitize
  * @returns {string} Sanitized value
  */
-export function sanitizeInput(value) {
+function sanitizeInput(value) {
     if (value === null || value === undefined) return '';
     return String(value)
         .replace(/&/g, '&amp;')
@@ -72,7 +72,7 @@ export function sanitizeInput(value) {
  * @param {number|string} minutes - Duration to validate
  * @returns {boolean} True if valid duration
  */
-export function isValidDuration(minutes) {
+function isValidDuration(minutes) {
     const num = parseInt(minutes, 10);
     return !isNaN(num) && num >= 1 && num <= 1440;
 }
@@ -83,7 +83,7 @@ export function isValidDuration(minutes) {
  * @param {string} endDate - End date string
  * @returns {boolean} True if valid range
  */
-export function isValidDateRange(startDate, endDate) {
+function isValidDateRange(startDate, endDate) {
     if (!startDate || !endDate) return true;
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -98,7 +98,7 @@ export function isValidDateRange(startDate, endDate) {
  * @param {string} options.viewName - Name of the view
  * @returns {Function} Lazy initialization function
  */
-export function createLazyInitializer(initFn, { containerId, viewName }) {
+function createLazyInitializer(initFn, { containerId, viewName }) {
     let initialized = false;
     return function lazyInit(...args) {
         const container = document.getElementById(containerId);
@@ -117,7 +117,7 @@ export function createLazyInitializer(initFn, { containerId, viewName }) {
  * Generates a unique ID based on timestamp and random string
  * @returns {string} Unique identifier
  */
-export function generateId() {
+function generateId() {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -127,7 +127,7 @@ export function generateId() {
  * @param {*} fallback - Fallback value on error
  * @returns {*} Parsed value or fallback
  */
-export function safeJsonParse(jsonString, fallback = null) {
+function safeJsonParse(jsonString, fallback = null) {
     try {
         return JSON.parse(jsonString);
     } catch (e) {

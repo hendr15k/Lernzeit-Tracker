@@ -25,7 +25,7 @@ const ACHIEVEMENT_DEFINITIONS = [
  * Gets stored achievements from localStorage
  * @returns {Array} Array of unlocked achievements
  */
-export function getStoredAchievements() {
+function getStoredAchievements() {
     try {
         const raw = localStorage.getItem('lt_achievements');
         const parsed = raw ? JSON.parse(raw) : [];
@@ -40,7 +40,7 @@ export function getStoredAchievements() {
  * Saves achievements to localStorage
  * @param {Array} achievements - Achievements array
  */
-export function saveAchievements(achievements) {
+function saveAchievements(achievements) {
     try {
         localStorage.setItem('lt_achievements', JSON.stringify(achievements));
     } catch (e) {
@@ -53,7 +53,7 @@ export function saveAchievements(achievements) {
  * @param {string} dateString - ISO date string
  * @returns {string} Formatted date string
  */
-export function formatAchievementDate(dateString) {
+function formatAchievementDate(dateString) {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return 'unbekannt';
     return date.toLocaleDateString('de-DE', {
@@ -67,7 +67,7 @@ export function formatAchievementDate(dateString) {
  * Gets the current week range
  * @returns {Object} Object with start and end dates
  */
-export function getCurrentWeekRange() {
+function getCurrentWeekRange() {
     const now = new Date();
     const dayOfWeek = now.getDay();
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -87,7 +87,7 @@ export function getCurrentWeekRange() {
  * Gets the current month range
  * @returns {Object} Object with start and end dates
  */
-export function getCurrentMonthRange() {
+function getCurrentMonthRange() {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -99,7 +99,7 @@ export function getCurrentMonthRange() {
  * @param {Array} entries - Learning entries
  * @returns {Object} Progress object with achievement IDs as keys
  */
-export function getAchievementProgress(entries) {
+function getAchievementProgress(entries) {
     const settings = window.storageManager.getSettings();
     const dailyGoalMinutes = settings.dailyGoal || 60;
     const dailyGoalSeconds = dailyGoalMinutes * 60;
@@ -207,7 +207,7 @@ function calculateStreak(entries) {
  * @param {boolean} options.showToasts - Whether to show toast notifications
  * @returns {Array} Updated achievements array
  */
-export function checkAchievements(entries, { showToasts = false } = {}) {
+function checkAchievements(entries, { showToasts = false } = {}) {
     const unlocked = getStoredAchievements();
     const unlockedIds = new Set(unlocked.map(item => item.id));
     const progress = getAchievementProgress(entries);
@@ -245,7 +245,7 @@ export function checkAchievements(entries, { showToasts = false } = {}) {
  * Renders achievements list display
  * @param {Array} entries - Learning entries
  */
-export function renderAchievementsDisplay(entries) {
+function renderAchievementsDisplay(entries) {
     const container = document.getElementById('achievements-list');
     const summary = document.getElementById('achievements-summary');
     if (!container) return;
@@ -285,6 +285,6 @@ export function renderAchievementsDisplay(entries) {
  * Gets achievement definitions
  * @returns {Array} Achievement definitions array
  */
-export function getAchievementDefinitions() {
+function getAchievementDefinitions() {
     return ACHIEVEMENT_DEFINITIONS;
 }
