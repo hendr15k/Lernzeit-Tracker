@@ -337,3 +337,82 @@ body {
         scroll-behavior: auto !important;
     }
 }
+
+/* ==================== ACHIEVEMENTS PAGE ==================== */
+
+/* Native <details> summary styling */
+.achievement-category summary {
+    list-style: none;
+    -webkit-appearance: none;
+    appearance: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+    border-radius: 1rem;
+}
+
+.achievement-category summary::-webkit-details-marker {
+    display: none;
+}
+
+.achievement-category summary::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--color-text-muted);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.achievement-category[open] > summary::after {
+    transform: rotate(180deg);
+}
+
+.achievement-category summary:hover {
+    background-color: var(--color-surface);
+}
+
+.achievement-category {
+    transition: border-color 0.3s;
+}
+
+.achievement-category[open] {
+    border-color: var(--color-primary);
+}
+
+/* Achievement card hover */
+.achievement-card {
+    transition: transform 0.2s ease, border-color 0.3s;
+}
+
+.achievement-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Progress bar variants */
+.progress-bar-green {
+    background-color: var(--color-success);
+}
+
+.progress-bar-gray {
+    background-color: #374151;
+}
+
+.progress-bar-orange {
+    background-color: #f97316;
+}
+
+/* Light mode adjustments for achievements */
+.light .achievement-category summary::after {
+    border-top-color: var(--color-text-muted);
+}
+
+.light .achievement-card.grayscale {
+    filter: grayscale(1) opacity(0.6);
+}

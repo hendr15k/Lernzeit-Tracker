@@ -409,6 +409,232 @@ function renderRecommendedStudyTime() {
 }
 
 // Todo functions are now in app.js, window functions are called from there
+    if (typeof window.updateStatisticsView === 'function') {
+        window.updateStatisticsView();
+    }
+
+// ==================== STATISTIKEN ====================
+
+/**
+ * Aktualisiert die Statistiken-Seite
+ */
+function updateStatisticsView() {
+    const entries = window.storageManager.getEntries();
+    const subjects = window.storageManager.getSubjects();
+    renderStatisticsPage(entries, subjects);
+}
+
+/**
+ * Rendert die gesamte Statistiken-Seite
+ */
+function renderStatisticsPage(entries, subjects) {
+    // --- 1. Stat-Karten ---
+    const totalSeconds = entries.reduce((acc, e) => acc + e.duration, 0);
+    const totalHours = (totalSeconds / 3600).toFixed(1);
+
+    const totalEl = document.getElementById('stat-total-hours');
+    if (totalEl) totalEl.textContent = `${totalHours}h`;
+
+    // Ø Tagesleistung
+    const dayTotals = {};
+    entries.forEach(e => {
+        const d = new Date(e.startTime).toDateString();
+        dayTotals[d] = (dayTotals[d] || 0) + e.duration;
+    });
+    const activeDays = Object.keys(dayTotals).length;
+    const avgSeconds = activeDays > 0 ? totalSeconds / activeDays : 0;
+    const avgHours = (avgSeconds / 3600).toFixed(1);
+    const avgEl = document.getElementById('stat-avg-day');
+    if (avgEl) avgEl.textContent = `${avgHours}h`;
+
+    // Bester Tag
+    let bestDayStr = '—';
+    let bestDaySeconds = 0;
+    if (Object.keys(dayTotals).length > 0) {
+        bestDaySeconds = Math.max(...Object.values(dayTotals));
+        const bestDate = Object.entries(dayTotals).find(([, v]) => v === bestDaySeconds);
+        if (bestDate) {
+            bestDayStr = new Date(bestDate[0]).toLocaleDateString('de-DE', {
+                weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric'
+            });
+        }
+    }
+    const bestDayEl = document.getElementById('stat-best-day');
+    if (bestDayEl) {
+        bestDayEl.textContent = `${bestDayStr} (${(bestDaySeconds / 3600).toFixed(1)}h)`;
+    }
+
+    // Längste Session
+    let longestSeconds = 0;
+    let longestSubject = '';
+    entries.forEach(e => {
+        if (e.duration > longestSeconds) {
+            longestSeconds = e.duration;
+            const subject = subjects.find(s => String(s.id) === String(e.subjectId));
+            longestSubject = subject ? subject.name : '';
+        }
+    });
+    const longestEl = document.getElementById('stat-longest-session');
+    if (longestEl) {
+        const longestMinutes = Math.round(longestSeconds / 60);
+        longestEl.textContent = longestSubject
+            ? `${longestMinutes}min (${escapeHtml(longestSubject).substring(0, 18)})`
+            : `${longestMinutes}min`;
+    }
+
+    // --- 2-4. Charts ---
+    renderMonthlyBars(entries);
+    renderSubjectComparison(entries, subjects);
+    renderWeeklyProgressLine(entries);
+}
+
+function getLast6MonthsData(entries) {
+    const result = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const monthEntries = entries.filter(e => {
+            const ed = new Date(e.startTime);
+            return ed.getFullYear() === year && ed.getMonth() === month;
+        });
+        const totalSeconds = monthEntries.reduce((acc, e) => acc + e.duration, 0);
+        result.push({
+            label: d.toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }),
+            seconds: totalSeconds,
+            year, month
+        });
+    }
+    return result;
+}
+
+function getSubjectComparisonData(entries, subjects) {
+    const result = subjects.map(subject => {
+        const totalSeconds = entries
+            .filter(e => String(e.subjectId) === String(subject.id))
+            .reduce((acc, e) => acc + e.duration, 0);
+        return { name: subject.name, color: subject.color, totalSeconds };
+    });
+    result.sort((a, b) => b.totalSeconds - a.totalSeconds);
+    return result;
+}
+
+function renderMonthlyBars(entries) {
+    const container = document.getElementById('stat-monthly-chart');
+    if (!container) return;
+    container.innerHTML = '';
+    const months = getLast6MonthsData(entries);
+    const maxSeconds = Math.max(...months.map(m => m.seconds), 3600);
+    months.forEach(m => {
+        const pct = Math.max((m.seconds / maxSeconds) * 100, m.seconds > 0 ? 3 : 0);
+        const hrs = (m.seconds / 3600).toFixed(1);
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+            <div class="w-20 text-xs text-adaptive-muted truncate flex-shrink-0">${escapeHtml(m.label)}</div>
+            <div class="flex-1 h-5 bg-gray-700/30 rounded-full overflow-hidden relative">
+                <div class="h-full bg-primary transition-all rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <div class="w-14 text-right text-xs text-adaptive-muted font-medium">${hrs}h</div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function renderSubjectComparison(entries, subjects) {
+    const container = document.getElementById('stat-subject-bars');
+    if (!container) return;
+    container.innerHTML = '';
+    const data = getSubjectComparisonData(entries, subjects);
+    if (data.length === 0) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-4">Keine Daten vorhanden.</div>';
+        return;
+    }
+    const maxSeconds = Math.max(...data.map(d => d.totalSeconds), 1);
+    data.forEach(item => {
+        if (item.totalSeconds === 0) return;
+        const pct = (item.totalSeconds / maxSeconds) * 100;
+        const hrs = (item.totalSeconds / 3600).toFixed(1);
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        const escapedName = escapeHtml(item.name);
+        row.innerHTML = `
+            <div class="w-20 text-xs font-medium text-adaptive truncate flex-shrink-0" title="${escapedName}">${escapedName.substring(0, 10)}</div>
+            <div class="flex-1 h-5 bg-gray-700/30 rounded-full overflow-hidden relative">
+                <div class="h-full ${item.color} transition-all rounded-full" style="width: ${Math.max(pct, 3)}%"></div>
+            </div>
+            <div class="w-14 text-right text-xs text-adaptive-muted font-medium">${hrs}h</div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function renderWeeklyProgressLine(entries) {
+    const container = document.getElementById('stat-weekly-line-chart');
+    if (!container) return;
+
+    const weeks = [];
+    const now = new Date();
+    for (let i = 3; i >= 0; i--) {
+        const monday = getWeekStart(new Date(now));
+        monday.setDate(monday.getDate() - (i * 7));
+        const sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        const weekSeconds = entries
+            .filter(e => e.startTime >= monday.getTime() && e.startTime <= sunday.getTime())
+            .reduce((acc, e) => acc + e.duration, 0);
+        weeks.push({
+            label: `${monday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}–${sunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`,
+            seconds: weekSeconds
+        });
+    }
+
+    const maxSeconds = Math.max(...weeks.map(w => w.seconds), 3600);
+    const width = 320;
+    const height = 140;
+    const padding = { top: 16, right: 10, bottom: 30, left: 30 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    if (weeks.length === 0) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center w-full py-4">Keine Daten</div>';
+        return;
+    }
+
+    const points = weeks.map((w, i) => ({
+        x: padding.left + (weeks.length === 1 ? chartWidth / 2 : (i / (weeks.length - 1)) * chartWidth),
+        y: padding.top + chartHeight - (w.seconds / maxSeconds) * chartHeight,
+        ...w
+    }));
+
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const areaPath = linePath + ` L ${points[points.length - 1].x} ${padding.top + chartHeight} L ${points[0].x} ${padding.top + chartHeight} Z`;
+
+    container.innerHTML = `
+        <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <defs>
+                <linearGradient id="statWeeklyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.25" />
+                    <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+                </linearGradient>
+            </defs>
+            ${[0, 0.5, 1].map(ratio => {
+                const y = padding.top + chartHeight * (1 - ratio);
+                const hrs = Math.round((maxSeconds * ratio) / 3600 * 10) / 10;
+                return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#374151" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.3"/>
+                    <text x="${padding.left - 4}" y="${y + 3}" text-anchor="end" fill="#9ca3af" font-size="8">${hrs}h</text>`;
+            }).join('')}
+            <path d="${areaPath}" fill="url(#statWeeklyGradient)" />
+            <path d="${linePath}" fill="none" stroke="#3b82f6" stroke-width="2" />
+            ${points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${p.seconds > 0 ? 3.5 : 2.5}" fill="#3b82f6" opacity="${p.seconds > 0 ? 1 : 0.3}">
+                <title>${p.label}: ${Math.round(p.seconds / 60)}min</title>
+            </circle>`).join('')}
+            ${points.map((p) => `<text x="${p.x}" y="${height - 8}" text-anchor="middle" fill="#9ca3af" font-size="9">${p.label.split('–')[0]}</text>`).join('')}
+        </svg>
+    `;
+}
 
 const DONUT_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
