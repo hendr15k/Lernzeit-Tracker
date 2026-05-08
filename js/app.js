@@ -99,6 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // PWA Install Prompt
     initPWAInstall();
+
+    // Check for app updates
+    initUpdateChecker();
 });
 
 function initPWAInstall() {
@@ -162,6 +165,40 @@ function initFontSize() {
 
 function applyFontSize(size) {
     document.documentElement.style.fontSize = size + 'px';
+}
+
+function initUpdateChecker() {
+    const banner = document.getElementById('update-banner');
+    if (!banner) return;
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').then(registration => {
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        banner.classList.remove('hidden', 'translate-y-full');
+                        setTimeout(() => {
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            window.location.reload();
+                        }, 2000);
+                    }
+                });
+            });
+
+            setInterval(() => {
+                registration.update();
+            }, 60 * 60 * 1000);
+        });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
+        });
+    }
 }
 
 function initTheme() {
