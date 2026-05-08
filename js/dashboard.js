@@ -1254,17 +1254,29 @@ function renderDashboardSubjects(entries) {
         return;
     }
 
-    const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
-    const maxDuration = Math.max(
-        ...subjects.map(s => entries.filter(e => e.subjectId === s.id).reduce((acc, curr) => acc + curr.duration, 0)),
-        1
-    );
+    const durationBySubject = new Map();
+    let totalSeconds = 0;
+
+    for (const entry of entries) {
+        totalSeconds += entry.duration;
+        durationBySubject.set(
+            entry.subjectId,
+            (durationBySubject.get(entry.subjectId) || 0) + entry.duration
+        );
+    }
+
+    let maxDuration = 1;
+    for (const subject of subjects) {
+        const duration = durationBySubject.get(subject.id) || 0;
+        if (duration > maxDuration) {
+            maxDuration = duration;
+        }
+    }
 
     let summaryParts = [];
 
     subjects.forEach(subject => {
-        const subjectEntries = entries.filter(e => e.subjectId === subject.id);
-        const duration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
+        const duration = durationBySubject.get(subject.id) || 0;
         const hrs = (duration / 3600).toFixed(1);
         const barWidth = Math.round((duration / maxDuration) * 100);
 
