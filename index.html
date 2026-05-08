@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Lernzeit-Tracker — Tracke deine Lernzeiten für FH Aachen Fächer">
     <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,13 +33,24 @@
     </script>
 </head>
 <body class="bg-dark text-adaptive font-sans antialiased pb-24">
-    <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden flex flex-col">
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <!-- Pull to refresh indicator -->
+    <div id="pull-indicator" class="pull-indicator fixed top-0 left-0 right-0 h-0 overflow-hidden flex items-center justify-center z-50 pointer-events-none">
+        <div class="flex flex-col items-center text-primary">
+            <i data-lucide="refresh-cw" class="w-6 h-6 animate-spin"></i>
+            <span class="text-xs mt-1">Laden...</span>
+        </div>
+    </div>
+
+    <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden flex flex-col" role="application" aria-label="Lernzeit Tracker Anwendung">
 
         <!-- Top Header -->
-        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300">
+        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300" role="banner">
             <div class="flex items-center space-x-2">
-                <button class="p-2 rounded-full hover:bg-surface transition" aria-label="Home">
-                    <i data-lucide="home" class="w-6 h-6"></i>
+                <button class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Home" role="button" tabindex="0">
+                    <i data-lucide="home" class="w-6 h-6" aria-hidden="true"></i>
                 </button>
                 <div id="header-title" class="hidden">
                     <!-- Dynamic Title -->
@@ -47,68 +58,158 @@
             </div>
 
             <div class="flex items-center space-x-3">
-                <button id="btn-add" class="p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive" aria-label="Eintrag hinzufügen">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
+                <button id="btn-add" class="btn-interactive p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive touch-target" aria-label="Eintrag hinzufügen" role="button" tabindex="0">
+                    <i data-lucide="plus" class="w-5 h-5" aria-hidden="true"></i>
                 </button>
-                <button id="btn-timer-toggle" class="p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white" aria-label="Timer öffnen">
-                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                <button id="btn-timer-toggle" class="btn-interactive p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white touch-target" aria-label="Timer öffnen" role="button" tabindex="0">
+                    <i data-lucide="play" class="w-5 h-5 fill-current" aria-hidden="true"></i>
                 </button>
-                <button id="btn-theme" class="p-2 rounded-full bg-success hover:bg-green-600 transition text-white" aria-label="Theme wechseln">
-                    <i data-lucide="lightbulb" class="w-5 h-5 fill-current"></i>
+                <button id="btn-theme" class="btn-interactive p-2 rounded-full bg-success hover:bg-green-600 transition text-white touch-target" aria-label="Theme wechseln" role="button" tabindex="0">
+                    <i data-lucide="lightbulb" class="w-5 h-5 fill-current" aria-hidden="true"></i>
                 </button>
-                <button id="btn-menu" class="p-2 rounded-full hover:bg-surface transition" aria-label="Menü">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
+                <button id="btn-menu" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Menü" role="button" tabindex="0">
+                    <i data-lucide="menu" class="w-6 h-6" aria-hidden="true"></i>
                 </button>
             </div>
         </header>
 
         <!-- Main Content Area -->
-        <main id="main-content" class="flex-1 p-4 overflow-y-auto">
+        <main id="main-content" class="flex-1 p-4 overflow-y-auto" role="main" tabindex="-1">
 
             <!-- View: Dashboard -->
-            <div id="view-dashboard" class="view-section animate-fade-in">
+            <div id="view-dashboard" class="view-section animate-fade-in" role="region" aria-label="Dashboard">
                 <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
                 <div class="grid gap-4">
                     <!-- Daily Goal Progress Ring -->
-                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center">
-                        <svg id="daily-goal-ring" width="120" height="120" viewBox="0 0 120 120" class="block">
+                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center animate-slide-up">
+                        <svg id="daily-goal-ring" width="120" height="120" viewBox="0 0 120 120" class="block" role="img" aria-label="Tägliches Lernziel Fortschritt">
                             <!-- Background track -->
                             <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2937" stroke-width="8" />
                             <!-- Progress arc -->
                             <circle id="daily-goal-progress" cx="60" cy="60" r="52" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"
                                 stroke-dasharray="326.73" stroke-dashoffset="326.73"
                                 transform="rotate(-90 60 60)"
-                                style="transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;" />
+                                class="progress-ring-circle"
+                                aria-hidden="true" />
                             <!-- Center text -->
                             <text id="daily-goal-time" x="60" y="55" text-anchor="middle" dominant-baseline="central"
-                                fill="currentColor" font-size="16" font-weight="bold" font-family="inherit">0m</text>
+                                fill="currentColor" font-size="16" font-weight="bold" font-family="inherit" class="counter-animated">0m</text>
                             <text id="daily-goal-label" x="60" y="73" text-anchor="middle" dominant-baseline="central"
                                 fill="#9ca3af" font-size="11" font-family="inherit">Ziel: 1h</text>
                             <!-- Fire emoji when goal met -->
                             <text id="daily-goal-fire" x="95" y="28" text-anchor="middle" dominant-baseline="central"
-                                font-size="16" opacity="0" style="transition: opacity 0.3s ease;">🔥</text>
+                                font-size="16" opacity="0" style="transition: opacity 0.3s ease;" aria-hidden="true">🔥</text>
                         </svg>
                     </div>
 
-                    <!-- Graph Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="h-32 flex items-end space-x-2" id="dashboard-graph">
-                            <!-- Bars injected via JS -->
+                    <!-- Focus Score Widget -->
+                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.05s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="target" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                                Focus Score
+                            </h2>
+                            <span id="focus-score-badge" class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">—</span>
                         </div>
-                        <div class="flex justify-between items-center mt-4">
-                            <h2 class="text-lg font-semibold">Wochenübersicht</h2>
+                        <div class="flex items-center gap-4">
+                            <svg id="focus-score-ring" width="60" height="60" viewBox="0 0 60 60" aria-hidden="true">
+                                <circle cx="30" cy="30" r="26" fill="none" stroke="#1f2937" stroke-width="5" />
+                                <circle id="focus-score-progress" cx="30" cy="30" r="26" fill="none" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"
+                                    stroke-dasharray="163.36" stroke-dashoffset="163.36"
+                                    transform="rotate(-90 30 30)"
+                                    class="focus-score-ring"
+                                    aria-hidden="true" />
+                            </svg>
+                            <div class="flex-1">
+                                <div class="text-2xl font-bold text-adaptive counter-animated" id="focus-score-value">0</div>
+                                <div class="text-xs text-adaptive-muted" id="focus-score-label">Sessions diese Woche</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Study Time Widget -->
+                    <div class="surface-card p-4 border border-gray-800 recommended-time-card text-white animate-slide-up" style="animation-delay: 0.1s;">
+                        <div class="flex justify-between items-start mb-2">
+                            <h2 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="clock" class="w-5 h-5" aria-hidden="true"></i>
+                                Empfohlene Lernzeit
+                            </h2>
+                            <span id="recommended-time-subject" class="text-xs bg-white/20 px-2 py-0.5 rounded-full"></span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <div class="text-3xl font-bold" id="recommended-time-value">—</div>
+                                <div class="text-xs opacity-75" id="recommended-time-reason"></div>
+                            </div>
+                            <button id="btn-start-recommended" class="btn-interactive px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium transition" aria-label="Empfohlene Lernzeit starten">
+                                Starten
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SVG Line Chart Widget -->
+                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.15s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-success" aria-hidden="true"></i>
+                                Wochen-Trend
+                            </h2>
                             <span id="dashboard-week-comparison" class="text-xs bg-green-400/10 text-green-400 px-2 py-1 rounded-full">—</span>
+                        </div>
+                        <div class="relative h-40" id="dashboard-line-chart" role="img" aria-label="Wochen-Trend Diagramm">
+                            <!-- SVG Line Chart injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Subject Distribution Donut Chart -->
+                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.2s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-5 h-5 text-purple-500" aria-hidden="true"></i>
+                                Fächerverteilung
+                            </h2>
+                            <span id="subject-distribution-total" class="text-xs text-adaptive-muted"></span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <svg id="subject-donut-chart" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Fächerverteilung">
+                                <!-- Donut chart injected via JS -->
+                            </svg>
+                            <div id="subject-distribution-legend" class="flex-1 space-y-2 text-sm">
+                                <!-- Legend items injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mini Todo Widget -->
+                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.25s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="check-square" class="w-5 h-5 text-orange-500" aria-hidden="true"></i>
+                                Lernziele
+                            </h2>
+                            <button id="btn-add-todo" class="btn-interactive p-1 hover:bg-surface rounded transition" aria-label="Neues Lernziel hinzufügen">
+                                <i data-lucide="plus-circle" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="todo-list" class="space-y-2 max-h-48 overflow-y-auto" role="list" aria-label="Lernziele Liste">
+                            <!-- Todo items injected via JS -->
+                        </div>
+                        <div id="todo-empty-state" class="text-sm text-adaptive-muted text-center py-4 hidden">
+                            Keine Lernziele vorhanden
                         </div>
                     </div>
 
                     <!-- Streak Widget -->
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
-                             <div class="text-3xl font-bold text-primary" id="dashboard-streak">0</div>
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center animate-slide-up" style="animation-delay: 0.3s;">
+                             <div class="flex items-center gap-2">
+                                 <div class="text-3xl font-bold text-primary counter-animated" id="dashboard-streak">0</div>
+                                 <span id="streak-fire" class="text-xl" aria-hidden="true">🔥</span>
+                             </div>
                              <div class="text-xs text-adaptive-muted">Tage Streak</div>
                         </div>
-                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
-                             <div class="text-3xl font-bold text-success" id="dashboard-total">0h</div>
+                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center animate-slide-up" style="animation-delay: 0.35s;">
+                             <div class="text-3xl font-bold text-success counter-animated" id="dashboard-total">0h</div>
                              <div class="text-xs text-adaptive-muted">Gesamtzeit</div>
                         </div>
                     </div>
@@ -218,6 +319,29 @@
                         </div>
                     </div>
 
+                    <!-- Todo Checklist Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Prüfungsvorbereitung</h2>
+                            <button id="btn-add-todo" class="p-1.5 bg-primary/20 hover:bg-primary/30 rounded-full transition" aria-label="Todo hinzufügen">
+                                <i data-lucide="plus" class="w-4 h-4 text-primary"></i>
+                            </button>
+                        </div>
+                        <div id="todo-list-mini" class="space-y-2">
+                            <!-- Dynamic todos -->
+                        </div>
+                        <div id="todo-progress-mini" class="mt-3 pt-3 border-t border-gray-700">
+                            <div class="flex justify-between text-xs text-adaptive-muted">
+                                <span>Fortschritt</span>
+                                <span id="todo-progress-text">0/0</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full mt-1 overflow-hidden">
+                                <div id="todo-progress-bar" class="h-full bg-success transition-all" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <button id="btn-show-all-todos" class="mt-3 w-full text-center text-xs text-primary hover:underline">Alle anzeigen →</button>
+                    </div>
+
                     <!-- Wochenvergleich by Subject -->
                     <div class="surface-card p-4 border border-gray-800">
                         <div class="flex justify-between items-center mb-3">
@@ -226,6 +350,26 @@
                         </div>
                         <div id="weekly-compare-list" class="space-y-3">
                             <!-- Dynamic rows -->
+                        </div>
+                    </div>
+
+                    <!-- Subject Distribution Pie Chart -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Fächerverteilung</h2>
+                        </div>
+                        <div id="subject-pie-chart">
+                            <!-- Dynamic chart -->
+                        </div>
+                    </div>
+
+                    <!-- Learning Trend Line -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Lerntrend</h2>
+                        </div>
+                        <div id="learning-trend-line">
+                            <!-- Dynamic line chart -->
                         </div>
                     </div>
 
@@ -281,50 +425,52 @@
             </div>
 
             <!-- View: Einheiten -->
-            <div id="view-einheiten" class="view-section hidden animate-fade-in">
+            <div id="view-einheiten" class="view-section hidden animate-fade-in" role="region" aria-label="Lerneinheiten">
                 <div class="flex flex-col space-y-4 mb-6">
                     <div class="flex justify-between items-center">
                         <h1 class="text-3xl font-bold">Einheiten</h1>
-                        <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm">
+                        <label for="history-filter-subject" class="sr-only">Nach Fach filtern</label>
+                        <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm" aria-label="Nach Fach filtern">
                             <option value="">Alle Fächer</option>
                             <!-- Options injected via JS -->
                         </select>
                     </div>
-                    <input type="text" id="history-search-input" placeholder="Suche in Notizen oder Fächern..." class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-sm">
+                    <label for="history-search-input" class="sr-only">Suche in Notizen oder Fächern</label>
+                    <input type="text" id="history-search-input" placeholder="Suche in Notizen oder Fächern..." class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-sm" aria-label="Suchen">
                 </div>
-                <div id="einheiten-list" class="space-y-4">
+                <div id="einheiten-list" class="space-y-4" role="list" aria-label="Lerneinheiten Liste">
                     <!-- Dynamic List -->
                 </div>
             </div>
 
             <!-- View: Fächer -->
-            <div id="view-faecher" class="view-section hidden animate-fade-in">
+            <div id="view-faecher" class="view-section hidden animate-fade-in" role="region" aria-label="Fächer">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-bold">Fächer</h1>
-                    <button id="btn-add-subject" class="bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition" aria-label="Fach hinzufügen">
+                    <button id="btn-add-subject" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" aria-label="Fach hinzufügen">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
                 </div>
-                <div id="faecher-list" class="grid gap-4">
+                <div id="faecher-list" class="grid gap-4" role="list" aria-label="Fächer Liste">
                     <!-- Dynamic List -->
                 </div>
             </div>
 
             <!-- View: Kalender -->
-            <div id="view-kalender" class="view-section hidden animate-fade-in">
+            <div id="view-kalender" class="view-section hidden animate-fade-in" role="region" aria-label="Kalender">
                 <h1 class="text-3xl font-bold mb-6">Kalender</h1>
-                <div class="flex space-x-2 mb-6" id="calendar-view-controls">
-                    <button class="calendar-view-btn px-4 py-2 bg-surface rounded-full text-sm font-medium text-adaptive" data-view="day">Tagessicht</button>
-                    <button class="calendar-view-btn px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted" data-view="week">Wochensicht</button>
-                    <button class="calendar-view-btn px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted" data-view="month">Monatssicht</button>
+                <div class="flex space-x-2 mb-6" id="calendar-view-controls" role="tablist" aria-label="Kalenderansicht auswählen">
+                    <button class="calendar-view-btn btn-interactive px-4 py-2 bg-surface rounded-full text-sm font-medium text-adaptive touch-target" data-view="day" role="tab" aria-selected="true">Tagessicht</button>
+                    <button class="calendar-view-btn btn-interactive px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted touch-target" data-view="week" role="tab" aria-selected="false">Wochensicht</button>
+                    <button class="calendar-view-btn btn-interactive px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted touch-target" data-view="month" role="tab" aria-selected="false">Monatssicht</button>
                 </div>
-                <div id="kalender-list" class="space-y-6">
+                <div id="kalender-list" class="space-y-6" role="tabpanel" aria-label="Kalenderansicht">
                     <!-- Dynamic List -->
                 </div>
             </div>
 
             <!-- View: Semester -->
-            <div id="view-semester" class="view-section hidden animate-fade-in">
+            <div id="view-semester" class="view-section hidden animate-fade-in" role="region" aria-label="Semester">
                 <!-- Semester List View -->
                 <div id="semester-list-view">
                     <div class="flex justify-between items-center mb-6">
@@ -481,28 +627,91 @@
                 </div>
             </div>
 
+            <!-- Add Todo Modal -->
+            <div id="add-todo-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+                <div class="flex justify-between items-center p-4">
+                    <button id="btn-add-todo-close" class="p-2 rounded-full hover:bg-surface transition">
+                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                    </button>
+                    <div id="add-todo-title" class="text-sm font-medium text-adaptive-muted">Todo hinzufügen</div>
+                    <div class="w-10"></div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Titel</label>
+                        <input type="text" id="add-todo-title-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Kapitel 5 lernen">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
+                        <select id="add-todo-subject" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                            <option value="">— Kein Fach —</option>
+                        </select>
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Priorität</label>
+                        <select id="add-todo-priority" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                            <option value="low">Niedrig</option>
+                            <option value="medium" selected>Mittel</option>
+                            <option value="high">Hoch</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-8 pb-12">
+                    <button id="btn-add-todo-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                        Speichern
+                    </button>
+                </div>
+            </div>
+
         </main>
 
         <!-- Bottom Navigation -->
-        <nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe">
+        <nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe z-40" role="navigation" aria-label="Hauptnavigation">
             <div class="max-w-md mx-auto flex justify-between items-center px-4 py-3">
-                <button class="nav-btn active flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-dashboard">
-                    <i data-lucide="gauge" class="w-6 h-6"></i>
+                <button class="nav-btn active btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5 touch-target" data-target="view-dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard" tabindex="0">
+                    <i data-lucide="gauge" class="w-6 h-6" aria-hidden="true"></i>
                     <span class="text-[10px]">Dashboard</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-einheiten">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5 touch-target" data-target="view-einheiten" role="tab" aria-selected="false" aria-controls="view-einheiten" tabindex="-1">
+                    <i data-lucide="history" class="w-6 h-6" aria-hidden="true"></i>
+                    <span class="text-[10px]">Einheiten</span>
+                </button>
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5 touch-target" data-target="view-faecher" role="tab" aria-selected="false" aria-controls="view-faecher" tabindex="-1">
+                    <i data-lucide="landmark" class="w-6 h-6" aria-hidden="true"></i>
+                    <span class="text-[10px]">Fächer</span>
+                </button>
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5 touch-target" data-target="view-kalender" role="tab" aria-selected="false" aria-controls="view-kalender" tabindex="-1">
+                    <i data-lucide="calendar" class="w-6 h-6" aria-hidden="true"></i>
+                    <span class="text-[10px]">Kalender</span>
+                </button>
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5 touch-target" data-target="view-semester" role="tab" aria-selected="false" aria-controls="view-semester" tabindex="-1">
+                    <i data-lucide="graduation-cap" class="w-6 h-6" aria-hidden="true"></i>
+                    <span class="text-[10px]">Semester</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Floating Action Button -->
+        <button id="fab-main" class="btn-interactive fixed bottom-24 right-4 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center z-30 transition-transform touch-target" title="Timer starten" aria-label="Timer starten" role="button">
+            <i data-lucide="plus" class="w-6 h-6 text-white" aria-hidden="true"></i>
+        </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/6" data-target="view-todos">
+                    <i data-lucide="check-square" class="w-6 h-6"></i>
+                    <span class="text-[10px]">Todos</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/6" data-target="view-einheiten">
                     <i data-lucide="history" class="w-6 h-6"></i>
                     <span class="text-[10px]">Einheiten</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-faecher">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/6" data-target="view-faecher">
                     <i data-lucide="landmark" class="w-6 h-6"></i>
                     <span class="text-[10px]">Fächer</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-kalender">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/6" data-target="view-kalender">
                     <i data-lucide="calendar" class="w-6 h-6"></i>
                     <span class="text-[10px]">Kalender</span>
                 </button>
-                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/5" data-target="view-semester">
+                <button class="nav-btn flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/6" data-target="view-semester">
                     <i data-lucide="graduation-cap" class="w-6 h-6"></i>
                     <span class="text-[10px]">Semester</span>
                 </button>
@@ -515,14 +724,14 @@
         </button>
 
         <!-- Timer Overlay -->
-        <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
+        <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col" role="dialog" aria-modal="true" aria-labelledby="timer-title">
             <!-- Timer Header -->
             <div class="flex justify-between items-center p-4">
-                <button id="btn-timer-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Timer schließen">
+                <button id="btn-timer-close" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Timer schließen">
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
-                <div class="text-sm font-medium text-adaptive-muted">Timer</div>
-                <button class="p-2 rounded-full hover:bg-surface transition" aria-label="Timer maximieren">
+                <div id="timer-title" class="text-sm font-medium text-adaptive-muted">Timer</div>
+                <button class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Timer maximieren">
                     <i data-lucide="maximize-2" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -532,6 +741,7 @@
 
                 <!-- Subject Selector -->
                 <div class="w-full max-w-xs">
+                     <label for="timer-subject-select" class="sr-only">Fach auswählen</label>
                      <select id="timer-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none" aria-label="Fach auswählen">
                         <!-- Options injected via JS -->
                      </select>
@@ -542,18 +752,19 @@
 
                 <!-- Thema (Topics) -->
                 <div class="w-full max-w-xs">
-                     <input type="text" id="timer-topics-input" list="timer-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" placeholder="Thema (z.B. Reihen, Folgen)">
+                     <label for="timer-topics-input" class="sr-only">Thema</label>
+                     <input type="text" id="timer-topics-input" list="timer-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" placeholder="Thema (z.B. Reihen, Folgen)" aria-label="Thema eingeben">
                      <datalist id="timer-topics-datalist"></datalist>
                 </div>
 
                 <!-- Time Display -->
                 <div class="flex flex-col items-center space-y-2">
                     <div id="timer-ring-bg" class="w-48 h-48 rounded-full border-4 border-transparent flex items-center justify-center transition-colors duration-500">
-                        <div class="text-7xl font-mono font-bold tracking-wider" id="timer-display">
+                        <div class="text-7xl font-mono font-bold tracking-wider counter-animated" id="timer-display" aria-live="polite" aria-atomic="true">
                             00:00:00
                         </div>
                     </div>
-                    <div id="pomodoro-indicator" class="text-sm text-adaptive-muted"></div>
+                    <div id="pomodoro-indicator" class="text-sm text-adaptive-muted" aria-live="polite"></div>
                 </div>
 
                 <!-- Notes Toggle & Textarea -->
@@ -562,30 +773,36 @@
                         📝 <span id="timer-notes-toggle-label">Notizen</span>
                     </button>
                     <div id="timer-notes-collapsed" class="hidden w-full mt-2">
-                        <textarea id="timer-notes-input" class="w-full bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm resize-none" rows="3" placeholder="Notizen zur Session..."></textarea>
+                        <div class="relative">
+                            <textarea id="timer-notes-input" class="w-full bg-surface text-adaptive p-2 pr-10 rounded-lg border border-gray-700 outline-none text-sm resize-none" rows="3" placeholder="Notizen zur Session..."></textarea>
+                            <button id="btn-voice-input" class="absolute right-2 top-2 p-1.5 hover:bg-gray-700 rounded-full transition" title="Sprach­eingabe (Ctrl+M)">
+                                <i data-lucide="mic" class="w-4 h-4 text-adaptive-muted"></i>
+                            </button>
+                        </div>
                     </div>
+                </div>
                 </div>
 
                 <!-- Pomodoro Toggle -->
-                <button id="btn-pomodoro-toggle" class="text-xs bg-surface hover:bg-gray-700 px-3 py-1.5 rounded-full transition border border-gray-700">🍅 Pomodoro</button>
+                <button id="btn-pomodoro-toggle" class="btn-interactive text-xs bg-surface hover:bg-gray-700 px-3 py-1.5 rounded-full transition border border-gray-700 touch-target"><span aria-hidden="true">🍅</span> Pomodoro</button>
 
                 <!-- Controls -->
                 <div class="flex items-center space-x-6">
-                    <button id="btn-timer-start" class="w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition" aria-label="Timer starten">
-                         <i data-lucide="play" class="w-8 h-8 fill-current ml-1"></i>
+                    <button id="btn-timer-start" class="btn-interactive w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition touch-target" aria-label="Timer starten">
+                         <i data-lucide="play" class="w-8 h-8 fill-current ml-1" aria-hidden="true"></i>
                     </button>
-                    <button id="btn-timer-pause" class="hidden w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black" aria-label="Timer pausieren">
-                         <i data-lucide="pause" class="w-8 h-8 fill-current"></i>
+                    <button id="btn-timer-pause" class="hidden btn-interactive w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black touch-target" aria-label="Timer pausieren">
+                         <i data-lucide="pause" class="w-8 h-8 fill-current" aria-hidden="true"></i>
                     </button>
-                    <button id="btn-timer-stop" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white" aria-label="Timer stoppen">
-                         <i data-lucide="square" class="w-6 h-6 fill-current"></i>
+                    <button id="btn-timer-stop" class="btn-interactive w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white touch-target" aria-label="Timer stoppen">
+                         <i data-lucide="square" class="w-6 h-6 fill-current" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Save Button (visible when stopped/paused) -->
             <div class="p-8 pb-12">
-                <button id="btn-timer-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+                <button id="btn-timer-save" class="btn-interactive w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50 touch-target">
                     Sitzung speichern
                 </button>
             </div>
@@ -800,6 +1017,57 @@
                         <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
                             <input type="checkbox" id="settings-pomo-auto-work" class="accent-primary w-4 h-4">
                             Arbeit automatisch nach Pause starten
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-lg font-bold mb-4">🔔 Benachrichtigungen</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-notify-pomodoro" class="accent-primary w-4 h-4">
+                            Pomodoro-Benachrichtigungen
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-notify-daily" class="accent-primary w-4 h-4">
+                            Tägliche Lern-Erinnerung
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-notify-sound" checked class="accent-primary w-4 h-4">
+                            Ton bei Benachrichtigungen
+                        </label>
+                    </div>
+                    <button id="btn-test-notification" class="mt-4 w-full py-2 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition text-sm">
+                        Benachrichtigung testen
+                    </button>
+                </div>
+
+                <!-- Quick Entry Settings -->
+                <div class="w-full pt-8 border-t border-gray-800">
+                    <h3 class="text-lg font-bold mb-4">⌨️ Tastenkürzel</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-adaptive-muted">Neuer Eintrag</span>
+                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + N</kbd>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-adaptive-muted">Speichern</span>
+                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + Enter</kbd>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-adaptive-muted">Timer start/stop</span>
+                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Space</kbd>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-adaptive-muted">Sprach­eingabe</span>
+                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + M</kbd>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+                            <input type="checkbox" id="settings-voice-input" class="accent-primary w-4 h-4">
+                            Sprach­eingabe für Notizen
                         </label>
                     </div>
                 </div>

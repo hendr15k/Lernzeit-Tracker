@@ -139,3 +139,201 @@ body {
 .heatmap-tooltip-time {
     color: var(--color-text-muted);
 }
+
+/* ==================== ANIMATIONS & TRANSITIONS ==================== */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Micro-interactions for buttons */
+.btn-interactive {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-interactive:active {
+    transform: scale(0.95);
+}
+
+.btn-interactive:hover {
+    transform: scale(1.02);
+}
+
+/* Progress ring animation */
+.progress-ring-circle {
+    transition: stroke-dashoffset 0.8s ease-in-out;
+}
+
+/* Counter animation */
+.counter-animated {
+    animation: countUp 0.4s ease-out;
+}
+
+/* Focus indicators for accessibility */
+:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Skip link for accessibility */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--color-primary);
+    color: white;
+    padding: 8px 16px;
+    z-index: 100;
+    transition: top 0.3s;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* ==================== TOUCH IMPROVEMENTS ==================== */
+.touch-target {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Swipe hint animation */
+.swipe-hint {
+    animation: swipeHint 2s ease-in-out infinite;
+}
+
+@keyframes swipeHint {
+    0%, 100% { transform: translateX(0); opacity: 0.5; }
+    50% { transform: translateX(-10px); opacity: 1; }
+}
+
+/* Pull to refresh indicator */
+.pull-indicator {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* ==================== CHART STYLES ==================== */
+.chart-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.chart-area {
+    transition: opacity 0.3s ease;
+}
+
+.chart-dot {
+    transition: r 0.2s ease, opacity 0.2s ease;
+}
+
+.chart-dot:hover {
+    r: 6;
+}
+
+/* Donut chart */
+.donut-segment {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform-origin: center;
+}
+
+.donut-segment:hover {
+    opacity: 0.85;
+    transform: scale(1.02);
+}
+
+/* ==================== FOCUS SCORE WIDGET ==================== */
+.focus-score-ring {
+    transition: stroke-dashoffset 1s ease-out;
+}
+
+.focus-indicator {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ==================== TODO WIDGET ==================== */
+.todo-item {
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.todo-item.completed {
+    opacity: 0.6;
+}
+
+.todo-checkbox {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.todo-checkbox.checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+/* ==================== RECOMMENDED STUDY TIME ==================== */
+.recommended-time-card {
+    background: linear-gradient(135deg, var(--color-primary) 0%, #2563eb 100%);
+}
+
+/* ==================== STREAK ANIMATION ==================== */
+.streak-fire {
+    animation: streakPulse 1s ease-in-out infinite;
+}
+
+@keyframes streakPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+/* ==================== ACCESSIBILITY UTILITIES ==================== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Visible focus for keyboard navigation */
+*:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

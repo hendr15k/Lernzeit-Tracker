@@ -1,5 +1,22 @@
+/**
+ * @fileoverview Storage Manager - Handles all localStorage operations for the Lernzeit Tracker
+ * @module StorageManager
+ */
+
+/**
+ * StorageManager class handles all data persistence using localStorage
+ * @class
+ */
 class StorageManager {
+    /**
+     * Creates a new StorageManager instance and initializes default data
+     * @constructor
+     */
     constructor() {
+        /**
+         * LocalStorage key names
+         * @type {Object}
+         */
         this.STORAGE_KEYS = {
             ENTRIES: 'lernzeit_entries',
             SUBJECTS: 'lernzeit_subjects',
@@ -9,6 +26,12 @@ class StorageManager {
         this.init();
     }
 
+    /**
+     * Saves data to localStorage with error handling
+     * @param {string} key - Storage key
+     * @param {*} data - Data to store
+     * @private
+     */
     _save(key, data) {
         try {
             localStorage.setItem(key, JSON.stringify(data));
@@ -22,8 +45,11 @@ class StorageManager {
         }
     }
 
+    /**
+     * Initializes default data if not present and handles migrations
+     * @private
+     */
     init() {
-        // Subjects
         let subjects = null;
         try {
             const stored = localStorage.getItem(this.STORAGE_KEYS.SUBJECTS);
@@ -45,13 +71,11 @@ class StorageManager {
             this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
         }
 
-        // Settings — only seed defaults if no saved settings exist
         const storedSettings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
         if (!storedSettings) {
             const defaults = { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16, themeMode: 'dark' };
             this._save(this.STORAGE_KEYS.SETTINGS, defaults);
         } else {
-            // Ensure fontSize and themeMode keys exist in existing settings (migration)
             try {
                 const parsed = JSON.parse(storedSettings);
                 let needsUpdate = false;
@@ -71,7 +95,6 @@ class StorageManager {
             }
         }
 
-        // Semesters — seed default FH Aachen ET 2. Semester if empty
         const storedSemesters = localStorage.getItem(this.STORAGE_KEYS.SEMESTERS);
         if (!storedSemesters) {
             this.initDefaultSemester();
@@ -91,6 +114,10 @@ class StorageManager {
         }
     }
 
+    /**
+     * Migrates modules to include subjectId based on module name matching
+     * @private
+     */
     migrateModulesSubjectId() {
         const semesters = this.getSemesters();
         const subjects = this.getSubjects();
@@ -98,7 +125,6 @@ class StorageManager {
 
         semesters.forEach(semester => {
             (semester.modules || []).forEach(mod => {
-                // Migrate klausur to examPeriod
                 if (mod.klausur && !mod.examPeriod) {
                     mod.examPeriod = mod.klausur;
                     delete mod.klausur;
@@ -106,7 +132,6 @@ class StorageManager {
                 }
 
                 if (!mod.subjectId && mod.name) {
-                    // Try to match by name
                     const matched = subjects.find(s => {
                         const sName = s.name.toLowerCase();
                         const mName = mod.name.toLowerCase();
@@ -127,6 +152,10 @@ class StorageManager {
         }
     }
 
+    /**
+     * Migrates exam dates for modules
+     * @private
+     */
     migrateExamDates() {
         const semesters = this.getSemesters();
         const examDateMap = {
@@ -157,6 +186,10 @@ class StorageManager {
         }
     }
 
+    /**
+     * Initializes default semester with modules
+     * @private
+     */
     initDefaultSemester() {
         const now = new Date();
         const year = now.getFullYear();
@@ -230,6 +263,11 @@ class StorageManager {
     }
 
     // ==================== SEMESTER METHODS ====================
+
+    /**
+     * Gets all semesters
+     * @returns {Array} Array of semester objects
+     */
     getSemesters() {
         try {
             return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SEMESTERS) || '[]');
@@ -239,16 +277,28 @@ class StorageManager {
         }
     }
 
+    /**
+     * Saves semesters array
+     * @param {Array} semesters - Array of semesters
+     */
     saveSemesters(semesters) {
         this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
     }
 
+    /**
+     * Adds a new semester
+     * @param {Object} semester - Semester object
+     */
     addSemester(semester) {
         const semesters = this.getSemesters();
         semesters.push({ ...semester, id: Date.now().toString(), modules: [] });
         this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
     }
 
+    /**
+     * Updates an existing semester
+     * @param {Object} updatedSemester - Semester object with id
+     */
     updateSemester(updatedSemester) {
         const semesters = this.getSemesters();
         const index = semesters.findIndex(s => String(s.id) === String(updatedSemester.id));
@@ -258,11 +308,20 @@ class StorageManager {
         }
     }
 
+    /**
+     * Deletes a semester by ID
+     * @param {string|number} id - Semester ID
+     */
     deleteSemester(id) {
         const semesters = this.getSemesters().filter(s => String(s.id) !== String(id));
         this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
     }
 
+    /**
+     * Adds a module to a semester
+     * @param {string|number} semesterId - Semester ID
+     * @param {Object} module - Module object
+     */
     addModule(semesterId, module) {
         const semesters = this.getSemesters();
         const semester = semesters.find(s => String(s.id) === String(semesterId));
@@ -273,6 +332,11 @@ class StorageManager {
         }
     }
 
+    /**
+     * Updates a module in a semester
+     * @param {string|number} semesterId - Semester ID
+     * @param {Object} updatedModule - Module object with id
+     */
     updateModule(semesterId, updatedModule) {
         const semesters = this.getSemesters();
         const semester = semesters.find(s => String(s.id) === String(semesterId));
@@ -285,6 +349,11 @@ class StorageManager {
         }
     }
 
+    /**
+     * Deletes a module from a semester
+     * @param {string|number} semesterId - Semester ID
+     * @param {string|number} moduleId - Module ID
+     */
     deleteModule(semesterId, moduleId) {
         const semesters = this.getSemesters();
         const semester = semesters.find(s => String(s.id) === String(semesterId));
@@ -294,6 +363,12 @@ class StorageManager {
         }
     }
 
+    // ==================== ENTRY METHODS ====================
+
+    /**
+     * Gets all learning entries
+     * @returns {Array} Array of entry objects
+     */
     getEntries() {
         try {
             return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]');
@@ -303,12 +378,20 @@ class StorageManager {
         }
     }
 
+    /**
+     * Adds a new learning entry
+     * @param {Object} entry - Entry object
+     */
     addEntry(entry) {
         const entries = this.getEntries();
         entries.push({ ...entry, id: Date.now().toString() });
         this._save(this.STORAGE_KEYS.ENTRIES, entries);
     }
 
+    /**
+     * Updates an existing entry
+     * @param {Object} updatedEntry - Entry object with id
+     */
     updateEntry(updatedEntry) {
         const entries = this.getEntries();
         const index = entries.findIndex(e => String(e.id) === String(updatedEntry.id));
@@ -318,18 +401,26 @@ class StorageManager {
         }
     }
 
+    /**
+     * Deletes an entry by ID
+     * @param {string|number} id - Entry ID
+     */
     deleteEntry(id) {
-        // Ensure type consistency (comparing as strings)
         const entries = this.getEntries().filter(e => String(e.id) !== String(id));
         this._save(this.STORAGE_KEYS.ENTRIES, entries);
     }
 
+    // ==================== SUBJECT METHODS ====================
+
+    /**
+     * Gets all subjects
+     * @returns {Array} Array of subject objects
+     */
     getSubjects() {
         try {
             return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
         } catch (e) {
             console.error('Error parsing subjects:', e);
-            // Return defaults or empty if corrupted
             return [
                 { id: '1', name: 'HM2', color: 'bg-blue-500' },
                 { id: '2', name: 'GET2', color: 'bg-green-500' },
@@ -338,12 +429,20 @@ class StorageManager {
         }
     }
 
+    /**
+     * Adds a new subject
+     * @param {Object} subject - Subject object
+     */
     addSubject(subject) {
         const subjects = this.getSubjects();
         subjects.push({ ...subject, id: Date.now().toString() });
         this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
     }
 
+    /**
+     * Updates an existing subject
+     * @param {Object} updatedSubject - Subject object with id
+     */
     updateSubject(updatedSubject) {
         const subjects = this.getSubjects();
         const index = subjects.findIndex(s => String(s.id) === String(updatedSubject.id));
@@ -353,6 +452,10 @@ class StorageManager {
         }
     }
 
+    /**
+     * Deletes a subject by ID and clears subjectId from related modules
+     * @param {string|number} id - Subject ID
+     */
     deleteSubject(id) {
         const subjects = this.getSubjects().filter(s => String(s.id) !== String(id));
         this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
@@ -372,6 +475,12 @@ class StorageManager {
         }
     }
 
+    // ==================== SETTINGS METHODS ====================
+
+    /**
+     * Gets application settings
+     * @returns {Object} Settings object with defaults
+     */
     getSettings() {
         try {
             const raw = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
@@ -383,6 +492,10 @@ class StorageManager {
         }
     }
 
+    /**
+     * Updates settings (merges with existing)
+     * @param {Object} newSettings - Settings to merge
+     */
     updateSettings(newSettings) {
         const currentSettings = this.getSettings();
         const settings = { ...currentSettings, ...newSettings };
@@ -390,6 +503,18 @@ class StorageManager {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.storageManager = new StorageManager();
-});
+// Initialize storage manager in browser environment
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.storageManager = new StorageManager();
+    });
+}
+
+// Export for both CommonJS (Node.js testing) and ES modules (browser)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = StorageManager;
+} else if (typeof window !== 'undefined') {
+    window.StorageManager = StorageManager;
+}
+
+export default StorageManager;
