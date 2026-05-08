@@ -1515,7 +1515,7 @@ function renderModuleList(semesterId) {
         container.classList.remove('hidden');
 
         modules.forEach(mod => {
-            const examBadge = getExamBadge(mod.examPeriod);
+            const examBadge = getExamBadge(mod.examPeriod, mod.examDate);
             const entries = window.storageManager.getEntries();
             const spentSeconds = entries
                 .filter(e => String(e.subjectId) === String(mod.subjectId))
@@ -1586,10 +1586,11 @@ function renderModuleList(semesterId) {
     lucide.createIcons();
 }
 
-function getExamBadge(examPeriod) {
+function getExamBadge(examPeriod, examDate) {
     if (!examPeriod) return null;
     const now = new Date();
-    const exam = new Date(examPeriod);
+    const effectiveDate = examDate || examPeriod;
+    const exam = new Date(effectiveDate);
     const diffDays = Math.ceil((exam - now) / (1000 * 60 * 60 * 24));
 
     const periodNames = {
@@ -1599,14 +1600,14 @@ function getExamBadge(examPeriod) {
         '2027-02-01': 'Jan/Feb 2027'
     };
 
-    const periodName = periodNames[examPeriod] || formatDateShort(examPeriod);
+    const displayDate = examDate ? formatDateShort(examDate) : (periodNames[examPeriod] || formatDateShort(examPeriod));
 
     if (diffDays < 0) {
-        return { text: `Bestanden (${periodName})`, bgClass: 'bg-green-900/40 text-green-300' };
+        return { text: `Bestanden (${displayDate})`, bgClass: 'bg-green-900/40 text-green-300' };
     } else if (diffDays <= 14) {
-        return { text: `${diffDays} Tage (${periodName})`, bgClass: 'bg-yellow-900/40 text-yellow-300' };
+        return { text: `${diffDays} Tage (${displayDate})`, bgClass: 'bg-yellow-900/40 text-yellow-300' };
     } else {
-        return { text: periodName, bgClass: 'bg-red-900/40 text-red-300' };
+        return { text: displayDate, bgClass: 'bg-red-900/40 text-red-300' };
     }
 }
 
@@ -1750,6 +1751,8 @@ function openEditModuleModal(semesterId, moduleId) {
     if (hoursEl) hoursEl.value = mod.hours || '';
     const examEl = document.getElementById('add-module-exam-period');
     if (examEl) examEl.value = mod.examPeriod || '';
+    const examDateEl = document.getElementById('add-module-exam-date');
+    if (examDateEl) examDateEl.value = mod.examDate || '';
     const gradeEl = document.getElementById('add-module-grade');
     if (gradeEl) gradeEl.value = mod.grade || '';
     const notesEl = document.getElementById('add-module-notes');
@@ -1769,6 +1772,7 @@ function saveModule() {
     const ects = Math.max(0, parseInt(document.getElementById('add-module-ects').value) || 0);
     const hours = Math.max(0, parseInt(document.getElementById('add-module-hours').value) || 0);
     const examPeriod = document.getElementById('add-module-exam-period').value || '';
+    const examDate = document.getElementById('add-module-exam-date').value || '';
     const grade = document.getElementById('add-module-grade').value || '';
     const notes = document.getElementById('add-module-notes').value.trim();
 
@@ -1786,11 +1790,12 @@ function saveModule() {
             ects,
             hours,
             examPeriod,
+            examDate,
             grade,
             notes
         });
     } else {
-        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, examPeriod, grade, notes });
+        window.storageManager.addModule(_currentSemesterId, { name, code, subjectId: subjectId || null, ects, hours, examPeriod, examDate, grade, notes });
     }
 
     closeOverlay('add-module-overlay');
@@ -2772,7 +2777,8 @@ function renderExamCountdown() {
     semesters.forEach(semester => {
         (semester.modules || []).forEach(mod => {
             if (mod.examPeriod && !mod.grade) {
-                const examDate = new Date(mod.examPeriod);
+                const effectiveDate = mod.examDate || mod.examPeriod;
+                const examDate = new Date(effectiveDate);
                 const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
                 const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
                 examModules.push({
@@ -2780,6 +2786,7 @@ function renderExamCountdown() {
                     subjectName: subject ? subject.name : 'Unbekannt',
                     subjectColor: subject ? subject.color : 'bg-gray-500',
                     examPeriod: mod.examPeriod,
+                    examDate: mod.examDate || null,
                     diffDays: diffDays,
                     ects: mod.ects || 0
                 });
@@ -2799,7 +2806,7 @@ function renderExamCountdown() {
 
     const periodNames = {
         '2026-03-30': 'Mär/Apr 26',
-        '2026-07-20': 'Jul 26',
+        '2026-07-14': 'Jul 26',
         '2026-09-21': 'Sep 26',
         '2027-02-01': 'Jan/Feb 27'
     };
@@ -2808,6 +2815,7 @@ function renderExamCountdown() {
         const urgencyClass = mod.diffDays <= 14 ? 'border-l-yellow-500' : mod.diffDays <= 60 ? 'border-l-blue-500' : 'border-l-gray-600';
         const badgeClass = mod.diffDays <= 14 ? 'bg-yellow-900/40 text-yellow-300' : mod.diffDays <= 60 ? 'bg-blue-900/40 text-blue-300' : 'bg-gray-700/60 text-gray-300';
         const timeText = mod.diffDays <= 0 ? 'Bald' : mod.diffDays === 1 ? 'Morgen!' : `${mod.diffDays} Tage`;
+        const dateText = mod.examDate ? formatDateShort(mod.examDate) : (periodNames[mod.examPeriod] || mod.examPeriod);
 
         return `
             <div class="flex items-center gap-3 p-2 border-l-4 ${urgencyClass}">
@@ -2816,7 +2824,7 @@ function renderExamCountdown() {
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium truncate">${mod.name}</div>
-                    <div class="text-xs text-adaptive-muted">${periodNames[mod.examPeriod] || mod.examPeriod} · ${mod.ects} ECTS</div>
+                    <div class="text-xs text-adaptive-muted">${dateText} · ${mod.ects} ECTS</div>
                 </div>
                 <span class="text-xs ${badgeClass} px-2 py-0.5 rounded-full flex-shrink-0">${timeText}</span>
             </div>
