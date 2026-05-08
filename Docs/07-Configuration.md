@@ -1,6 +1,8 @@
 # Konfigurationsdateien
 
-Dieses Dokument beschreibt alle Konfigurationsdateien des Lernzeit-Tracker Projekts.
+Dieses Dokument beschreibt alle Konfigurationsdateien des Lernzeit-Tracker-Projekts.
+
+---
 
 ## Inhaltsverzeichnis
 
@@ -59,10 +61,14 @@ Die zentrale Konfigurationsdatei für Node.js-Projekte. Enthält Metadaten, Abh�
 
 | Abschnitt | Beschreibung |
 |-----------|--------------|
-| `dependencies` | Externe Pakete für die Anwendung |
+| `name` | Der Paketname |
+| `version` | Aktuelle Versionsnummer (SemVer) |
+| `description` | Beschreibung der Anwendung |
+| `main` | Einstiegspunkt der Anwendung (`sw.js` als Service Worker) |
 | `devDependencies` | Entwicklungsabhängigkeiten (`@playwright/test` für E2E-Tests, `serve` für lokale Server) |
 | `scripts` | NPM-Skripte für verschiedene Test-Szenarien |
-| `main` | Einstiegspunkt der Anwendung (`sw.js` als Service Worker) |
+| `repository` | Git-Repository-Informationen |
+| `license` | Lizenztyp (ISC) |
 
 ### Verfügbare NPM-Skripte
 
@@ -71,6 +77,12 @@ Die zentrale Konfigurationsdatei für Node.js-Projekte. Enthält Metadaten, Abh�
 | `test` | Alle Playwright-Tests ausführen |
 | `test:mobile` | Tests nur für iPhone-Emulation |
 | `test:android` | Tests nur für Android-Emulation |
+| `test:viewport` | Tests für verschiedene Viewport-Größen |
+| `test:dashboard` | Tests für die Dashboard-Komponente |
+| `test:timer` | Tests für die Timer-Funktionalität |
+| `test:nav` | Tests für die Navigation |
+| `test:themes` | Tests für Light/Dark-Mode |
+| `test:heatmap` | Tests für die Heatmap-Komponente |
 | `test:headed` | Tests mit sichtbarem Browser (Debugging) |
 | `test:ui` | Playwright UI-Modus starten |
 
@@ -78,7 +90,7 @@ Die zentrale Konfigurationsdatei für Node.js-Projekte. Enthält Metadaten, Abh�
 
 ## 2. manifest.json
 
-Konfigurationsdatei für die Progressive Web App (PWA). Ermöglicht die Installation der App auf dem Home-Bildschirm.
+Die Manifest-Datei definiert die Progressive Web App (PWA). Ermöglicht die Installation der App auf dem Home-Bildschirm von Mobilgeräten.
 
 ```json
 {
@@ -106,17 +118,32 @@ Konfigurationsdatei für die Progressive Web App (PWA). Ermöglicht die Installa
 
 ### Eigenschaften
 
-| Eigenschaft | Beschreibung |
-|------------|--------------|
-| `name` | Vollständiger App-Name (wird im App-Info-Dialog angezeigt) |
-| `short_name` | Kurzname (max. 12 Zeichen, für den Home-Bildschirm) |
-| `start_url` | URL, die beim Starten der installierten App geöffnet wird |
-| `display` | Anzeigemodus. Mögliche Werte: `standalone`, `fullscreen`, `minimal-ui`, `browser` |
-| `background_color` | Hintergrundfarbe während des Ladevorgangs (Dark Mode: `#0f172a`) |
-| `theme_color` | Farbe der Statusleiste und Adressleiste (`#3b82f6` = Blau) |
-| `icons` | App-Symbole für verschiedene Geräte und Auflösungen |
+| Eigenschaft | Typ | Standardwert | Beschreibung |
+|------------|-----|--------------|--------------|
+| `name` | string | — | Vollständiger App-Name (wird im App-Info-Dialog angezeigt) |
+| `short_name` | string | — | Kurzname (max. 12 Zeichen, für den Home-Bildschirm) |
+| `version` | string | — | Manifest-Version für Update-Erkennung |
+| `start_url` | string | — | URL, die beim Starten der installierten App geöffnet wird |
+| `display` | string | `standalone` | Anzeigemodus (siehe unten) |
+| `background_color` | string | `#0f172a` | Hintergrundfarbe während des Ladevorgangs |
+| `theme_color` | string | `#3b82f6` | Farbe der Statusleiste und Adressleiste |
+| `icons` | array | — | App-Symbole für verschiedene Auflösungen |
 
-> **Hinweis**: Die beiden Icon-Größen werden für verschiedene Display-Dichten verwendet. 192×192 für Standard-Displays, 512×512 für hochauflösende Displays (Retina).
+### Display-Modi
+
+| Modus | Beschreibung |
+|-------|--------------|
+| `standalone` | App läuft in eigenem Fenster ohne Browser-UI |
+| `fullscreen` | Vollbildmodus ohne jegliche Browser-Elemente |
+| `minimal-ui` | Minimale Browser-UI (Adressleiste ausgeblendet) |
+| `browser` | Normale Browser-Ansicht |
+
+### Icons
+
+Die beiden Icon-Größen werden für verschiedene Display-Dichten verwendet:
+
+- **192×192**: Standard-Displays (mdpi)
+- **512×512**: Hochauflösende Displays (xxhdpi/Retina)
 
 ---
 
@@ -169,33 +196,33 @@ module.exports = defineConfig({
 });
 ```
 
-### Konfigurationsoptionen
+### Globale Konfigurationsoptionen
 
-| Option | Beschreibung |
-|--------|--------------|
-| `testDir` | Verzeichnis mit Testdateien (`./tests`) |
-| `fullyParallel` | Alle Tests parallel ausführen |
-| `forbidOnly` | Verhindert `test.only()` in CI-Umgebungen |
-| `retries` | Wiederholungen bei Fehlern (CI: 2, lokal: 0) |
-| `workers` | Anzahl paralleler Worker (CI: 1, lokal: alle verfügbaren) |
-| `reporter` | Ausgabeformat der Testergebnisse |
-| `baseURL` | Basis-URL für alle Tests (`file://...`) |
-| `trace` | Trace-Sammlung bei ersten Retry |
-| `screenshot` | Screenshots nur bei Testfehlern |
+| Option | Standardwert | Beschreibung |
+|--------|--------------|--------------|
+| `testDir` | `./tests` | Verzeichnis mit Testdateien |
+| `fullyParallel` | `true` | Alle Tests parallel ausführen |
+| `forbidOnly` | `false` (lokaler Modus) | Verhindert `test.only()` in CI-Umgebungen |
+| `retries` | `0` (lokal) / `2` (CI) | Wiederholungen bei fehlgeschlagenen Tests |
+| `workers` | `undefined` (alle) | Anzahl paralleler Worker |
+| `reporter` | `list` | Ausgabeformat der Testergebnisse |
+| `baseURL` | `file://...` | Basis-URL für alle Tests |
+| `trace` | `on-first-retry` | Trace-Sammlung bei ersten Retry |
+| `screenshot` | `only-on-failure` | Screenshots nur bei Testfehlern |
 
 ### Definierte Testprojekte
 
-| Projekt | Viewport | Gerät |
-|---------|----------|-------|
-| `chromium-mobile` | Pixel 5 (393×851) | Android Smartphone |
-| `chromium-mobile-small` | 360×640 | Kleine Android-Geräte |
-| `chromium-mobile-large` | 414×896 | iPhone (Large) |
+| Projekt | Viewport | Gerät | Beschreibung |
+|---------|---------|-------|--------------|
+| `chromium-mobile` | 393×851 | Pixel 5 | Standard Android-Smartphone |
+| `chromium-mobile-small` | 360×640 | Galaxy S5/SM-G960F | Kleine Android-Geräte |
+| `chromium-mobile-large` | 414×896 | iPhone 11/12 | iPhone (Large-Viewport) |
 
 ---
 
 ## 4. sw.js (Service Worker)
 
-Service Worker für Offline-Funktionalität und Caching-Strategien. Ermöglicht der App, auch ohne Internetverbindung zu funktionieren.
+Der Service Worker ermöglicht Offline-Funktionalität und Caching-Strategien. Damit funktioniert die App auch ohne Internetverbindung.
 
 ```javascript
 const CACHE_NAME = 'lernzeit-tracker-v6';
@@ -260,23 +287,23 @@ self.addEventListener('message', (e) => {
 
 ### Caching-Strategie
 
-Der Service Worker implementiert eine **Cache-First**-Strategie:
+Der Service Worker implementiert eine **Cache-First**-Strategie (Stale-While-Revalidate):
 
-1. **Install** (Zeile 14-17): Pre-Caching aller definierten Assets
-2. **Activate** (Zeile 19-27): Bereinigung alter Cache-Versionen
-3. **Fetch** (Zeile 29-35): Prüft zuerst den Cache, dann das Netzwerk
-4. **Message** (Zeile 37-41): Ermöglicht Steuerung für Update-Auslösung via `postMessage`
+1. **Install**: Pre-Caching aller definierten Assets
+2. **Activate**: Bereinigung alter Cache-Versionen
+3. **Fetch**: Prüft zuerst den Cache, dann das Netzwerk
+4. **Message**: Ermöglicht Steuerung für Update-Auslösung via `postMessage`
 
 ### Cache-Versionierung
 
-Bei Änderungen muss `CACHE_NAME` aktualisiert werden (`v6` → `v7`), damit der `activate`-Handler alte Caches löscht.
+Der `CACHE_NAME` dient der Versionierung. Bei Änderungen muss die Version aktualisiert werden (`v6` → `v7`), damit der `activate`-Handler automatisch alte Caches löscht.
 
-### Externe Abhängigkeiten
+### Gecachte Assets
 
-| URL | Verwendung |
-|-----|------------|
-| `cdn.tailwindcss.com` | Tailwind CSS für Styling |
-| `unpkg.com/lucide` | Lucide Icons (Bibliothek für SVG-Icons) |
+| Typ | Dateien |
+|-----|---------|
+| Lokale Dateien | `index.html`, `style.css`, `js/app.js`, `js/store.js`, `sw.js`, `manifest.json`, Icons |
+| Externe Ressourcen | Tailwind CSS CDN, Lucide Icons |
 
 ---
 
@@ -358,13 +385,14 @@ Diese CSS-Variablen ermöglichen ein konsistentes Farbschema und einfaches Themi
 | `--color-text-muted` | `#6b7280` | `#a1a1aa` | Gedämpfter Text (Sekundärtext) |
 | `--color-primary` | `#3b82f6` | `#3b82f6` | Akzentfarbe (Buttons, Links) |
 | `--color-success` | `#22c55e` | `#22c55e` | Erfolgsindikatoren |
+| `--timer-overlay-bg` | Radiales Gradient | Radiales Gradient | Timer-Overlay-Hintergrund |
 
 ### Heatmap-Level
 
-Die Aktivitäts-Heatmap verwendet 5 Intensitätsstufen:
+Die Aktivitäts-Heatmap verwendet 5 Intensitätsstufen zur Visualisierung der Lernaktivität:
 
-| Level | Dark Mode | Light Mode | Bedeutung |
-|-------|-----------|------------|-----------|
+| Level | Dark Mode | Light Mode | Aktivitätsstufe |
+|-------|-----------|------------|-----------------|
 | 0 | `--color-surface` | `#e5e7eb` | Keine Aktivität |
 | 1 | `#064e3b` | `#a7f3d0` | Geringe Aktivität |
 | 2 | `#047857` | `#6ee7b7` | Leichte Aktivität |
@@ -426,17 +454,18 @@ Toast-Benachrichtigungsstile für Benachrichtigungen am unteren Bildschirmrand.
 
 ### Toast-Varianten
 
-| Variante | Klasse | Farbe | Verwendung |
-|----------|--------|-------|------------|
-| Standard | `.toast` | Surface-Farbe | Allgemeine Meldungen |
-| Erfolg | `.toast-success` | Grüner Rand (`#22c55e`) | Erfolgreiche Aktionen |
-| Fehler | `.toast-error` | Roter Rand (`#ef4444`) | Fehlermeldungen |
+| Variante | CSS-Klasse | Akzentfarbe | Verwendung |
+|----------|------------|-------------|------------|
+| Standard | `.toast` | — | Allgemeine Meldungen |
+| Erfolg | `.toast-success` | `#22c55e` (Grün) | Erfolgreiche Aktionen |
+| Fehler | `.toast-error` | `#ef4444` (Rot) | Fehlermeldungen |
 
 ### Animationsverhalten
 
-- **Eingeblendet**: Slide-Up + Fade-In (0.3s)
-- **Ausgeblendet**: Slide-Down + Fade-Out
+- **Eingeblendet**: Slide-Up + Fade-In (0.3s, ease-out)
+- **Ausgeblendet**: Slide-Down + Fade-Out (0.3s)
 - **Position**: Zentriert am unteren Bildschirmrand (24px Abstand)
+- **Easing**: `cubic-bezier(0.4, 0, 0.2, 1)` für natürliche Bewegung
 
 ---
 
@@ -472,20 +501,18 @@ jobs:
 ### Validierungsschritte
 
 1. **HTML-Prüfung**: Verifiziert, dass `index.html` existiert
-2. **JavaScript-Syntax**: Prüft alle JS-Dateien mit `node --check` auf syntaktische Korrektheit
+2. **JavaScript-Syntax**: Prüft alle `.js`-Dateien mit `node --check` auf syntaktische Korrektheit
 
 ---
 
 ## Zusammenfassung
 
-Die Konfigurationsdateien des Lernzeit-Trackers ermöglichen:
-
 | Datei | Zweck | Schlüsselfunktion |
 |-------|-------|-------------------|
 | `package.json` | Projektmetriken und npm-Skripte | Testautomatisierung |
-| `manifest.json` | PWA-Konfiguration für Installation | Installation auf Home-Bildschirm |
-| `playwright.config.js` | E2E-Test-Setup mit mobilen Viewports | Responsive Testing |
-| `sw.js` | Offline-Unterstützung via Service Worker | Funktionalität ohne Internet |
-| `style.css` | Dynamisches Theming mit CSS-Variablen | Light/Dark Mode |
-| `css/toast.css` | Toast-Benachrichtigungskomponenten | Benutzerfeedback |
-| `.github/workflows/validate.yml` | Automatisierte Validierung in CI | Code-Qualitätssicherung |
+| `manifest.json` | PWA-Konfiguration | Installation auf Home-Bildschirm |
+| `playwright.config.js` | E2E-Test-Setup | Responsive Testing |
+| `sw.js` | Offline-Unterstützung | Funktionalität ohne Internet |
+| `style.css` | Dynamisches Theming | Light/Dark Mode |
+| `css/toast.css` | Toast-Benachrichtigungen | Benutzerfeedback |
+| `.github/workflows/validate.yml` | CI-Validierung | Code-Qualitätssicherung |

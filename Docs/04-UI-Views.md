@@ -1,8 +1,29 @@
 # UI-Views und Komponenten Dokumentation
 
+## Inhaltsverzeichnis
+
+1. [Übersicht](#übersicht)
+2. [Hauptansichten](#1-hauptansichten-views)
+3. [Modal-Overlays](#2-modal-overlays)
+4. [Dashboard-Widgets](#3-dashboard-widgets)
+5. [Navigationssystem](#4-navigationssystem)
+6. [Theme-System](#5-theme-system)
+7. [Toast-Benachrichtigungen](#6-toast-benachrichtigungen)
+8. [Floating Action Button](#7-floating-action-button-fab)
+9. [Weitere Komponenten](#8-weitere-komponenten)
+10. [Utility-Funktionen](#9-utility-funktionen)
+
+---
+
 ## Übersicht
 
 Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzeiten. Die Anwendung verwendet ein Single-Page-Application-Design mit fünf Hauptansichten und mehreren Modal-Overlays. Das UI basiert auf Tailwind CSS mit CSS Custom Properties für das dynamische Theme-System.
+
+**Technologie-Stack:**
+
+- Framework: Progressive Web App (PWA)
+- Styling: Tailwind CSS mit CSS Custom Properties
+- Icons: Lucide Icons
 
 ---
 
@@ -12,10 +33,10 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Die Startseite der Anwendung zeigt eine Übersicht aller Lernstatistiken auf einen Blick. Die Ansicht ist in mehrere Widget-Bereiche unterteilt, die kontinuierlich aktualisiert werden.
 
-**Enthaltene Widgets:**
+#### Enthaltene Widgets
 
-| Widget | ID | Funktion |
-|--------|-----|----------|
+| Widget | ID | Beschreibung |
+|--------|-----|--------------|
 | Tagesziel-Ring | `#daily-goal-ring` | SVG-basierter Fortschrittsring mit animierter SVG-Grafik |
 | Wochenübersicht | `#dashboard-graph` | Balkendiagramm der letzten 7 Tage |
 | Streak-Anzeige | `#dashboard-streak` | Anzahl Tage in Folge mit Lernaktivität |
@@ -35,7 +56,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Chronologische Liste aller Lernsessions mit Filter- und Suchfunktion. Diese Ansicht dient als Verlauf, um vergangene Sessions einzusehen und zu bearbeiten.
 
-**Elemente:**
+#### Elemente
 
 | Element | ID | Beschreibung |
 |---------|-----|--------------|
@@ -44,7 +65,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Suchfeld | `#history-search-input` | Freitextsuche in Notizen und Fächern |
 | Einheiten-Liste | `#einheiten-list` | Dynamisch gerenderte Einträge, gruppiert nach Datum |
 
-**Funktionalität:**
+#### Funktionalität
 
 - Einträge werden nach Datum absteigend gruppiert
 - Jeder Eintrag zeigt: Fach-Farbe, Fachname, Uhrzeit, Dauer in Minuten
@@ -57,7 +78,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Verwaltungsoberfläche für Lernfächer mit Statistiken pro Fach. Hier können Fächer erstellt, bearbeitet und gelöscht werden.
 
-**Elemente:**
+#### Elemente
 
 | Element | ID | Beschreibung |
 |---------|-----|--------------|
@@ -65,7 +86,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Hinzufügen-Button | `#btn-add-subject` | Öffnet das Fach-Modal |
 | Fächer-Liste | `#faecher-list` | Grid mit Fach-Karten |
 
-**Fach-Karte (dynamisch generiert):**
+#### Fach-Karte (dynamisch generiert)
 
 - Farbiger Kreis mit den ersten zwei Buchstaben des Fachnamens
 - Fachname und Gesamtlernzeit
@@ -78,7 +99,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Aggregierte Zeitansicht mit Tag/Woche/Monat-Umschaltung. Diese Ansicht ermöglicht einen schnellen Überblick über die Lernzeit in verschiedenen Zeitrahmen.
 
-**Elemente:**
+#### Elemente
 
 | Element | ID | Beschreibung |
 |---------|-----|--------------|
@@ -88,7 +109,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Monatssicht-Button | `calendar-view-btn[data-view="month"]` | Zeigt Monate an |
 | Kalender-Liste | `#kalender-list` | Aggregierte Zeiteinträge |
 
-**Kalender-Item (dynamisch):**
+#### Kalender-Item (dynamisch)
 
 - Titel mit Datum, Woche oder Monat je nach Ansicht
 - Fortschrittsbalken zum eingestellten Ziel
@@ -100,8 +121,6 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 ### 1.5 Semester (`#view-semester`)
 
 **Beschreibung:** Verwaltung von Semesterplänen mit Modulen und Prüfungen. Diese Ansicht bietet eine strukturierte Übersicht über akademische Zeiträume.
-
-**Ansichten:**
 
 #### 1.5.1 Liste-Ansicht (`#semester-list-view`)
 
@@ -148,7 +167,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Vollbild-Overlay für die Stoppuhr-Funktion mit integriertem Pomodoro-Support. Der Timer kann flexibel als Stoppuhr oder als vordefinierter Pomodoro-Timer verwendet werden.
 
-**Struktur:**
+#### Struktur
 
 ```
 #timer-overlay
@@ -173,14 +192,14 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 └── #btn-timer-save (Sitzung speichern)
 ```
 
-**Timer-Modi:**
+#### Timer-Modi
 
 | Modus | Beschreibung |
 |-------|--------------|
 | Stoppuhr (frei) | Zählt Sekunden, Minuten und Stunden hoch |
 | Pomodoro | Countdown-Timer mit konfigurierbaren Phasen |
 
-**Pomodoro-Phasen:**
+#### Pomodoro-Phasen
 
 | Phase | Variable | Standarddauer |
 |-------|----------|---------------|
@@ -188,10 +207,10 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Kurze Pause | `pomodoroPhase = 'shortBreak'` | 5 Minuten |
 | Lange Pause | `pomodoroPhase = 'longBreak'` | 15 Minuten |
 
-**Timer-Ring-Farben:**
+#### Timer-Ring-Farben
 
-| Phase | Farbe |
-|-------|-------|
+| Phase | Farbe (Border) |
+|-------|----------------|
 | Arbeit | `border-green-500/30` |
 | Pause | `border-amber-500/30` |
 
@@ -201,7 +220,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Modal zum manuellen Hinzufügen einer Lernsession. Ermöglicht das nachträgliche Erfassen von Sessions, die nicht mit dem Timer aufgezeichnet wurden.
 
-**Felder:**
+#### Felder
 
 | Feld | ID | Typ | Beschreibung |
 |------|-----|-----|--------------|
@@ -213,7 +232,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Quick-Duration | `.btn-quick-duration` | Buttons | Schnellauswahl: 15m, 30m, 45m, 60m |
 | Notizen | `#add-notes-input` | Textarea | Freitextnotizen |
 
-**Buttons:**
+#### Buttons
 
 | Button | ID | Funktion |
 |--------|-----|----------|
@@ -226,7 +245,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Modal zur Erstellung und Bearbeitung von Fächern. Jedes Fach hat eine eindeutige Farbe zur visuellen Unterscheidung.
 
-**Felder:**
+#### Felder
 
 | Feld | ID | Typ | Beschreibung |
 |------|-----|-----|--------------|
@@ -234,24 +253,25 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Farbe | `#add-subject-color` | Select | Auswahl aus 10 Farben |
 | Wochenziel | `#add-subject-weekly-goal` | Number | Ziel in Stunden pro Woche |
 
-**Buttons:**
+#### Buttons
 
 | Button | ID | Funktion |
 |--------|-----|----------|
 | Schließen | `#btn-add-subject-close` | Schließt das Modal |
 | Speichern | `#btn-add-subject-save` | Speichert das Fach |
 
-**Verfügbare Farben:**
+#### Verfügbare Farben
 
-`bg-red-500`, `bg-orange-500`, `bg-yellow-500`, `bg-green-500`, `bg-teal-500`, `bg-blue-500`, `bg-indigo-500`, `bg-purple-500`, `bg-pink-500`, `bg-gray-500`
+```
+bg-red-500, bg-orange-500, bg-yellow-500, bg-green-500, bg-teal-500,
+bg-blue-500, bg-indigo-500, bg-purple-500, bg-pink-500, bg-gray-500
+```
 
 ---
 
 ### 2.4 Einstellungen (`#settings-overlay`)
 
 **Beschreibung:** Umfassende Einstellungsverwaltung mit mehreren Abschnitten für Personalisierung und Datenverwaltung.
-
-**Abschnitte:**
 
 #### 2.4.1 Allgemein
 
@@ -302,7 +322,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Modal zur Semesterverwaltung. Ein Semester definiert einen akademischen Zeitraum mit Start- und Enddatum.
 
-**Felder:**
+#### Felder
 
 | Feld | ID | Typ | Beschreibung |
 |------|-----|-----|--------------|
@@ -310,7 +330,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Startdatum | `#add-semester-start` | Date | Beginn des Semesters |
 | Enddatum | `#add-semester-end` | Date | Ende des Semesters |
 
-**Buttons:**
+#### Buttons
 
 | Button | ID | Funktion |
 |--------|-----|----------|
@@ -324,7 +344,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** Modal zur Modulverwaltung innerhalb eines Semesters. Module repräsentieren einzelne Kurse oder Prüfungen.
 
-**Felder:**
+#### Felder
 
 | Feld | ID | Typ | Beschreibung |
 |------|-----|-----|--------------|
@@ -338,7 +358,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Note | `#add-module-grade` | Select | Erhaltene Note |
 | Notizen | `#add-module-notes` | Textarea | Zusätzliche Notizen |
 
-**Buttons:**
+#### Buttons
 
 | Button | ID | Funktion |
 |--------|-----|----------|
@@ -346,7 +366,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Speichern | `#btn-add-module-save` | Speichert das Modul |
 | Löschen | `#btn-delete-module` | Löscht das Modul (nur im Bearbeiten-Modus) |
 
-**Verfügbare Prüfungsperioden:**
+#### Verfügbare Prüfungsperioden
 
 | ID | Label | Zeitraum |
 |----|-------|----------|
@@ -363,7 +383,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 
 **Beschreibung:** SVG-basierter Ringdiagramm zur Visualisierung des Tagesziels. Der Ring füllt sich proportional zur erreichten Lernzeit.
 
-**SVG-Elemente:**
+#### SVG-Elemente
 
 | Element | ID | Beschreibung |
 |---------|-----|--------------|
@@ -372,7 +392,7 @@ Der Lernzeit-Tracker ist eine progressive Web-App (PWA) zum Tracking von Lernzei
 | Beschriftung | `#daily-goal-label` | Tagesziel-Beschriftung |
 | Feuer-Animation | `#daily-goal-fire` | Feuer-Animation bei Zielerreichung |
 
-**Berechnung:**
+#### Berechnung
 
 ```javascript
 pct = min(todaySeconds / dailyGoalSeconds, 1)
@@ -385,13 +405,13 @@ offset = circumference * (1 - pct)
 
 **Beschreibung:** GitHub-inspirierte Aktivitätsübersicht der letzten 12 Wochen. Bietet einen visuellen Überblick über die Lernaktivität über einen längeren Zeitraum.
 
-**Struktur:**
+#### Struktur
 
 - 12 Spalten (entspricht 12 Wochen)
 - 7 Zeilen (Wochentage, Mo–So)
 - Zellen: 14×14px mit 3px Abstand
 
-**Level-Farben:**
+#### Level-Farben
 
 | Level | Dunkelmodus | Hellmodus | Bedeutung |
 |-------|-------------|-----------|-----------|
@@ -401,10 +421,10 @@ offset = circumference * (1 - pct)
 | 3 | `#059669` | `#34d399` | 50–75% des Maximums |
 | 4 | `#34d399` | `#10b981` | Mehr als 75% des Maximums |
 
-**Interaktion:**
+#### Interaktion
 
-- Hover: Zeigt Tooltip mit Datum und Lernzeit
-- Skalierung bei Hover: `transform: scale(1.2)`
+- **Hover:** Zeigt Tooltip mit Datum und Lernzeit
+- **Skalierung:** `transform: scale(1.2)` bei Hover
 
 ---
 
@@ -412,7 +432,7 @@ offset = circumference * (1 - pct)
 
 **Beschreibung:** Grid mit freigeschalteten und gesperrten Achievements. Erfolge motivieren durch Gamification und Anerkennung von Meilensteinen.
 
-**Verfügbare Achievements:**
+#### Verfügbare Achievements
 
 | ID | Icon | Name | Freischaltbedingung |
 |----|------|------|---------------------|
@@ -433,7 +453,7 @@ offset = circumference * (1 - pct)
 | consistency_30 | 📈 | Beständigkeit | 30-Tage-Streak erreicht |
 | first_hour | ⏱️ | Erste Stunde | Erste 60 Minuten gesamt |
 
-**Zustände:**
+#### Zustände
 
 | Zustand | Darstellung |
 |---------|-------------|
@@ -446,14 +466,14 @@ offset = circumference * (1 - pct)
 
 **Beschreibung:** Balkendiagramm für die aktuelle Woche (Montag bis Sonntag). Zeigt die tägliche Lernzeit als visuelle Balken.
 
-**Struktur:**
+#### Struktur
 
 - 7 Balken mit gleicher Breite
 - Höhe proportional zur Lernzeit
 - Tooltip bei Hover mit genauer Zeitangabe
 - Wochentag-Labels: Mo, Di, Mi, Do, Fr, Sa, So
 
-**Statistik-Bereiche:**
+#### Statistik-Bereiche
 
 | Element | ID | Beschreibung |
 |---------|-----|--------------|
@@ -469,7 +489,7 @@ offset = circumference * (1 - pct)
 
 **Beschreibung:** Analyse der persönlichen Lernmuster. Identifiziert optimale Lernzeiten und zeigt Trends über Zeit.
 
-**Metriken:**
+#### Metriken
 
 | Metrik | ID | Berechnung/Beschreibung |
 |--------|-----|-------------------------|
@@ -484,7 +504,7 @@ offset = circumference * (1 - pct)
 
 **Beschreibung:** Liste der nächsten Prüfungen mit automatischer Countdown-Anzeige. Hilft bei der Priorisierung der Lernzeit.
 
-**Element-Struktur:**
+#### Element-Struktur
 
 ```
 Modul-Item
@@ -494,15 +514,15 @@ Modul-Item
 └── Countdown-Badge
 ```
 
-**Dringlichkeitsfarben:**
+#### Dringlichkeitsfarben
 
 | Tage bis Prüfung | Badge-Farbe | Rahmenfarbe |
 |-------------------|-------------|-------------|
-| 14 oder weniger | Gelb | Gelb |
-| 60 oder weniger | Blau | Blau |
-| Mehr als 60 | Grau | Grau |
+| ≤ 14 | Gelb | Gelb |
+| ≤ 60 | Blau | Blau |
+| > 60 | Grau | Grau |
 
-**Funktionen:**
+#### Funktionen
 
 - `exportExamToICS()`: Exportiert Prüfungsdatum als .ics-Datei für Kalender-Import
 
@@ -512,7 +532,7 @@ Modul-Item
 
 ### 4.1 Header (`<header>`)
 
-**Buttons:**
+#### Buttons
 
 | Button | ID | Icon | Funktion |
 |--------|-----|------|----------|
@@ -526,7 +546,7 @@ Modul-Item
 
 ### 4.2 Bottom Navigation (`<nav>`)
 
-**Buttons:**
+#### Buttons
 
 | Button | Klasse | Icon | Ziel-View |
 |--------|--------|------|-----------|
@@ -536,10 +556,10 @@ Modul-Item
 | Kalender | `.nav-btn` | `calendar` | `#view-kalender` |
 | Semester | `.nav-btn` | `graduation-cap` | `#view-semester` |
 
-**Aktiver Zustand:**
+#### Aktiver Zustand
 
-- Klasse: `active`
-- Farbe: `text-primary` (definiert über CSS-Variable)
+- **Klasse:** `active`
+- **Farbe:** `text-primary` (definiert über CSS-Variable)
 
 ---
 
@@ -555,7 +575,7 @@ Modul-Item
 
 ### 5.2 CSS Custom Properties
 
-**Dunkelmodus (Standard):**
+#### Dunkelmodus (Standard)
 
 ```css
 --color-bg: #0f0f11;
@@ -565,7 +585,7 @@ Modul-Item
 --timer-overlay-bg: radial-gradient(circle at top, #1e3a8a 0%, #0f0f11 60%);
 ```
 
-**Hellmodus:**
+#### Hellmodus
 
 ```css
 --color-bg: #f3f4f6;
@@ -593,15 +613,10 @@ applyTheme(isDark) {
 
 ### 6.1 Container (`#toast-container`)
 
-**Stylesheet:** `css/toast.css:1-44`
-
-**Position:** `position: fixed; bottom: 24px; left: 50%;`
-
-**Stil:**
-
-- Pill-Form: `border-radius: 99px`
-- Schatten: `box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3)`
-- Animation: Slide-up mit Fade-In/Out
+- **Stylesheet:** `css/toast.css:1-44`
+- **Position:** `fixed; bottom: 24px; left: 50%;`
+- **Stil:** Pill-Form (`border-radius: 99px`), Schatten (`box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3)`)
+- **Animation:** Slide-up mit Fade-In/Out
 
 ### 6.2 Typen
 
@@ -613,9 +628,9 @@ applyTheme(isDark) {
 
 ### 6.3 Anzeige
 
-**Anzeigedauer:** 3000ms (3 Sekunden)
+- **Anzeigedauer:** 3000ms (3 Sekunden)
 
-**API:**
+#### API
 
 ```javascript
 showToast(message, type = 'success')
@@ -627,13 +642,12 @@ showToast(message, type = 'success')
 
 ### 7.1 Element (`#fab-main`)
 
-**Position:** `fixed; bottom: 24px; right: 16px;`
-
-**Größe:** 56×56px (`w-14 h-14`)
-
-**Farbe:** `--color-primary` (Standard: #3b82f6)
-
-**Schatten:** `box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4)`
+| Property | Wert |
+|----------|------|
+| Position | `fixed; bottom: 24px; right: 16px;` |
+| Größe | 56×56px (`w-14 h-14`) |
+| Farbe | `--color-primary` (Standard: #3b82f6) |
+| Schatten | `box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4)` |
 
 ### 7.2 Zustände
 
@@ -652,10 +666,12 @@ showToast(message, type = 'success')
 }
 ```
 
-**Interaktion:**
+### 7.4 Interaktion
 
-- Klick bei läuft: Timer pausieren
-- Klick bei gestoppt: Timer-Overlay öffnen
+| Zustand | Klick-Aktion |
+|---------|--------------|
+| Läuft | Timer pausieren |
+| Gestoppt | Timer-Overlay öffnen |
 
 ---
 
@@ -663,11 +679,10 @@ showToast(message, type = 'success')
 
 ### 8.1 PWA Install Banner (`#pwa-install-banner`)
 
-**Position:** `fixed; bottom: 20px; left: 16px; right: 16px;`
+- **Position:** `fixed; bottom: 20px; left: 16px; right: 16px;`
+- **Anzeige:** Erscheint nach 5 Sekunden, wenn PWA installierbar ist
 
-**Anzeige:** Erscheint nach 5 Sekunden, wenn PWA installierbar ist
-
-**Buttons:**
+#### Buttons
 
 | Button | ID | Funktion |
 |--------|-----|----------|
@@ -676,11 +691,9 @@ showToast(message, type = 'success')
 
 ### 8.2 Update Banner (`#update-banner`)
 
-**Position:** `fixed; bottom: 20px;`
-
-**Anzeige:** Erscheint bei Service-Worker-Updates
-
-**Verhalten:** Automatischer Reload nach 2 Sekunden
+- **Position:** `fixed; bottom: 20px;`
+- **Anzeige:** Erscheint bei Service-Worker-Updates
+- **Verhalten:** Automatischer Reload nach 2 Sekunden
 
 ---
 

@@ -1,6 +1,6 @@
 # API-Referenz
 
-Vollständige Referenz aller globalen Funktionen im Lernzeit-Tracker.
+Vollständige Referenz aller globalen Funktionen und Datenstrukturen im Lernzeit-Tracker.
 
 ---
 
@@ -17,6 +17,10 @@ Vollständige Referenz aller globalen Funktionen im Lernzeit-Tracker.
 9. [Themen-Management](#themen-management)
 10. [Globale Variablen](#globale-variablen)
 11. [Datenstrukturen](#datenstrukturen)
+
+---
+
+> **Hinweis:** Diese Referenz dokumentiert alle global verfügbaren Funktionen und Variablen der Anwendung. Die meisten Funktionen sind direkt im globalen Scope aufrufbar (z.B. `updateViews()`), während Funktionen des Storage-Managers über `window.storageManager` aufgerufen werden (z.B. `window.storageManager.getEntries()`).
 
 ---
 
@@ -67,7 +71,7 @@ const entries = window.storageManager.getEntries();
 
 ### addEntry(entry)
 
-Fügt einen neuen Lernzeit-Eintrag hinzu.
+Fügt einen neuen Lernzeit-Eintrag zum Storage hinzu.
 
 **Parameter:**
 
@@ -100,7 +104,7 @@ window.storageManager.addEntry({
 
 ### updateEntry(updatedEntry)
 
-Aktualisiert einen bestehenden Eintrag.
+Aktualisiert einen bestehenden Lernzeit-Eintrag im Storage.
 
 **Parameter:**
 
@@ -126,7 +130,7 @@ window.storageManager.updateEntry({
 
 ### deleteEntry(id)
 
-Löscht einen Eintrag anhand der ID.
+Löscht einen Lernzeit-Eintrag anhand seiner ID aus dem Storage.
 
 **Parameter:**
 
@@ -146,7 +150,7 @@ window.storageManager.deleteEntry('123');
 
 ### getSubjects()
 
-Gibt alle Fächer zurück.
+Gibt alle Fächer aus dem Storage zurück.
 
 **Rückgabe:** `Array<Object>` — Array von Subject-Objekten (siehe [Datenstrukturen](#datenstrukturen))
 
@@ -165,7 +169,7 @@ const subjects = window.storageManager.getSubjects();
 
 ### addSubject(subject)
 
-Fügt ein neues Fach hinzu.
+Fügt ein neues Fach zum Storage hinzu.
 
 **Parameter:**
 
@@ -192,7 +196,7 @@ window.storageManager.addSubject({
 
 ### updateSubject(updatedSubject)
 
-Aktualisiert ein bestehendes Fach.
+Aktualisiert ein bestehendes Fach im Storage.
 
 **Parameter:**
 
@@ -218,7 +222,7 @@ window.storageManager.updateSubject({
 
 ### deleteSubject(id)
 
-Löscht ein Fach. Verknüpfte Einträge behalten ihre Referenz, aber `subjectId` wird auf `null` gesetzt.
+Löscht ein Fach anhand seiner ID. Verknüpfte Einträge behalten ihre Referenz, aber `subjectId` wird auf `null` gesetzt.
 
 **Parameter:**
 
@@ -238,9 +242,9 @@ window.storageManager.deleteSubject('1');
 
 ### getSettings()
 
-Gibt alle App-Einstellungen zurück.
+Gibt alle App-Einstellungen aus dem Storage zurück.
 
-**Rückgabe:** `Object` — Einstellungsobjekt
+**Rückgabe:** `Object` — Settings-Objekt mit allen App-Konfigurationen
 
 **Beispiel:**
 
@@ -273,7 +277,7 @@ Aktualisiert App-Einstellungen (partielle Updates erlaubt).
 | Name | Typ | erforderlich | Beschreibung |
 |------|-----|--------------|--------------|
 | `newSettings` | `Object` | ✓ | Einstellungen zum Aktualisieren |
-| * | * | — | BeliebigeSubset von Einstellungsfeldern |
+| * | * | — | Beliebiges Subset von Einstellungsfeldern |
 
 **Rückgabe:** `void`
 
@@ -292,9 +296,9 @@ window.storageManager.updateSettings({
 
 #### getSemesters()
 
-Gibt alle Semester zurück.
+Gibt alle Semester aus dem Storage zurück.
 
-**Rückgabe:** `Array<Object>` — Array von Semester-Objekten
+**Rückgabe:** `Array<Object>` — Array von Semester-Objekten (siehe [Datenstrukturen](#semester))
 
 **Beispiel:**
 
@@ -311,7 +315,7 @@ const semesters = window.storageManager.getSemesters();
 
 #### addSemester(semester)
 
-Fügt ein neues Semester hinzu.
+Fügt ein neues Semester zum Storage hinzu.
 
 **Parameter:**
 
@@ -338,7 +342,7 @@ window.storageManager.addSemester({
 
 #### updateSemester(updatedSemester)
 
-Aktualisiert ein bestehendes Semester.
+Aktualisiert ein bestehendes Semester im Storage.
 
 **Parameter:**
 
@@ -363,7 +367,7 @@ window.storageManager.updateSemester({
 
 #### deleteSemester(id)
 
-Löscht ein Semester und alle zugehörigen Module.
+Löscht ein Semester und alle zugehörigen Module aus dem Storage.
 
 **Parameter:**
 
@@ -383,7 +387,7 @@ window.storageManager.deleteSemester('1');
 
 #### addModule(semesterId, module)
 
-Fügt ein Modul zu einem Semester hinzu.
+Fügt ein neues Modul zu einem bestimmten Semester hinzu.
 
 **Parameter:**
 
@@ -421,7 +425,7 @@ window.storageManager.addModule('1', {
 
 #### updateModule(semesterId, updatedModule)
 
-Aktualisiert ein bestehendes Modul.
+Aktualisiert ein bestehendes Modul in einem bestimmten Semester.
 
 **Parameter:**
 
@@ -447,7 +451,7 @@ window.storageManager.updateModule('1', {
 
 #### deleteModule(semesterId, moduleId)
 
-Löscht ein Modul aus einem Semester.
+Löscht ein Modul aus einem bestimmten Semester.
 
 **Parameter:**
 
@@ -470,7 +474,7 @@ window.storageManager.deleteModule('1', 'mod-1');
 
 ### showToast(message, type)
 
-Zeigt eine Toast-Benachrichtigung an.
+Zeigt eine temporäre Toast-Benachrichtigung unten rechts im Bildschirm an.
 
 **Parameter:**
 
@@ -494,7 +498,7 @@ showToast('Standard: Erfolg');  // type ist optional
 
 ### openAddEntryOverlay(editEntryId?)
 
-Öffnet den Overlay zum Hinzufügen oder Bearbeiten eines Eintrags.
+Öffnet den Overlay-Dialog zum Hinzufügen oder Bearbeiten eines Lernzeit-Eintrags.
 
 **Parameter:**
 
@@ -515,7 +519,7 @@ openAddEntryOverlay('123');      // Öffnet Overlay zum Bearbeiten von Eintrag '
 
 ### openAddSubjectOverlay(editSubjectId?)
 
-Öffnet den Overlay zum Hinzufügen oder Bearbeiten eines Fachs.
+Öffnet den Overlay-Dialog zum Hinzufügen oder Bearbeiten eines Fachs.
 
 **Parameter:**
 
@@ -536,7 +540,7 @@ openAddSubjectOverlay('1');      // Öffnet Overlay zum Bearbeiten von Fach '1'
 
 ### openOverlay(id)
 
-Öffnet ein Overlay-Element anhand seiner ID.
+Öffnet ein Overlay-Element anhand seiner HTML-ID.
 
 **Parameter:**
 
@@ -557,7 +561,7 @@ openOverlay('timer-settings-overlay');
 
 ### closeOverlay(id)
 
-Schließt ein Overlay-Element anhand seiner ID.
+Schließt ein Overlay-Element anhand seiner HTML-ID.
 
 **Parameter:**
 
@@ -578,7 +582,7 @@ closeOverlay('timer-settings-overlay');
 
 ### updateSubjectSelects()
 
-Aktualisiert alle Fach-Auswahlfelder (Selects) im DOM mit den aktuellen Fächern aus dem Storage.
+Aktualisiert alle Fach-Auswahlfelder (Select-Dropdowns) im DOM mit den aktuellen Fächern aus dem Storage.
 
 **Rückgabe:** `void`
 
@@ -594,7 +598,7 @@ updateSubjectSelects();
 
 ### initTimer()
 
-Initialisiert den Timer mit allen Event-Listenern und stellt einen vorherigen Zustand wieder her (z.B. nach Page-Reload).
+Initialisiert den Timer mit allen Event-Listenern und stellt einen vorherigen Zustand wieder her (z.B. nach einem Page-Reload).
 
 **Rückgabe:** `void`
 
@@ -608,7 +612,7 @@ initTimer();
 
 ### requestWakeLock()
 
-Fordert einen Screen Wake Lock an, um zu verhindern, dass der Bildschirm in den Ruhezustand geht, während der Timer läuft.
+Fordert einen Screen Wake Lock an, um zu verhindern, dass der Bildschirm während des Timer-Betriebs in den Ruhezustand wechselt.
 
 **Rückgabe:** `Promise<void>`
 
@@ -625,7 +629,7 @@ await requestWakeLock();
 
 ### playBeep(freq?, duration?, count?)
 
-Spielt einen akustischen Signalton ab (verwendet für Pomodoro-Benachrichtigungen).
+Spielt einen akustischen Signalton ab. Diese Funktion wird für Pomodoro-Benachrichtigungen verwendet.
 
 **Parameter:**
 
@@ -648,7 +652,7 @@ playBeep();            // Standard: 800Hz, 200ms, 2 Mal
 
 ### getPomodoroSettings()
 
-Gibt die aktuellen Pomodoro-Einstellungen zurück.
+Gibt die aktuellen Pomodoro-Einstellungen aus dem Storage zurück.
 
 **Rückgabe:** `Object`
 
@@ -682,7 +686,7 @@ const pomo = getPomodoroSettings();
 
 ### updateViews()
 
-Aktualisiert alle Ansichten (Dashboard, Historie, Kalender, Fächer, Heatmap). Ruft alle anderen Render-Funktionen auf.
+Aktualisiert alle Ansichten (Dashboard, Historie, Kalender, Fächer, Heatmap). Diese Funktion ruft intern alle anderen Render-Funktionen auf.
 
 **Rückgabe:** `void`
 
@@ -696,7 +700,7 @@ updateViews();
 
 ### renderHistory(entries, subjects)
 
-Rendert die Historien-Liste mit allen Einträgen, gruppiert nach Datum.
+Rendert die Historien-Liste mit allen Einträgen, gruppiert nach Datum (absteigend sortiert).
 
 **Parameter:**
 
@@ -719,7 +723,7 @@ renderHistory(entries, subjects);
 
 ### renderCalendar(entries)
 
-Rendert die Kalender-Ansicht (Tages-, Wochen-, Monatsansicht).
+Rendert die Kalender-Ansicht (Tages-, Wochen- oder Monatsansicht).
 
 **Parameter:**
 
@@ -729,7 +733,7 @@ Rendert die Kalender-Ansicht (Tages-, Wochen-, Monatsansicht).
 
 **Rückgabe:** `void`
 
-**Verwendet:** Die globale Variable `currentCalendarView` bestimmt die Ansicht:
+**Hinweis:** Die globale Variable `currentCalendarView` bestimmt die aktuelle Ansicht:
 
 | Wert | Beschreibung |
 |------|--------------|
@@ -748,7 +752,7 @@ renderCalendar(entries);
 
 ### renderFaecher(entries, subjects)
 
-Rendert die Fächer-Liste mit Statistiken (Gesamtzeit, durchschnittliche Session-Dauer).
+Rendert die Fächer-Übersicht mit Statistiken pro Fach (Gesamtzeit, durchschnittliche Session-Dauer, Wochenziel-Fortschritt).
 
 **Parameter:**
 
@@ -769,7 +773,7 @@ renderFaecher(entries, subjects);
 
 ### renderHeatmap(entries)
 
-Rendert die Aktivitäts-Heatmap (GitHub-Stil) der letzten 12 Wochen.
+Rendert die Aktivitäts-Heatmap (GitHub-Stil) der letzten 12 Wochen auf dem Dashboard.
 
 **Parameter:**
 
@@ -789,7 +793,7 @@ renderHeatmap(entries);
 
 ### renderSemester(entries, subjects)
 
-Rendert die Semester-Ansicht (ruft intern `renderSemesterList` auf).
+Rendert die Semester-Ansicht. Ruft intern `renderSemesterList` auf, um alle Semester mit Statistiken anzuzeigen.
 
 **Parameter:**
 
@@ -804,7 +808,7 @@ Rendert die Semester-Ansicht (ruft intern `renderSemesterList` auf).
 
 ### renderSemesterList()
 
-Rendert die Liste aller Semester mit Übersicht (Anzahl Module, Gesamt-ECTs).
+Rendert die Liste aller Semester mit einer Übersicht (Anzahl Module, Gesamt-ECTs).
 
 **Rückgabe:** `void`
 
@@ -812,7 +816,7 @@ Rendert die Liste aller Semester mit Übersicht (Anzahl Module, Gesamt-ECTs).
 
 ### renderModuleList(semesterId)
 
-Rendert die Modul-Liste eines bestimmten Semesters.
+Rendert die Modul-Liste eines bestimmten Semesters mit allen zugehörigen Modulen.
 
 **Parameter:**
 
@@ -826,7 +830,7 @@ Rendert die Modul-Liste eines bestimmten Semesters.
 
 ### renderTopicBadges(topics)
 
-Generiert HTML für Themen-Badges.
+Generiert HTML-String für Themen-Badges.
 
 **Parameter:**
 
@@ -834,7 +838,7 @@ Generiert HTML für Themen-Badges.
 |------|-----|--------------|--------------|
 | `topics` | `string` | ✓ | Kommagetrennte Themenliste |
 
-**Rückgabe:** `string` — HTML-String mit Badge-Elementen
+**Rückgabe:** `string` — HTML-String mit formatierten Badge-Elementen
 
 **Beispiel:**
 
@@ -851,7 +855,7 @@ document.getElementById('topics').innerHTML = renderTopicBadges('Integralrechnun
 
 ### updateDashboard(entries)
 
-Aktualisiert alle Dashboard-Widgets (Streak, Gesamtdauer, Statistiken, Graphen).
+Aktualisiert alle Dashboard-Widgets, einschließlich Streak, Gesamtdauer, Statistiken und Graphen.
 
 **Parameter:**
 
@@ -865,7 +869,7 @@ Aktualisiert alle Dashboard-Widgets (Streak, Gesamtdauer, Statistiken, Graphen).
 
 ### renderWeeklyStats(entries)
 
-Rendert die Wochenstatistiken mit Balkendiagramm (letzte Woche, Montag–Sonntag).
+Rendert die Wochenstatistiken mit Balkendiagramm für die letzte Woche (Montag bis Sonntag).
 
 **Parameter:**
 
@@ -879,7 +883,7 @@ Rendert die Wochenstatistiken mit Balkendiagramm (letzte Woche, Montag–Sonntag
 
 ### renderWeeklyComparison(entries)
 
-Rendert den Wochenvergleich (diese Woche vs. letzte Woche) aufgeschlüsselt nach Fach.
+Rendert den Wochenvergleich mit prozentualer Veränderung (diese Woche vs. letzte Woche), aufgeschlüsselt nach Fach.
 
 **Parameter:**
 
@@ -893,7 +897,7 @@ Rendert den Wochenvergleich (diese Woche vs. letzte Woche) aufgeschlüsselt nach
 
 ### renderDashboardSubjects(entries)
 
-Rendert die Fach-Kacheln auf dem Dashboard mit Fortschrittsbalken zum Wochenziel.
+Rendert die Fach-Kacheln auf dem Dashboard mit Fortschrittsbalken zum jeweiligen Wochenziel.
 
 **Parameter:**
 
@@ -907,7 +911,7 @@ Rendert die Fach-Kacheln auf dem Dashboard mit Fortschrittsbalken zum Wochenziel
 
 ### updateDailyGoalRing(entries)
 
-Aktualisiert den Tagesziel-Ring mit dem aktuellen Fortschritt.
+Aktualisiert den Tagesziel-Ring auf dem Dashboard mit dem aktuellen Fortschritt.
 
 **Parameter:**
 
@@ -921,7 +925,7 @@ Aktualisiert den Tagesziel-Ring mit dem aktuellen Fortschritt.
 
 ### renderGraph(entries)
 
-Rendert den 7-Tage-Balkengraph auf dem Dashboard.
+Rendert den 7-Tage-Balkengraph auf dem Dashboard (Lernzeit pro Tag der letzten Woche).
 
 **Parameter:**
 
@@ -935,7 +939,7 @@ Rendert den 7-Tage-Balkengraph auf dem Dashboard.
 
 ### updateWeeklyComparison(entries)
 
-Aktualisiert das Wochenvergleichs-Badge auf dem Dashboard (Prozentuale Änderung).
+Aktualisiert das Wochenvergleichs-Badge auf dem Dashboard mit der prozentualen Veränderung.
 
 **Parameter:**
 
@@ -949,7 +953,7 @@ Aktualisiert das Wochenvergleichs-Badge auf dem Dashboard (Prozentuale Änderung
 
 ### renderExamCountdown()
 
-Rendert die Prüfungs-Countdown-Liste mit den nächsten Prüfungen.
+Rendert die Prüfungs-Countdown-Liste mit den nächstgelegenen anstehenden Prüfungen.
 
 **Rückgabe:** `void`
 
@@ -957,7 +961,7 @@ Rendert die Prüfungs-Countdown-Liste mit den nächsten Prüfungen.
 
 ### updateStudyRecommendation()
 
-Berechnet und zeigt eine Lernempfehlung basierend auf Prüfungsterminen und Lernfortschritt.
+Berechnet und zeigt eine personalisierte Lernempfehlung basierend auf anstehenden Prüfungsterminen und dem bisherigen Lernfortschritt.
 
 **Rückgabe:** `void`
 
@@ -965,7 +969,7 @@ Berechnet und zeigt eine Lernempfehlung basierend auf Prüfungsterminen und Lern
 
 ### renderAchievements(entries)
 
-Rendert die Achievements-Liste mit Fortschrittsanzeigen.
+Rendert die Achievements-Liste mit Fortschrittsanzeigen für noch nicht freigeschaltete Achievements.
 
 **Parameter:**
 
@@ -980,9 +984,9 @@ Rendert die Achievements-Liste mit Fortschrittsanzeigen.
 ### renderTrends(entries)
 
 Rendert die Trend-Analyse mit folgenden Statistiken:
-- Beste Lernzeit (Tageszeit)
-- Durchschnittliche Session-Dauer
-- Top-Lerntag der Woche
+- **Beste Lernzeit:** Optimale Tageszeit für Lernen
+- **Durchschnittliche Session-Dauer:** Mittlere Dauer einer Lernsession
+- **Top-Lerntag:** Der produktivste Wochentag
 
 **Parameter:**
 
@@ -998,7 +1002,7 @@ Rendert die Trend-Analyse mit folgenden Statistiken:
 
 ### formatDuration(seconds)
 
-Formatiert eine Sekundenanzahl als lesbare Dauer (z.B. "1h 30m").
+Formatiert eine Sekundenanzahl als lesbare Dauer im Format "Xh Ym" (z.B. "1h 30m").
 
 **Parameter:**
 
@@ -1043,7 +1047,7 @@ formatDateShort(new Date());       // Aktuelles Datum im deutschen Format
 
 ### escapeHtml(value)
 
-Escaped HTML-Sonderzeichen zur sicheren Ausgabe im DOM (XSS-Schutz).
+Escapt HTML-Sonderzeichen zur sicheren Ausgabe im DOM (XSS-Schutz).
 
 **Parameter:**
 
@@ -1073,12 +1077,12 @@ Berechnet die aktuelle Lern-Serie (Streak) in Tagen.
 |------|-----|--------------|--------------|
 | `entries` | `Array<Object>` | ✓ | Array von Entry-Objekten |
 
-**Rückgabe:** `number` — Anzahl der aufeinanderfolgenden Tage
+**Rückgabe:** `number` — Anzahl der aufeinanderfolgenden Tage mit mindestens einem Lernzeit-Eintrag
 
-**Logik:**
-1. Zählt rückwärts vom heutigen Tag (oder gestern, falls heute noch nicht gelernt wurde)
-2. Ein Tag zählt, wenn mindestens ein Eintrag existiert
-3. Unterbricht die Serie, wenn ein Tag ohne Einträge existiert
+**Algorithmus:**
+1. Beginnt mit dem heutigen Tag (oder gestern, falls heute noch nicht gelernt wurde)
+2. Zählt rückwärts und prüft jeden Tag auf mindestens einen Eintrag
+3. Die Serie wird unterbrochen, sobald ein Tag ohne Einträge existiert
 
 **Beispiel:**
 
@@ -1134,7 +1138,7 @@ getTopTopicsForSubject('1', 5);     // Top 5 Themen
 
 ### getWeekNumber(d)
 
-Berechnet die ISO-Wochennummer eines Datums.
+Berechnet die ISO-Wochennummer (Kalenderwoche) eines gegebenen Datums.
 
 **Parameter:**
 
@@ -1155,7 +1159,7 @@ getWeekNumber(new Date('2026-01-01'));  // { year: 2025, week: 1 } (ISO-Wochenst
 
 ### getWeekStart(date)
 
-Gibt den Montag einer Woche zurück (00:00:00 Uhr).
+Gibt den Montag (Wochenanfang) der Woche zurück, in der das übergebene Datum liegt.
 
 **Parameter:**
 
@@ -1176,7 +1180,7 @@ getWeekStart(new Date());               // Montag der aktuellen Woche
 
 ### getCurrentWeekRange()
 
-Gibt den Datumsbereich der aktuellen Woche zurück.
+Gibt den Datumsbereich (Montag bis Sonntag) der aktuellen Woche zurück.
 
 **Rückgabe:** `Object`
 
@@ -1199,7 +1203,7 @@ const range = getCurrentWeekRange();
 
 ### getCurrentMonthRange()
 
-Gibt den Datumsbereich des aktuellen Monats zurück.
+Gibt den Datumsbereich (erster bis letzter Tag) des aktuellen Monats zurück.
 
 **Rückgabe:** `Object`
 
@@ -1222,7 +1226,7 @@ const range = getCurrentMonthRange();
 
 ### getExamBadge(examPeriod, examDate)
 
-Generiert Badge-Informationen für Prüfungen (Text und CSS-Klassen).
+Generiert Badge-Informationen für die Prüfungsansicht (angezeigter Text und CSS-Klassen basierend auf der verbleibenden Zeit).
 
 **Parameter:**
 
@@ -1253,7 +1257,7 @@ getExamBadge('2026-07-14', '2026-07-28');
 
 ### getGradeBadgeClass(grade)
 
-Gibt die CSS-Klasse für eine Noten-Badge zurück (grün für beste Noten, rot für schlechte).
+Gibt die CSS-Klasse für eine Noten-Badge zurück (grün für beste Noten, rot für schlechte/bestandene Noten).
 
 **Parameter:**
 
@@ -1275,7 +1279,7 @@ getGradeBadgeClass(2.3);      // Funktioniert auch mit Zahlen
 
 ### getHeatmapLevel(seconds, maxSeconds)
 
-Berechnet das Heatmap-Level (0–4) basierend auf der Lernzeit.
+Berechnet das Heatmap-Level (0–4) basierend auf der Lernzeit in Sekunden.
 
 **Parameter:**
 
@@ -1289,7 +1293,7 @@ Berechnet das Heatmap-Level (0–4) basierend auf der Lernzeit.
 | Level | Bedeutung |
 |-------|-----------|
 | 0 | Keine Aktivität |
-| 1 | Wenig Aktivität (< 25% von max) |
+| 1 | Wenig Aktivität (< 25% des Maximums) |
 | 2 | Moderate Aktivität (25–50%) |
 | 3 | Hohe Aktivität (50–75%) |
 | 4 | Sehr hohe Aktivität (> 75%) |
@@ -1308,7 +1312,7 @@ getHeatmapLevel(0, 7200);      // 0
 
 ### exportExamToICS(examDate, moduleName)
 
-Exportiert einen Prüfungstermin als ICS-Datei zum Import in Kalender-Apps (Google Calendar, Apple Calendar, Outlook).
+Exportiert einen Prüfungstermin als ICS-Datei (iCalendar), die in Kalender-Apps importiert werden kann (Google Calendar, Apple Calendar, Outlook).
 
 **Parameter:**
 
@@ -1330,7 +1334,7 @@ exportExamToICS('2026-07-28', 'Höhere Mathematik 2');
 
 ### generateWeeklyPDFReport()
 
-Generiert einen Wochenbericht. Die Datei wird als Textdatei heruntergeladen (ersetzt echte PDF-Funktionalität).
+Generiert einen Wochenbericht. Die Datei wird als Textdatei heruntergeladen.
 
 **Rückgabe:** `void`
 
@@ -1353,7 +1357,7 @@ generateWeeklyPDFReport();
 
 ### showSemesterDetail(semesterId)
 
-Zeigt die Detailansicht eines Semesters mit Modul-Liste.
+Zeigt die Detailansicht eines Semesters mit dessen Modul-Liste an.
 
 **Parameter:**
 
@@ -1367,7 +1371,7 @@ Zeigt die Detailansicht eines Semesters mit Modul-Liste.
 
 ### showSemesterList()
 
-Kehrt zur Semester-Listenansicht zurück (zeigt alle Semester).
+Kehrt zur Semester-Listenansicht zurück und zeigt alle vorhandenen Semester.
 
 **Rückgabe:** `void`
 
@@ -1375,7 +1379,7 @@ Kehrt zur Semester-Listenansicht zurück (zeigt alle Semester).
 
 ### populateModuleSubjectSelect(selectedId?)
 
-Füllt das Modul-Fach-Select mit aktuellen Fächern aus dem Storage.
+Füllt das Modul-Fach-Select-Dropdown mit aktuellen Fächern aus dem Storage.
 
 **Parameter:**
 
@@ -1389,7 +1393,7 @@ Füllt das Modul-Fach-Select mit aktuellen Fächern aus dem Storage.
 
 ### openAddSemesterModal()
 
-Öffnet den Modal zum Hinzufügen eines neuen Semesters.
+Öffnet den Modal-Dialog zum Hinzufügen eines neuen Semesters.
 
 **Rückgabe:** `void`
 
@@ -1397,7 +1401,7 @@ Füllt das Modul-Fach-Select mit aktuellen Fächern aus dem Storage.
 
 ### openEditSemesterModal(semesterId)
 
-Öffnet den Modal zum Bearbeiten eines Semesters und lädt dessen Daten vor.
+Öffnet den Modal-Dialog zum Bearbeiten eines Semesters und lädt dessen vorhandene Daten vor.
 
 **Parameter:**
 
@@ -1411,7 +1415,7 @@ Füllt das Modul-Fach-Select mit aktuellen Fächern aus dem Storage.
 
 ### saveSemester()
 
-Speichert ein Semester (neu oder aktualisiert, je nach Kontext). Wird vom Modal-Formular aufgerufen.
+Speichert ein Semester (neu oder aktualisiert, je nach Kontext). Diese Funktion wird vom Semester-Modal-Formular aufgerufen.
 
 **Rückgabe:** `void`
 
@@ -1419,7 +1423,7 @@ Speichert ein Semester (neu oder aktualisiert, je nach Kontext). Wird vom Modal-
 
 ### openAddModuleModal()
 
-Öffnet den Modal zum Hinzufügen eines neuen Moduls.
+Öffnet den Modal-Dialog zum Hinzufügen eines neuen Moduls.
 
 **Rückgabe:** `void`
 
@@ -1427,7 +1431,7 @@ Speichert ein Semester (neu oder aktualisiert, je nach Kontext). Wird vom Modal-
 
 ### openEditModuleModal(semesterId, moduleId)
 
-Öffnet den Modal zum Bearbeiten eines Moduls und lädt dessen Daten vor.
+Öffnet den Modal-Dialog zum Bearbeiten eines Moduls und lädt dessen vorhandene Daten vor.
 
 **Parameter:**
 
@@ -1442,7 +1446,7 @@ Speichert ein Semester (neu oder aktualisiert, je nach Kontext). Wird vom Modal-
 
 ### saveModule()
 
-Speichert ein Modul (neu oder aktualisiert, je nach Kontext). Wird vom Modal-Formular aufgerufen.
+Speichert ein Modul (neu oder aktualisiert, je nach Kontext). Diese Funktion wird vom Modul-Modal-Formular aufgerufen.
 
 **Rückgabe:** `void`
 
@@ -1452,7 +1456,7 @@ Speichert ein Modul (neu oder aktualisiert, je nach Kontext). Wird vom Modal-For
 
 ### ACHIEVEMENT_DEFINITIONS
 
-Konstante mit allen Achievement-Definitionen (Typ: `Array<Object>`).
+Konstante mit allen verfügbaren Achievement-Definitionen (Typ: `Array<Object>`).
 
 **Struktur:**
 
@@ -1471,9 +1475,9 @@ Konstante mit allen Achievement-Definitionen (Typ: `Array<Object>`).
 
 ### getStoredAchievements()
 
-Liest gespeicherte Achievements aus dem localStorage.
+Liest alle freigeschalteten Achievements aus dem localStorage.
 
-**Rückgabe:** `Array<Object>` — Array von Achievement-Objekten
+**Rückgabe:** `Array<Object>` — Array von Achievement-Objekten mit `id` und `unlockedAt`
 
 **Beispiel:**
 
@@ -1490,7 +1494,7 @@ const achievements = getStoredAchievements();
 
 ### saveAchievements(achievements)
 
-Speichert Achievements in localStorage.
+Speichert freigeschaltete Achievements im localStorage.
 
 **Parameter:**
 
@@ -1513,7 +1517,7 @@ saveAchievements([
 
 ### formatAchievementDate(dateString)
 
-Formatiert das Freischaltungsdatum eines Achievements.
+Formatiert das Freischaltungsdatum eines Achievements im deutschen Datumsformat (TT.MM.YYYY).
 
 **Parameter:**
 
@@ -1533,7 +1537,7 @@ formatAchievementDate('2026-05-01');  // "01.05.2026"
 
 ### getAchievementProgress(entries)
 
-Berechnet den Fortschritt für alle Achievements basierend auf den Einträgen.
+Berechnet den Fortschritt für alle Achievements basierend auf den vorhandenen Einträgen.
 
 **Parameter:**
 
@@ -1541,7 +1545,7 @@ Berechnet den Fortschritt für alle Achievements basierend auf den Einträgen.
 |------|-----|--------------|--------------|
 | `entries` | `Array<Object>` | ✓ | Array von Entry-Objekten |
 
-**Rückgabe:** `Object` — Map von Achievement-IDs zu Boolean (freigeschaltet oder nicht)
+**Rückgabe:** `Object` — Map von Achievement-IDs zu Boolean (`true` = freigeschaltet, `false` = noch nicht erreicht)
 
 **Beispiel:**
 
@@ -1561,7 +1565,7 @@ getAchievementProgress(entries);
 
 ### checkAchievements(entries, options?)
 
-Prüft auf neue Achievements und zeigt ggf. Toast-Benachrichtigungen an.
+Prüft auf neu freigeschaltete Achievements basierend auf den Einträgen und zeigt optional Toast-Benachrichtigungen an.
 
 **Parameter:**
 
@@ -1589,7 +1593,7 @@ const newAchievements = checkAchievements(entries, { showToasts: true });
 
 ### getTopicsForSubject(subjectId)
 
-Sammelt alle Themen für ein bestimmtes Fach aus den Einträgen.
+Sammelt alle einzigartigen Themen für ein bestimmtes Fach aus den vorhandenen Einträgen.
 
 **Parameter:**
 
@@ -1610,7 +1614,7 @@ const topics = getTopicsForSubject('1');
 
 ### getTopTopicsForSubject(subjectId, limit?)
 
-Gibt die Top-N Themen für ein Fach zurück.
+Gibt die meistgenutzten (Top-N) Themen für ein bestimmtes Fach zurück.
 
 **Parameter:**
 
@@ -1633,15 +1637,17 @@ getTopTopicsForSubject('2');     // Top 3 Themen für anderes Fach
 
 ## Globale Variablen
 
+Globale Variablen werden zur Statusverwaltung der Anwendung verwendet.
+
 ### Timer-Status
 
 | Variable | Typ | Beschreibung |
 |----------|-----|--------------|
-| `timerInterval` | `number \| null` | Aktuelles `setInterval`-Handle oder `null` |
+| `timerInterval` | `number \| null` | Aktuelles `setInterval`-Handle oder `null` wenn inaktiv |
 | `timerSeconds` | `number` | Aktuelle Timer-Zeit in Sekunden |
-| `isTimerRunning` | `boolean` | `true` wenn Timer aktiv |
-| `timerStartTime` | `number \| null` | Start-Zeitstempel für Timer-Berechnung |
-| `wakeLock` | `WakeLockSentinel \| null` | WakeLock-Handle |
+| `isTimerRunning` | `boolean` | `true` wenn Timer aktiv, `false` wenn pausiert/gestoppt |
+| `timerStartTime` | `number \| null` | Start-Zeitstempel für Timer-Berechnung (Unix-Timestamp in ms) |
+| `wakeLock` | `WakeLockSentinel \| null` | WakeLock-Handle für Bildschirm-Aktivität |
 
 ```javascript
 let timerInterval;      // Aktuelles setInterval-Handle oder null
@@ -1657,11 +1663,11 @@ let wakeLock;           // WakeLock-Handle
 
 | Variable | Typ | Beschreibung |
 |----------|-----|--------------|
-| `pomodoroMode` | `boolean` | `true` = Pomodoro, `false` = Freie Stoppuhr |
+| `pomodoroMode` | `boolean` | `true` = Pomodoro-Modus, `false` = Freie Stoppuhr |
 | `pomodoroPhase` | `string` | Aktuelle Phase: `'work'` \| `'shortBreak'` \| `'longBreak'` |
-| `pomodoroCount` | `number` | Anzahl abgeschlossener Pomodoros |
-| `pomodoroCountdown` | `number` | Restzeit in Sekunden |
-| `pomodoroWorkSeconds` | `number` | Akkumulierte Arbeitssekunden |
+| `pomodoroCount` | `number` | Anzahl abgeschlossener Pomodoros in der aktuellen Sitzung |
+| `pomodoroCountdown` | `number` | Restzeit der aktuellen Phase in Sekunden |
+| `pomodoroWorkSeconds` | `number` | Gesamte akkumulierte Arbeitssekunden |
 
 ```javascript
 let pomodoroMode;          // true = Pomodoro, false = Frei (Stoppuhr)
@@ -1677,7 +1683,7 @@ let pomodoroWorkSeconds;   // Akkumulierte Arbeitssekunden
 
 | Variable | Typ | Beschreibung |
 |----------|-----|--------------|
-| `currentCalendarView` | `string` | Aktuelle Ansicht: `'day'` \| `'week'` \| `'month'` |
+| `currentCalendarView` | `string` | Aktuelle Kalenderansicht: `'day'` \| `'week'` \| `'month'` |
 
 ```javascript
 let currentCalendarView;   // 'day' | 'week' | 'month'
@@ -1703,16 +1709,18 @@ let _editingModuleId;      // ID des bearbeiteten Moduls
 
 ## Datenstrukturen
 
+Diese Sektion beschreibt die Struktur aller Datenobjekte, die in der Anwendung verwendet werden.
+
 ### Entry (Lernzeit-Eintrag)
 
 | Eigenschaft | Typ | erforderlich | Beschreibung |
 |-------------|-----|--------------|--------------|
-| `id` | `string \| number` | ✓ | Eindeutige ID |
-| `subjectId` | `string \| number` | ✓ | ID des Fachs |
+| `id` | `string \| number` | ✓ | Eindeutige ID des Eintrags |
+| `subjectId` | `string \| number` | ✓ | ID des zugehörigen Fachs |
 | `duration` | `number` | ✓ | Dauer in Sekunden |
 | `startTime` | `number` | ✓ | Startzeit als Unix-Timestamp (Millisekunden) |
 | `endTime` | `number` | ✓ | Endzeit als Unix-Timestamp (Millisekunden) |
-| `notes` | `string` | — | Notizen zum Eintrag |
+| `notes` | `string` | — | Optionale Notizen zum Eintrag |
 | `topics` | `string` | — | Themen, kommagetrennt (z.B. `"Mathe, Physik"`) |
 
 ```javascript
@@ -1733,10 +1741,10 @@ let _editingModuleId;      // ID des bearbeiteten Moduls
 
 | Eigenschaft | Typ | erforderlich | Beschreibung |
 |-------------|-----|--------------|--------------|
-| `id` | `string \| number` | ✓ | Eindeutige ID |
-| `name` | `string` | ✓ | Name des Fachs |
-| `color` | `string` | ✓ | Tailwind-CSS-Klasse für Farbe (z.B. `'bg-blue-500'`) |
-| `weeklyGoal` | `number` | — | Wochenziel in Stunden |
+| `id` | `string \| number` | ✓ | Eindeutige ID des Fachs |
+| `name` | `string` | ✓ | Anzeigename des Fachs |
+| `color` | `string` | ✓ | Tailwind-CSS-Klasse für die Farbdarstellung (z.B. `'bg-blue-500'`) |
+| `weeklyGoal` | `number` | — | Wöchentliches Lernziel in Stunden |
 
 ```javascript
 {
@@ -1753,11 +1761,11 @@ let _editingModuleId;      // ID des bearbeiteten Moduls
 
 | Eigenschaft | Typ | erforderlich | Beschreibung |
 |-------------|-----|--------------|--------------|
-| `id` | `string \| number` | ✓ | Eindeutige ID |
-| `name` | `string` | ✓ | Name des Semesters (z.B. "WS 2025/26") |
-| `start` | `string` | ✓ | Startdatum (ISO-Format: `YYYY-MM-DD`) |
-| `end` | `string` | ✓ | Enddatum (ISO-Format: `YYYY-MM-DD`) |
-| `modules` | `Array<Module>` | — | Liste der Module |
+| `id` | `string \| number` | ✓ | Eindeutige ID des Semesters |
+| `name` | `string` | ✓ | Anzeigename des Semesters (z.B. "WS 2025/26") |
+| `start` | `string` | ✓ | Startdatum im ISO-Format (`YYYY-MM-DD`) |
+| `end` | `string` | ✓ | Enddatum im ISO-Format (`YYYY-MM-DD`) |
+| `modules` | `Array<Module>` | — | Liste aller Module dieses Semesters |
 
 ```javascript
 {
@@ -1778,16 +1786,16 @@ let _editingModuleId;      // ID des bearbeiteten Moduls
 
 | Eigenschaft | Typ | erforderlich | Beschreibung |
 |-------------|-----|--------------|--------------|
-| `id` | `string \| number` | ✓ | Eindeutige ID |
-| `name` | `string` | ✓ | Name des Moduls |
-| `ects` | `number` | ✓ | ECTS-Punkte |
-| `hours` | `number` | ✓ | Geschätzte Lernstunden |
-| `subjectId` | `string \| number` | — | Verknüpftes Fach |
+| `id` | `string \| number` | ✓ | Eindeutige ID des Moduls |
+| `name` | `string` | ✓ | Vollständiger Name des Moduls |
+| `ects` | `number` | ✓ | Anzahl der ECTS-Punkte |
+| `hours` | `number` | ✓ | Geschätzte Lernstunden für dieses Modul |
+| `subjectId` | `string \| number` | — | ID des verknüpften Fachs |
 | `code` | `string` | — | Modulkürzel (z.B. `MATH-101`) |
-| `examPeriod` | `string` | — | Prüfungszeitraum (ISO-Datum) |
-| `examDate` | `string` | — | Konkretes Prüfungsdatum (ISO-Datum) |
-| `grade` | `string` | — | Erhaltene Note |
-| `notes` | `string` | — | Notizen |
+| `examPeriod` | `string` | — | Prüfungszeitraum im ISO-Format |
+| `examDate` | `string` | — | Konkretes Prüfungsdatum im ISO-Format |
+| `grade` | `string` | — | Erhaltene Note (z.B. "1.3" oder "bestanden") |
+| `notes` | `string` | — | Optionale Notizen |
 
 ```javascript
 {
@@ -1810,8 +1818,8 @@ let _editingModuleId;      // ID des bearbeiteten Moduls
 
 | Eigenschaft | Typ | erforderlich | Beschreibung |
 |-------------|-----|--------------|--------------|
-| `id` | `string` | ✓ | Achievement-ID (entspricht Definition) |
-| `unlockedAt` | `string` | ✓ | Freischaltungsdatum (ISO-Format: `YYYY-MM-DD`) |
+| `id` | `string` | ✓ | Achievement-ID (muss einer ID in `ACHIEVEMENT_DEFINITIONS` entsprechen) |
+| `unlockedAt` | `string` | ✓ | Freischaltungsdatum im ISO-Format (`YYYY-MM-DD`) |
 
 ```javascript
 {

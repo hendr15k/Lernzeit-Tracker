@@ -1,28 +1,49 @@
 # Dokumentation
 
-Willkommen zur Dokumentation des Lernzeit-Tracker-Projekts. Diese Seite bietet einen Überblick über die verfügbaren Dokumentationsressourcen.
+Willkommen zur Dokumentation des **Lernzeit-Tracker-Projekts**. Diese Seite bietet einen umfassenden Überblick über die verfügbaren Dokumentationsressourcen und die Projektstruktur.
+
+---
+
+## Inhaltsverzeichnis
+
+1. [Schnellnavigation](#schnellnavigation)
+2. [Projektstruktur](#projektstruktur)
+3. [Weitere Ressourcen](#weitere-ressourcen)
+4. [Beitragen](#beitragen)
+
+---
 
 ## Schnellnavigation
 
 | Dokument | Beschreibung |
-|----------|---------------|
+|----------|-------------|
 | [README.md](../README.md) | Projektübersicht, Features, Installation und Verwendung |
 
-## Weitere Ressourcen
-
-- **Projektübersicht:** Detaillierte Informationen zu Features, Installation und Nutzung finden Sie in der [`README.md`](../README.md)
-- **Live Demo:** Testen Sie die Anwendung direkt unter [GitHub Pages](https://hendr15k.github.io/Lernzeit-Tracker/)
+---
 
 ## Projektstruktur
 
 ```
 Lernzeit-Tracker/
-├── Docs/                 # Diese Dokumentation
-├── src/                  # Quellcode
-├── public/               # Öffentliche Assets
-└── README.md             # Hauptübersicht
+├── Docs/
+│   └── README.md          # Diese Dokumentation
+├── src/                   # Quellcode der Anwendung
+├── public/                # Öffentliche Assets (Bilder, Icons etc.)
+├── README.md              # Hauptübersicht des Projekts
+└── CONTRIBUTING.md        # Richtlinien für Beitragende
 ```
+
+---
+
+## Weitere Ressourcen
+
+| Ressource | Beschreibung |
+|-----------|-------------|
+| [README.md](../README.md) | Detaillierte Informationen zu Features, Installation und Nutzung |
+| [Live Demo](https://hendr15k.github.io/Lernzeit-Tracker/) | Testen Sie die Anwendung direkt in Ihrem Browser |
+
+---
 
 ## Beitragen
 
-Wenn Sie zum Projekt beitragen möchten, lesen Sie bitte die CONTRIBUTING-Richtlinien im Hauptverzeichnis.
+Interessiert daran, zum Projekt beizutragen? Bitte lesen Sie die [CONTRIBUTING-Richtlinien](../CONTRIBUTING.md) im Hauptverzeichnis, um mehr über den Prozess zu erfahren.

@@ -1,5 +1,18 @@
 # Deployment-Dokumentation
 
+## Inhaltsverzeichnis
+
+- [Lokale Entwicklung](#lokale-entwicklung)
+- [PWA-Installation](#pwa-installation)
+- [Service Worker Update-Mechanismus](#service-worker-update-mechanismus)
+- [Offline-Fähigkeiten](#offline-fähigkeiten)
+- [Browser-Kompatibilität](#browser-kompatibilität)
+- [Performance-Überlegungen](#performance-überlegungen)
+- [Produktions-Deployment](#produktions-deployment)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## Lokale Entwicklung
 
 ### Entwicklungsserver starten
@@ -12,13 +25,13 @@ Der Entwicklungsserver wird auf `http://localhost:8080` gestartet. Die Anwendung
 
 ### Lokale Entwicklung mit HTTPS
 
-Einige PWA-Features erfordern HTTPS. Für lokale Tests kann ein selbstsigniertes Zertifikat verwendet werden:
+Einige PWA-Features (z.B. Push-Benachrichtigungen, Background Sync) erfordern HTTPS. Für lokale Tests kann ein selbstsigniertes Zertifikat verwendet werden:
 
 ```bash
 npx serve -p 8080 --ssl-cert cert.pem --ssl-key key.pem
 ```
 
-> **Hinweis:** Nach dem Öffnen der HTTPS-URL zeigt der Browser eine Sicherheitswarnung an. Diese kann für lokale Tests ignoriert werden (Zertifikat vertrauen /weitermahren).
+> **Hinweis:** Nach dem Öffnen der HTTPS-URL zeigt der Browser eine Sicherheitswarnung an. Diese kann für lokale Tests ignoriert werden (Zertifikat vertrauen / weitermachen).
 
 ---
 
@@ -37,18 +50,18 @@ Die App erfüllt die Mindestanforderungen für PWA-Installation:
 
 1. Website im Browser öffnen
 2. Browser zeigt automatisch Installationsbanner an (sofern verfügbar)
-3. Auf "Zum Startbildschirm hinzufügen" klicken
+3. Auf **Zum Startbildschirm hinzufügen** klicken
 4. App wird als eigenständige Anwendung installiert
 
 ### Browser-spezifische Hinweise
 
 | Browser | Installationsmethode |
-|---------|---------------------|
-| Chrome / Edge | Automatisches Banner oder Menü > "App installieren" |
-| Safari (iOS) | Teilen-Menü > "Zum Home-Bildschirm" |
-| Firefox | Menü > "Seite installieren" |
+|---------|----------------------|
+| Chrome / Edge | Automatisches Banner oder Menü → "App installieren" |
+| Safari (iOS) | Teilen-Menü → "Zum Home-Bildschirm" |
+| Firefox | Menü → "Seite installieren" |
 
-> **iOS-Besonderheit:** Safari auf iOS unterstützt nicht alle PWA-Features (z.B. Background Sync). Die App bleibt jedoch funktional.
+> **iOS-Besonderheit:** Safari auf iOS unterstützt nicht alle PWA-Features (z.B. Background Sync). Die App bleibt jedoch vollständig funktional.
 
 ---
 
@@ -83,7 +96,7 @@ Die Service-Worker-Version wird in `sw.js` verwaltet. Bei Änderungen an gecacht
 const CACHE_VERSION = 'v2.0.0';
 ```
 
-> **Tipp:** Bei Problemen nach einem Update: Browser-Cache leeren und Service Worker in DevTools deregistrieren.
+> **Tipp:** Bei Problemen nach einem Update: Browser-Cache leeren und Service Worker in DevTools deregistrieren. Alternativ "Update on reload" in den DevTools aktivieren.
 
 ---
 
@@ -91,7 +104,7 @@ const CACHE_VERSION = 'v2.0.0';
 
 ### Caching-Strategie
 
-Die App implementiert einen Cache-First-Ansatz (Stale-While-Revalidate):
+Die App implementiert einen **Cache-First-Ansatz** (Stale-While-Revalidate):
 
 - Statische Ressourcen werden beim ersten Besuch gecacht
 - Seitenanfragen bedienen sich aus dem Cache
@@ -99,15 +112,19 @@ Die App implementiert einen Cache-First-Ansatz (Stale-While-Revalidate):
 
 ### Verfügbare Offline-Funktionen
 
-- Timer-Funktionalität (lokal gespeichert via localStorage)
-- Dashboard-Ansicht mit zuvor geladenen Daten
-- Alle Core-UI-Komponenten
+| Funktion | Status |
+|----------|--------|
+| Timer-Funktionalität | Verfügbar (via localStorage) |
+| Dashboard-Ansicht | Verfügbar (mit zuvor geladenen Daten) |
+| Core-UI-Komponenten | Vollständig verfügbar |
 
 ### Offline-Einschränkungen
 
-- Datenabruf von externen APIs nicht verfügbar
-- Echtzeit-Synchronisation deaktiviert
-- Lokale Daten bleiben vollständig funktionsfähig
+| Einschränkung | Beschreibung |
+|---------------|---------------|
+| Externer Datenabruf | Nicht verfügbar (API-Anfragen schlagen fehl) |
+| Echtzeit-Synchronisation | Deaktiviert |
+| Lokale Daten | Bleiben vollständig funktionsfähig |
 
 ### Cache manuell leeren
 
@@ -123,13 +140,13 @@ navigator.serviceWorker.getRegistration().then(reg => {
 });
 ```
 
-> **Hinweis:** Nach dem Leeren des Caches werden alle Ressourcen beim nächsten Besuch neu heruntergeladen.
+> **Hinweis:** Nach dem Leeren des Caches werden alle Ressourcen beim nächsten Besuch neu heruntergeladen. Dies kann zu längeren Ladezeiten führen.
 
 ---
 
 ## Browser-Kompatibilität
 
-### Unterstützte Browser
+### Unterstützte Desktop-Browser
 
 | Browser | Version | PWA-Support |
 |---------|---------|-------------|
@@ -140,18 +157,20 @@ navigator.serviceWorker.getRegistration().then(reg => {
 | Samsung Internet | 14+ | Vollständig |
 | Opera | 76+ | Vollständig |
 
-*iOS Safari unterstützt: Installation, Offline-Nutzung, lokales Caching. Nicht unterstützt: Background Sync, Push-Benachrichtigungen.
+*iOS Safari unterstützt: Installation, Offline-Nutzung, lokales Caching. **Nicht unterstützt:** Background Sync, Push-Benachrichtigungen.
 
 ### Mobile Browser
 
-- iOS Safari ab Version 14.1
-- Chrome für Android
-- Samsung Internet Browser
-- Firefox für Android
+| Browser | Plattform | PWA-Support |
+|---------|----------|-------------|
+| Safari | iOS | Eingeschränkt |
+| Chrome | Android | Vollständig |
+| Samsung Internet | Android | Vollständig |
+| Firefox | Android | Vollständig |
 
 ### Fallback für ältere Browser
 
-Die App verwendet progressive Verbesserung. Ältere Browser zeigen die Kernfunktionalität ohne Offline-Fähigkeiten.
+Die App verwendet **progressive Verbesserung** (Progressive Enhancement). Ältere Browser zeigen die Kernfunktionalität ohne Offline-Fähigkeiten.
 
 ---
 
@@ -172,16 +191,19 @@ Die App ist als Single-Page-Application konzipiert mit minimaler Abhängigkeit. 
 | HTML | Variabel | Update bei neuer Service-Worker-Version |
 | CSS/JS | 1 Jahr | Versionierung im Dateinamen empfohlen |
 | Bilder | 1 Jahr | |
+| Externe Fonts | 1 Jahr | Versionierung im Dateinamen |
 | API-Daten | Via Cache-Control Header | |
 
 ### Lighthouse-Empfehlungen
 
 Die App sollte folgende Scores erreichen:
 
-- PWA-Validierung: Bestanden
-- Performance-Score: ≥ 90
-- Accessibility-Score: ≥ 95
-- Best Practices: Bestanden
+| Kategorie | Ziel-Score |
+|-----------|------------|
+| PWA-Validierung | Bestanden |
+| Performance | ≥ 90 |
+| Accessibility | ≥ 95 |
+| Best Practices | Bestanden |
 
 ### Service-Worker-Registrierung
 
@@ -203,19 +225,24 @@ if ('serviceWorker' in navigator) {
 
 ### Empfohlene Hosting-Optionen
 
-- GitHub Pages
-- Netlify
-- Vercel
-- Cloudflare Pages
-- Jeder statische Webserver (Apache, Nginx)
+| Anbieter | Typ | Besonderheit |
+|----------|-----|--------------|
+| GitHub Pages | Statisch | Kostenlos, einfach |
+| Netlify | Statisch | CI/CD-Integration |
+| Vercel | Statisch | Schnelles CDN |
+| Cloudflare Pages | Statisch | Globales CDN |
+| Apache/Nginx | Statisch | Volle Kontrolle |
 
 ### Hosting-Anforderungen
 
-- **HTTPS obligatorisch** (PWA-Installation erfordert sichere Verbindung)
+- **HTTPS obligatorisch** – PWA-Installation erfordert sichere Verbindung
 - `.well-known`-Pfad für AppLinks (optional, für Android Deep Links)
-- Korrekte MIME-Types für:
-  - `manifest.json` → `application/manifest+json`
-  - `sw.js` → `application/javascript`
+- Korrekte MIME-Types:
+
+| Datei | MIME-Type |
+|-------|-----------|
+| `manifest.json` | `application/manifest+json` |
+| `sw.js` | `application/javascript` |
 
 ### Verzeichnisstruktur
 
@@ -238,9 +265,12 @@ Die App benötigt keinen Build-Prozess. Alle Dateien sind produktionsfertig:
 
 ### GitHub Pages Deployment
 
-1. Repository auf GitHub erstellen
-2. Settings > Pages > Source: `main` / `root`
-3. Nach kurzer Zeit unter `https://username.github.io/repository-name` verfügbar
+1. Repository auf GitHub erstellen/hochladen
+2. **Settings** → **Pages** → **Source:** `main` / `root`
+3. Nach kurzer Zeit verfügbar unter:
+   ```
+   https://username.github.io/repository-name
+   ```
 
 ---
 
@@ -248,27 +278,33 @@ Die App benötigt keinen Build-Prozess. Alle Dateien sind produktionsfertig:
 
 ### App wird nicht installiert
 
-1. **HTTPS prüfen:** Ist die Seite über HTTPS erreichbar?
-2. **manifest.json prüfen:** Vollständige Felder vorhanden (name, icons, start_url, display)?
-3. **Service Worker prüfen:** In DevTools > Application > Service Workers: Registriert und aktiv?
-4. **Console prüfen:** Fehlermeldungen auf Service-Worker-Fehler untersuchen
+| Prüfpunkt | Lösung |
+|-----------|--------|
+| HTTPS | Seite muss über HTTPS erreichbar sein |
+| manifest.json | Vollständige Felder prüfen (name, icons, start_url, display) |
+| Service Worker | In DevTools → Application → Service Workers prüfen |
+| Console | Fehlermeldungen auf Service-Worker-Fehler untersuchen |
 
 ### Offline funktioniert nicht
 
-1. DevTools öffnen (F12) > Application > Service Workers
+1. DevTools öffnen (F12) → Application → Service Workers
 2. Status prüfen: "Activated and is running"
-3. Application > Cache Storage: Dateien vorhanden?
+3. Application → Cache Storage: Dateien vorhanden?
 4. Console auf Fehler prüfen
 
 ### Service Worker aktualisiert nicht
 
-1. Browser-Cache leeren (STRG+SHIFT+R / CMD+SHIFT+R)
-2. In DevTools > Application > Service Workers: "Update on reload" aktivieren
-3. `update()` manuell aufrufen (siehe oben)
-4. Service Worker in DevTools abbrechen und Seite neu laden
+| Schritt | Aktion |
+|---------|--------|
+| 1 | Browser-Cache leeren (STRG+SHIFT+R / CMD+SHIFT+R) |
+| 2 | In DevTools → Application → Service Workers: "Update on reload" aktivieren |
+| 3 | `update()` manuell aufrufen |
+| 4 | Service Worker deregistrieren und Seite neu laden |
 
 ### HTTPS-Fehler trotz Zertifikat
 
-- Zertifikat muss für die Domain gültig sein (keine Wildcards für localhost)
-- Für lokale Tests: `localhost` verwenden (kein HTTPS erforderlich)
-- Zertifikat正确 konfiguriert (nicht abgelaufen, korrekte Chain)
+| Problem | Lösung |
+|---------|--------|
+| Zertifikat nicht für Domain gültig | Zertifikat für die Domain ausstellen (keine Wildcards für localhost) |
+| Lokale Tests | `localhost` verwenden (kein HTTPS erforderlich) |
+| Zertifikat nicht korrekt konfiguriert | Prüfen: nicht abgelaufen, korrekte Chain |

@@ -1,41 +1,69 @@
-# Testing Dokumentation
+# Testing-Dokumentation
 
-> **Voraussetzungen**: Node.js und npm müssen installiert sein. Führe `npm install` aus, bevor du Tests ausführst.
+> **Voraussetzungen**: Stelle sicher, dass Node.js und npm installiert sind. Führe vor dem ersten Testdurchlauf `npm install` aus.
+
+---
+
+## Inhaltsverzeichnis
+
+1. [Test Framework](#test-framework)
+2. [Projektstruktur](#projektstruktur)
+3. [Test-Kategorien](#test-kategorien)
+4. [Tests ausführen](#tests-ausführen)
+5. [Playwright-Konfiguration](#playwright-konfiguration)
+6. [Test-Setup](#test-setup)
+7. [Hilfsfunktionen](#hilfsfunktionen)
+8. [CI-Workflow](#ci-workflow)
+9. [Test-Schreibweise](#test-schreibweise)
+10. [Troubleshooting](#troubleshooting)
+11. [Best Practices](#best-practices)
+
+---
 
 ## Test Framework
 
 Das Projekt verwendet [Playwright](https://playwright.dev/) als End-to-End-Test-Framework. Playwright ermöglicht zuverlässige Tests für moderne Web-Anwendungen mit Unterstützung für:
 
-- **Browser-Automatisierung**: Chromium, Firefox, WebKit
-- **Mobile Emulation**: Gerätespezifische Viewports und Touch-Events
-- **Modi**: Headless (Standard) und Headed (mit Browser-GUI)
-- **Smart Waiting**: Automatisches Warten auf DOM-Änderungen
-- **Debugging**: Trace-Aufzeichnungen und interaktive Test-Entwicklung
+| Feature | Beschreibung |
+|---------|--------------|
+| **Browser-Automatisierung** | Chromium, Firefox, WebKit |
+| **Mobile Emulation** | Gerätespezifische Viewports und Touch-Events |
+| **Modi** | Headless (Standard) und Headed (mit Browser-GUI) |
+| **Smart Waiting** | Automatisches Warten auf DOM-Änderungen |
+| **Debugging** | Trace-Aufzeichnungen und interaktive Test-Entwicklung |
+
+---
 
 ## Projektstruktur
 
 ```
 tests/
 ├── mobile/
-│   ├── 00-viewports.spec.js     # Viewport-Tests
-│   ├── 01-dashboard.spec.js      # Dashboard-Tests
-│   ├── 02-timer.spec.js          # Timer-Tests
-│   ├── 03-navigation.spec.js     # Navigation-Tests
-│   ├── 04-themes.spec.js         # Theme-Tests
-│   └── 05-heatmap.spec.js        # Heatmap-Tests
-├── helpers.js                    # Hilfsfunktionen
-├── index.js                      # Test-Index
-└── setup.js                      # Test-Setup/Konfiguration
+│   ├── 00-viewports.spec.js    # Viewport-Tests
+│   ├── 01-dashboard.spec.js    # Dashboard-Tests
+│   ├── 02-timer.spec.js        # Timer-Tests
+│   ├── 03-navigation.spec.js   # Navigation-Tests
+│   ├── 04-themes.spec.js       # Theme-Tests
+│   └── 05-heatmap.spec.js      # Heatmap-Tests
+├── helpers.js                   # Hilfsfunktionen
+├── index.js                     # Test-Index
+└── setup.js                     # Test-Setup/Konfiguration
 ```
 
-### Test-Kategorien
+---
 
-#### 00-viewports.spec.js
-Tests für responsive Layouts auf verschiedenen Bildschirmgrößen:
-- iPhone SE (375x667)
-- iPhone 12 (390x844)
-- iPhone 11 Pro Max (414x896)
-- Samsung Galaxy S10+ (412x869)
+## Test-Kategorien
+
+### `00-viewports.spec.js` — Responsive Layouts
+
+Tests für verschiedene Bildschirmgrößen:
+
+| Gerät | Viewport |
+|-------|----------|
+| iPhone SE | 375 × 667 |
+| iPhone 12 | 390 × 844 |
+| iPhone 11 Pro Max | 414 × 896 |
+| Samsung Galaxy S10+ | 412 × 869 |
 
 Geprüft werden:
 - Grundlegendes Layout ohne horizontalen Overflow
@@ -43,8 +71,12 @@ Geprüft werden:
 - Korrekte FAB-Position
 - Safe Area Padding
 
-#### 01-dashboard.spec.js
-Tests für Dashboard-Widgets:
+---
+
+### `01-dashboard.spec.js` — Dashboard-Widgets
+
+Tests für alle Dashboard-Komponenten:
+
 - Tagesziel-Ring (`#daily-goal-ring`)
 - Wochengraph (`#dashboard-graph`)
 - Heatmap-Container (`#heatmap-container`)
@@ -55,49 +87,69 @@ Tests für Dashboard-Widgets:
 - Lern-Trends (`#trend-best-time`)
 - Keine Widget-Überlappungen
 
-#### 02-timer.spec.js
+---
+
+### `02-timer.spec.js` — Timer-Overlay
+
 Tests für den Timer-Overlay:
-- Öffnen/Schließen des Timers
+
+- Öffnen und Schließen des Timers
 - Timer-Anzeige und Steuerelemente
 - Fächerauswahl und Themen-Input
 - Pomodoro-Umschaltung
 - Notizen-Toggle
 - FAB-Interaktion
 
-#### 03-navigation.spec.js
+---
+
+### `03-navigation.spec.js` — Navigation und Overlays
+
 Tests für Navigation und Overlays:
+
 - Bottom Navigation (5 Buttons)
-- Navigation zwischen Views (Dashboard, Einheiten, Fächer, Kalender, Semester)
-- Header-Buttons (Hinzufügen, Timer, Theme, Menü)
+- Navigation zwischen Views: Dashboard, Einheiten, Fächer, Kalender, Semester
+- Header-Buttons: Hinzufügen, Timer, Theme, Menü
 - Settings-Overlay
 - Eintrag hinzufügen Overlay
 - Schließen-Buttons
 
-#### 04-themes.spec.js
-Tests für Dark/Light Mode:
+---
+
+### `04-themes.spec.js` — Dark/Light Mode
+
+Tests für Theme-Umschaltung:
+
 - Theme-Umschaltung (Light/Dark)
 - Lesbarkeit in beiden Themes
 - Theme-Persistenz bei Navigation
 - Input-Feld-Styling
 - Heatmap-Legendenfarben
 
-#### 05-heatmap.spec.js
-Tests für die Heatmap-Komponente:
+---
+
+### `05-heatmap.spec.js` — Heatmap-Komponente
+
+Tests für die Heatmap-Visualisierung:
+
 - Container und Zellen-Sichtbarkeit
 - Scroll-Verhalten bei breiten Heatmaps
-- Legende (5 Farbstufen)
+- Legende mit 5 Farbstufen
 - Zusammenfassung-Label
 - Tag-Labels
 - Tooltip-Interaktionen
 - Theme-abhängige Farben
 
-## Test ausführen
+---
+
+## Tests ausführen
 
 ### Alle Tests ausführen
 
 ```bash
 npm test
 ```
+
+---
 
 ### Spezifische Kategorie testen
 
@@ -121,6 +173,8 @@ npm run test:themes
 npm run test:heatmap
 ```
 
+---
+
 ### Mobile-spezifische Tests
 
 ```bash
@@ -131,6 +185,8 @@ npm run test:mobile
 npm run test:android
 ```
 
+---
+
 ### Spezielle Modi
 
 ```bash
@@ -140,6 +196,8 @@ npm run test:headed
 # UI-Modus: Interaktive Test-Entwicklung mit Playwright UI
 npm run test:ui
 ```
+
+---
 
 ## Playwright-Konfiguration
 
@@ -188,6 +246,8 @@ module.exports = defineConfig({
 });
 ```
 
+---
+
 ### Konfigurationsoptionen
 
 | Option | Beschreibung | Standard |
@@ -195,21 +255,28 @@ module.exports = defineConfig({
 | `testDir` | Verzeichnis mit Test-Dateien | `./tests` |
 | `fullyParallel` | Parallele Test-Ausführung | `true` |
 | `forbidOnly` | Verbot von `test.only` (aktiv im CI) | `true` in CI |
-| `retries` | Wiederholungen bei Fehlern | `0` lokal, `2` in CI |
+| `retries` | Wiederholungen bei fehlgeschlagenen Tests | `0` lokal, `2` in CI |
 | `workers` | Anzahl paralleler Worker | `undefined` (auto) |
 | `reporter` | Test-Reporter Format | `list` |
-| `baseURL` | Basis-URL für `page.goto()` | - |
+| `baseURL` | Basis-URL für `page.goto()` | — |
 | `trace` | Trace-Aufzeichnung | `on-first-retry` |
 | `screenshot` | Screenshots bei Fehlern | `only-on-failure` |
 
-**Trace-Aufzeichnungen** erfassen alle DOM-Interaktionen, Screenshots und Netzwerk-Anfragen. Siehe [Trace ansehen](#trace-ansehen).
+> **Hinweis**: Trace-Aufzeichnungen erfassen alle DOM-Interaktionen, Screenshots und Netzwerk-Anfragen. Siehe [Trace ansehen](#trace-ansehen).
+
+---
 
 ### Projekt-Konfigurationen
 
 Drei mobile Projekte sind konfiguriert:
-1. **chromium-mobile**: Pixel 5 Standard-Emulation
-2. **chromium-mobile-small**: 360x640 Viewport
-3. **chromium-mobile-large**: 414x896 Viewport
+
+| Projekt | Beschreibung | Viewport |
+|---------|--------------|----------|
+| `chromium-mobile` | Pixel 5 Standard-Emulation | Gerätedefinition |
+| `chromium-mobile-small` | Kleines Smartphone | 360 × 640 |
+| `chromium-mobile-large` | Großes Smartphone/Tablet | 414 × 896 |
+
+---
 
 ## Test-Setup
 
@@ -229,6 +296,8 @@ module.exports = { test };
 
 Dies ermöglicht das Laden von gespeichertem State für authentifizierte Tests.
 
+---
+
 ## Hilfsfunktionen
 
 Die Datei `tests/helpers.js` (importiert aus `./helpers`) stellt nützliche Funktionen bereit:
@@ -237,8 +306,8 @@ Die Datei `tests/helpers.js` (importiert aus `./helpers`) stellt nützliche Funk
 const { getFileUrl } = require('../helpers');
 
 // URL für index.html erstellen
-const url = getFileUrl();                       // file:///path/to/index.html
-const url = getFileUrl('subpage.html');         // file:///path/to/subpage.html
+const url = getFileUrl();                 // → file:///path/to/index.html
+const url = getFileUrl('subpage.html');   // → file:///path/to/subpage.html
 
 // Weitere Hilfsfunktionen in helpers.js:
 // - date utilities
@@ -246,7 +315,9 @@ const url = getFileUrl('subpage.html');         // file:///path/to/subpage.html
 // - Data generation helpers
 ```
 
-**Tipp**: `getFileUrl()` ist die empfohlene Methode, um URLs für Tests zu erstellen, da sie plattformunabhängig funktioniert.
+> **Empfehlung**: `getFileUrl()` ist die bevorzugte Methode zum Erstellen von URLs für Tests, da sie plattformunabhängig funktioniert.
+
+---
 
 ## CI-Workflow
 
@@ -269,11 +340,17 @@ jobs:
           echo "Done"
 ```
 
+---
+
 ### CI-Optimierungen
 
-- **Retries**: 2 Wiederholungen bei fehlgeschlagenen Tests
-- **Single Worker**: Ein Worker für stabilere Tests
-- **Forbid Only**: Verhindert versehentliche `test.only`
+| Optimierung | Beschreibung |
+|-------------|--------------|
+| **Retries** | 2 Wiederholungen bei fehlgeschlagenen Tests |
+| **Single Worker** | Ein Worker für stabilere Tests |
+| **Forbid Only** | Verhindert versehentliche `test.only` |
+
+---
 
 ## Test-Schreibweise
 
@@ -285,15 +362,17 @@ const { getFileUrl } = require('../helpers');
 
 test('Timer-Overlay lässt sich öffnen und schließen', async ({ page }) => {
   await page.goto(getFileUrl());
-  
+
   // Auf FAB klicken
   const fab = page.locator('#timer-fab');
   await fab.click();
-  
+
   // Timer-Overlay prüfen
   await expect(page.locator('#timer-overlay')).toBeVisible();
 });
 ```
+
+---
 
 ### Viewport-Tests
 
@@ -311,7 +390,7 @@ test.describe('Responsive Layout Tests', () => {
     test(`${vp.name} - Layout ohne horizontalen Overflow`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(getFileUrl());
-      
+
       // Kein horizontaler Scroll nötig
       const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
       expect(scrollWidth).toBeLessThanOrEqual(vp.width);
@@ -319,6 +398,8 @@ test.describe('Responsive Layout Tests', () => {
   }
 });
 ```
+
+---
 
 ### Erwartungen (Expectations)
 
@@ -341,7 +422,9 @@ await expect(locator).toBeChecked();
 await expect(locator).toBeEnabled();
 ```
 
-### Test überspringen
+---
+
+### Tests überspringen
 
 ```javascript
 test.skip('Wird übersprungen', async ({ page }) => {
@@ -352,6 +435,8 @@ test.fixme('Muss noch implementiert werden', async ({ page }) => {
   // ...
 });
 ```
+
+---
 
 ## Troubleshooting
 
@@ -364,6 +449,8 @@ npx playwright install
 # Browser aktualisieren
 npx playwright install chromium
 ```
+
+---
 
 ### Debugging
 
@@ -378,6 +465,8 @@ npm run test:ui
 npx playwright test tests/mobile/02-timer.spec.js --headed
 ```
 
+---
+
 ### Trace ansehen
 
 Traces werden automatisch bei Retry-Versuchen im `test-results/` Verzeichnis gespeichert:
@@ -390,6 +479,8 @@ npx playwright show-trace test-results/trace.zip
 npx playwright show-trace --open test-results/trace.zip
 ```
 
+---
+
 ### Häufige Probleme
 
 | Problem | Lösung |
@@ -397,24 +488,30 @@ npx playwright show-trace --open test-results/trace.zip
 | `getFileUrl is not defined` | Importiere `getFileUrl` aus `../helpers` |
 | Browser startet nicht | Führe `npx playwright install` aus |
 | Tests schlagen zufällig fehl | Erhöhe `retries` in der Konfiguration |
-| Timeout-Fehler | Prüfe ob das Element auf `.toBeVisible()` wartet |
+| Timeout-Fehler | Prüfe, ob das Element auf `.toBeVisible()` wartet |
+
+---
 
 ## Best Practices
 
 ### Test-Organisation
+
 - **Viewport-Tests**: Teste immer mehrere Viewports für responsive Designs
 - **Beschreibende Namen**: Testnamen sollten das erwartete Verhalten beschreiben (z.B. `"Timer-Overlay lässt sich schließen"`)
 
 ### Debugging
+
 - **Screenshots**: Werden automatisch bei Fehlern erstellt (`test-results/`)
 - **Traces**: Nützlich für das Debugging von Fehlschlägen
 - **Headed-Modus**: Nutze `npm run test:headed` für visuelles Debugging
 
 ### Performance
+
 - **Parallelisierung**: Lokal voll parallel, CI mit einzelnem Worker für Stabilität
 - **CI-Optimierungen**: 2 Retries, 1 Worker, `forbidOnly` aktiviert
 
 ### Wartbarkeit
+
 - Nutze `helpers.js` für wiederverwendbare Funktionen
 - Verwende `test.skip()` für temporär deaktivierte Tests
-- Führe regelmäßig `npm run test` aus, um sicherzustellen dass alle Tests bestehen
+- Führe regelmäßig `npm run test` aus, um sicherzustellen, dass alle Tests bestehen

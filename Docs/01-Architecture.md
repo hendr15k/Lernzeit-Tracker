@@ -1,5 +1,21 @@
 # Lernzeit-Tracker — Technische Architektur
 
+## Inhaltsverzeichnis
+
+1. [Projektübersicht](#1-projektübersicht)
+2. [Technologie-Stack](#2-technologie-stack)
+3. [Verzeichnisstruktur](#3-verzeichnisstruktur)
+4. [Modulare Architektur](#4-modulare-architektur)
+5. [Architektonische Entscheidungen](#5-architektonische-entscheidungen)
+6. [Datenfluss](#6-datenfluss)
+7. [PWA-Architektur](#7-pwa-architektur)
+8. [Dashboard-Widgets](#8-dashboard-widgets)
+9. [Achievements-System](#9-achievements-system)
+10. [Export/Import](#10-exportimport)
+11. [Anhang: Abkürzungen](#11-anhang-abkürzungen)
+
+---
+
 ## 1. Projektübersicht
 
 Der **Lernzeit-Tracker** ist eine Progressive Web App (PWA) zur Erfassung, Visualisierung und Analyse von Lernzeiten für Studierende. Die Anwendung ermöglicht das Tracking von Lernsitzungen mittels Timer oder manueller Eingabe, die Verwaltung von Fächern und Semestern, sowie umfangreiche Statistiken und Visualisierungen.
@@ -10,35 +26,35 @@ Der **Lernzeit-Tracker** ist eine Progressive Web App (PWA) zur Erfassung, Visua
 |------|--------------|
 | **Mobile-first** | Touch-optimierte Oberfläche für Smartphone-Nutzung |
 | **Offline-Fähigkeit** | Vollständige Funktionalität ohne Internetverbindung |
-| **Daten sovereignty** | Lokale Datenspeicherung ohne Backend-Abhängigkeit |
+| **Datensouveränität** | Lokale Datenspeicherung ohne Backend-Abhängigkeit |
 | **Motivation** | Gamification mit Achievements und Streaks |
 
 ---
 
 ## 2. Technologie-Stack
 
-### Frontend-Frameworks & Bibliotheken
+### 2.1 Frontend-Frameworks & Bibliotheken
 
 | Technologie | Version | Verwendung |
 |-------------|---------|------------|
 | Tailwind CSS | CDN (3.x) | Utility-First CSS-Framework für Styling |
 | Lucide Icons | 0.473.0 | Leichtgewichtige SVG-Icon-Bibliothek |
 
-### Build & Testing
+### 2.2 Build & Testing
 
 | Technologie | Verwendung |
 |-------------|------------|
 | Playwright | E2E-Tests für Mobile-Responsivität und Funktionalität |
 | serve | Lokaler Entwicklungsserver |
 
-### Datenpersistenz
+### 2.3 Datenpersistenz
 
 | Technologie | Beschreibung |
 |-------------|--------------|
 | localStorage | Primärer Datenspeicher für alle App-Daten (~5 MB) |
 | JSON | Serialisierungsformat für Datensätze |
 
-### PWA & Web APIs
+### 2.4 PWA & Web APIs
 
 | API | Verwendung |
 |-----|------------|
@@ -51,7 +67,7 @@ Der **Lernzeit-Tracker** ist eine Progressive Web App (PWA) zur Erfassung, Visua
 
 ## 3. Verzeichnisstruktur
 
-```text
+```
 Lernzeit-Tracker/
 ├── index.html              # Haupteinstiegspunkt und Single-Page-Struktur
 ├── manifest.json           # PWA-Manifest für Installation
@@ -63,11 +79,11 @@ Lernzeit-Tracker/
 ├── playwright.config.js    # Playwright-Testkonfiguration
 ├── css/
 │   └── toast.css           # Toast-Benachrichtigungs-Styles
-├── tests/                  # Playwright-E2E-Tests
-│   └── *.spec.js
-├── Docs/                   # Technische Dokumentation
-│   └── *.md
-└── icons/                  # PWA-App-Icons
+├── tests/
+│   └── *.spec.js           # Playwright-E2E-Tests
+├── Docs/
+│   └── *.md                # Technische Dokumentation
+└── icons/
     ├── icon-192.png        # 192×192 Pixel
     └── icon-512.png        # 512×512 Pixel
 ```
@@ -106,39 +122,49 @@ const STORAGE_KEYS = {
 
 #### Datenmodell
 
-```javascript
-// Entry (Lernsitzung)
+**Entry (Lernsitzung)**
+
+```typescript
 interface Entry {
     id: string;           // UUID
     subjectId: string;    // Referenz zum Fach
     startTime: number;    // Unix-Timestamp
     endTime: number;      // Unix-Timestamp
-    duration: number;      // Dauer in Sekunden
+    duration: number;     // Dauer in Sekunden
     notes: string;        // Optionale Notizen
     topics: string;       // Behandelte Themen
 }
+```
 
-// Subject (Fach)
+**Subject (Fach)**
+
+```typescript
 interface Subject {
     id: string;           // UUID
     name: string;         // Fachbezeichnung
     color: string;        // Tailwind-Farbklasse (z.B. 'bg-blue-500')
     weeklyGoal: number;    // Wochenziel in Stunden
 }
+```
 
-// Semester
+**Semester**
+
+```typescript
 interface Semester {
     id: string;           // UUID
     name: string;         // Bezeichnung (z.B. "WiSe 2025")
     start: string;        // Startdatum (ISO-Format)
     end: string;          // Enddatum (ISO-Format)
-    modules: Module[];     // Enthaltene Module
+    modules: Module[];    // Enthaltene Module
 }
+```
 
-// Module
+**Module**
+
+```typescript
 interface Module {
     id: string;           // UUID
-    subjectId: string;     // Zugehöriges Fach
+    subjectId: string;    // Zugehöriges Fach
     name: string;         // Modulbezeichnung
     code: string;         // Modulcode (z.B. "INF-001")
     ects: number;         // ECTS-Punkte
@@ -148,19 +174,22 @@ interface Module {
     grade: string;        // Note (nach Bestehen)
     notes: string;        // Zusätzliche Notizen
 }
+```
 
-// Settings (Benutzereinstellungen)
+**Settings (Benutzereinstellungen)**
+
+```typescript
 interface Settings {
     dailyGoal: number;              // Tagesziel in Minuten
-    learningDays: number;           // Lerntage pro Woche
+    learningDays: number;            // Lerntage pro Woche
     fontSize: number;               // Schriftgröße (1-3)
     themeMode: 'light' | 'dark' | 'auto';
     pomoWork: number;               // Arbeitsphase in Minuten
     pomoShortBreak: number;         // Kurze Pause in Minuten
     pomoLongBreak: number;          // Lange Pause in Minuten
-    pomoLongBreakInterval: number;  // Intervalle bis zur langen Pause
-    pomoAutoBreak: boolean;         // Automatische Pause starten
-    pomoAutoWork: boolean;          // Automatische Arbeit starten
+    pomoLongBreakInterval: number;   // Intervalle bis zur langen Pause
+    pomoAutoBreak: boolean;          // Automatische Pause starten
+    pomoAutoWork: boolean;           // Automatische Arbeit starten
 }
 ```
 
@@ -186,7 +215,9 @@ Enthält alle UI-Logik, Event-Handler und View-Updates. Strukturiert nach Funkti
 
 #### Timer-Architektur
 
-```text
+**Timer State Machine**
+
+```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Timer State Machine                      │
 ├─────────────────────────────────────────────────────────────┤
@@ -197,23 +228,29 @@ Enthält alle UI-Logik, Event-Handler und View-Updates. Strukturiert nach Funkti
 │   │              │ <──────────────│ timerSeconds++   │      │
 │   └──────────────┘     Pause      └──────────────────┘      │
 │                                                              │
-│   Zustandsvariablen:                                         │
-│   ├── isTimerRunning: boolean                                │
-│   ├── timerSeconds: number                                   │
-│   ├── pomodoroMode: boolean                                  │
-│   ├── pomodoroPhase: 'work' | 'shortBreak' | 'longBreak'     │
-│   └── startTime: number                                      │
-│                                                              │
-│   Persistenz:                                                │
-│   ├── localStorage['timer_state']  → TimerState-Objekt      │
-│   └── localStorage['timer_notes']  → Notizen während Timer  │
-│                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Zustandsvariablen**
+
+| Variable | Typ | Beschreibung |
+|----------|-----|--------------|
+| `isTimerRunning` | `boolean` | Timer läuft gerade |
+| `timerSeconds` | `number` | Aktuelle Sekundenanzahl |
+| `pomodoroMode` | `boolean` | Pomodoro-Modus aktiv |
+| `pomodoroPhase` | `'work' \| 'shortBreak' \| 'longBreak'` | Aktuelle Pomodoro-Phase |
+| `startTime` | `number` | Startzeitpunkt (Unix-Timestamp) |
+
+**Persistenz**
+
+| localStorage-Key | Inhalt |
+|-----------------|--------|
+| `timer_state` | TimerState-Objekt |
+| `timer_notes` | Notizen während Timer |
+
 ---
 
-### 4.3 UI-Komponenten (index.html)
+### 4.3 UI-Komponenten (`index.html`)
 
 Die Anwendung basiert auf einer Single-Page-Architektur mit View-basiertem Navigation.
 
@@ -257,9 +294,11 @@ Die Anwendung basiert auf einer Single-Page-Architektur mit View-basiertem Navig
 
 | Einschränkung | Auswirkung |
 |---------------|------------|
-| Keine Cross-Device-Synchronisation | Daten sind an ein Gerät gebunden |
+| Keine plattformübergreifende Synchronisation | Daten sind an ein Gerät gebunden |
 | localStorage-Limit (~5 MB) | Begrenzte Datenmenge möglich |
 | Keine serverseitigen Berechnungen | Komplexe Analysen müssen client-seitig laufen |
+
+---
 
 ### 5.2 Dual-Mode Timer
 
@@ -269,10 +308,12 @@ Die Anwendung unterstützt zwei komplementäre Timer-Modi:
 
 | Modus | Beschreibung | Typischer Einsatz |
 |-------|--------------|-------------------|
-| **Frei** | Stoppuhr ohne Zeitlimit | Offenes Lernen,自由的学習 |
+| **Stoppuhr** | Stoppuhr ohne Zeitlimit | Offenes Lernen |
 | **Pomodoro** | 25/5/15 Minuten-Zyklen | Fokussiertes Arbeiten mit Pausen |
 
-Pomodoro-Einstellungen sind vollständig konfigurierbar in den Settings.
+Pomodoro-Einstellungen sind vollständig konfigurierbar in den Einstellungen.
+
+---
 
 ### 5.3 CSS-First Styling
 
@@ -283,6 +324,8 @@ Pomodoro-Einstellungen sind vollständig konfigurierbar in den Settings.
 - **Schnelle Iteration:** Änderungen sofort ohne Neukompilierung sichtbar
 - **Konsistenz:** Integriertes Design-System mit vordefinierten Werten
 - **Kleine Bundle-Größe:** Nur genutzte CSS-Klassen werden verwendet
+
+---
 
 ### 5.4 View-basierte Navigation
 
@@ -358,45 +401,45 @@ function switchView(viewId) {
 ┌─────────────────────────────────────────────────────────────┐
 │                    Timer Save-Cycle                          │
 └─────────────────────────────────────────────────────────────┘
-      │
-      ▼
+       │
+       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ User drückt "Start"                                         │
+│ 1. User drückt "Start"                                       │
 └─────────────────────────────────────────────────────────────┘
-      │
-      ├──────────────────────────────────────────────────────┐
-      ▼                                                      ▼
+       │
+       ├──────────────────────────────────────────────────────┐
+       ▼                                                      ▼
 ┌─────────────────────┐                        ┌─────────────────────┐
-│ startInterval()     │                        │ requestWakeLock()   │
+│ startInterval()      │                        │ requestWakeLock()   │
 │ wird aufgerufen     │                        │ Display bleibt an   │
 └─────────────────────┘                        └─────────────────────┘
-      │
-      ▼
+       │
+       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Timer läuft: saveState() alle 1s in localStorage            │
-│ timer_state aktualisiert mit aktuellen Werten               │
+│ 2. Timer läuft: saveState() alle 1s in localStorage        │
+│    timer_state aktualisiert mit aktuellen Werten           │
 └─────────────────────────────────────────────────────────────┘
-      │
-      ▼
+       │
+       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ User drückt "Stopp"                                         │
+│ 3. User drückt "Stopp"                                      │
 └─────────────────────────────────────────────────────────────┘
-      │
-      ▼
+       │
+       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Entry-Objekt wird erstellt                                   │
+│ 4. Entry-Objekt wird erstellt                               │
 └─────────────────────────────────────────────────────────────┘
-      │
-      ▼
+       │
+       ▼
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │ storage.    │    │ check-      │    │ updateViews │
 │ addEntry()  │───>│ Achievements│───>│ ()          │
 └─────────────┘    └─────────────┘    └─────────────┘
-                                              │
-      ┌─────────────────────────────────────┘
-      ▼
+                                               │
+       ┌─────────────────────────────────────┘
+       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Wake Lock wird freigegeben                                   │
+│ 5. Wake Lock wird freigegeben                               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -460,6 +503,8 @@ self.addEventListener('activate', (event) => {
 | **Externe CDN** | Tailwind CSS, Lucide Icons (bei Erstverbindung) |
 | **App-Resources** | Icons, Manifest, CSS-Dateien |
 
+---
+
 ### 7.2 Manifest
 
 ```json
@@ -487,6 +532,8 @@ self.addEventListener('activate', (event) => {
 }
 ```
 
+---
+
 ### 7.3 Update-Mechanismus
 
 ```
@@ -496,7 +543,7 @@ self.addEventListener('activate', (event) => {
 
     ┌──────────────────────────────────────────────────────┐
     │ 1. Service Worker prüft periodisch auf Updates      │
-    │    (intervall: 1× pro Stunde oder bei Visibility)   │
+    │    (Intervall: 1× pro Stunde oder bei Tab-Wechsel)  │
     └──────────────────────────┬───────────────────────────┘
                                │
                                ▼
@@ -519,9 +566,11 @@ self.addEventListener('activate', (event) => {
                                ▼
     ┌──────────────────────────────────────────────────────┐
     │ 5. window.location.reload()                         │
-    │    → Neue Version wird sofort aktiv                 │
+    │    → Neue Version wird sofort aktiv                  │
     └──────────────────────────────────────────────────────┘
 ```
+
+---
 
 ### 7.4 Wake Lock
 
@@ -557,13 +606,13 @@ Das Dashboard besteht aus modularen, datengetriebenen Widgets:
 
 | Widget | Datenquelle | Berechnung/Visualisierung |
 |--------|-------------|---------------------------|
-| **Tagesziel-Ring** | today's entries | Kreisdiagramm: `(todaySeconds / dailyGoal) * circumference` |
-| **Wochenübersicht** | week entries | Balkendiagramm (7 Tage) |
-| **Streak** | entries per day | Consecutive days mit Lernaktivität |
+| **Tagesziel-Ring** | Today's entries | Kreisdiagramm: `(todaySeconds / dailyGoal) * circumference` |
+| **Wochenübersicht** | Week entries | Balkendiagramm (7 Tage) |
+| **Streak** | Entries per day | Konsekutive Tage mit Lernaktivität |
 | **Heatmap** | 12 weeks entries | Farbintensität pro Tag (GitHub-Style) |
-| **Achievements** | entries, settings | Bedingungsprüfung und Fortschritt |
-| **Prüfungs-Countdown** | semesters.modules | `days until examDate` |
-| **Wochenstatistik** | week entries | Summen, Durchschnitte, Vergleiche |
+| **Achievements** | Entries, Settings | Bedingungsprüfung und Fortschritt |
+| **Prüfungs-Countdown** | Semesters.modules | `days until examDate` |
+| **Wochenstatistik** | Week entries | Summen, Durchschnitte, Vergleiche |
 
 ---
 
@@ -619,7 +668,7 @@ Das Achievements-System motiviert durch Gamification:
 
 ---
 
-## Anhang: Abkürzungen
+## 11. Anhang: Abkürzungen
 
 | Abkürzung | Bedeutung |
 |-----------|-----------|

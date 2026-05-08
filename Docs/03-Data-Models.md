@@ -1,6 +1,6 @@
 # Datenmodelle und Speicherstruktur
 
-Dokumentation der Datenmodelle und Persistenzschicht der Lernzeit-Tracker Anwendung.
+Diese Dokumentation beschreibt die Datenmodelle und die Persistenzschicht der Lernzeit-Tracker Anwendung. Der StorageManager bildet die zentrale Schnittstelle für alle Datenzugriffe.
 
 ---
 
@@ -20,7 +20,7 @@ Dokumentation der Datenmodelle und Persistenzschicht der Lernzeit-Tracker Anwend
 
 ## StorageManager Klasse
 
-Die `StorageManager`-Klasse ist die zentrale Schnittstelle für alle Datenzugriffe in der Anwendung. Sie abstrahiert den Zugriff auf `localStorage` und bietet CRUD-Operationen für alle Datenmodelle.
+Die `StorageManager`-Klasse bildet die **zentrale Schnittstelle** für alle Datenzugriffe in der Anwendung. Sie abstrahiert den Zugriff auf `localStorage` und bietet konsistente CRUD-Operationen für alle Datenmodelle.
 
 ### Konstruktor und Initialisierung
 
@@ -40,8 +40,8 @@ class StorageManager {
 
 ### Öffentliche Methoden
 
-| Methode | Rückgabe | Beschreibung |
-|---------|----------|--------------|
+| Methode | Rückgabetyp | Beschreibung |
+|---------|-------------|--------------|
 | `init()` | `void` | Initialisiert alle Daten mit Standardwerten, falls Speicher leer ist |
 | `getEntries()` | `Entry[]` | Gibt alle Lernsitzungen zurück |
 | `addEntry(entry)` | `Entry` | Fügt eine neue Lernsitzung hinzu |
@@ -63,8 +63,8 @@ class StorageManager {
 
 ### Private Hilfsmethoden
 
-| Methode | Rückgabe | Beschreibung |
-|---------|----------|--------------|
+| Methode | Rückgabetyp | Beschreibung |
+|---------|-------------|--------------|
 | `_save(key, data)` | `void` | Speichert Daten in localStorage mit Fehlerbehandlung |
 | `_load(key)` | `any` | Lädt Daten aus localStorage |
 | `migrateModulesSubjectId()` | `void` | Migriert Module ohne subjectId anhand des Namens |
@@ -93,7 +93,7 @@ _save(key, data) {
 
 ## localStorage Schlüsselstruktur
 
-Die Anwendung verwendet vier primäre Schlüssel in localStorage:
+Die Anwendung verwendet vier **primäre Schlüssel** in localStorage:
 
 | Schlüssel | Datentyp | Beschreibung |
 |-----------|----------|--------------|
@@ -118,8 +118,8 @@ Repräsentiert eine einzelne Lernsitzung mit Zeitmessung.
 
 ### Feldbeschreibung
 
-| Feld | Typ | Pflicht | Standard | Beschreibung |
-|------|-----|---------|---------|--------------|
+| Feld | Typ | Pflicht | Standardwert | Beschreibung |
+|------|-----|---------|--------------|--------------|
 | `id` | `string` | Ja | - | Eindeutige ID (timestamp-basiert via `Date.now()`) |
 | `subjectId` | `string` | Ja | - | Referenz zum zugehörigen Fach |
 | `duration` | `number` | Ja | - | Dauer in **Sekunden** |
@@ -203,8 +203,8 @@ Repräsentiert ein Studienfach mit Farbcodierung und Wochenziel.
 
 ### Feldbeschreibung
 
-| Feld | Typ | Pflicht | Standard | Beschreibung |
-|------|-----|---------|----------|--------------|
+| Feld | Typ | Pflicht | Standardwert | Beschreibung |
+|------|-----|---------|--------------|--------------|
 | `id` | `string` | Ja | - | Eindeutige ID (timestamp-basiert) |
 | `name` | `string` | Ja | - | Anzeigename des Fachs |
 | `color` | `string` | Ja | - | CSS-Klasse für Farbdarstellung (Tailwind) |
@@ -212,19 +212,19 @@ Repräsentiert ein Studienfach mit Farbcodierung und Wochenziel.
 
 ### Farbcodierung
 
-Die Farbe wird als Tailwind CSS-Klasse angegeben:
+Die Farbe wird als **Tailwind CSS-Klasse** angegeben:
 
-| Klasse | Farbe | Verwendung |
-|--------|-------|------------|
-| `bg-blue-500` | Blau | Standard für Mathematik |
-| `bg-green-500` | Grün | Standard für GET |
-| `bg-purple-500` | Violett | Standard für Physik |
-| `bg-orange-500` | Orange | Standard für Elektrotechnik |
-| `bg-red-500` | Rot | Standard für Digitaltechnik |
-| `bg-yellow-500` | Gelb | Alternative Farbe |
-| `bg-pink-500` | Pink | Alternative Farbe |
-| `bg-indigo-500` | Indigo | Alternative Farbe |
-| `bg-teal-500` | Türkis | Alternative Farbe |
+| Klasse | Farbe | Standard für |
+|--------|-------|--------------|
+| `bg-blue-500` | Blau | Mathematik |
+| `bg-green-500` | Grün | GET |
+| `bg-purple-500` | Violett | Physik |
+| `bg-orange-500` | Orange | Elektrotechnik |
+| `bg-red-500` | Rot | Digitaltechnik |
+| `bg-yellow-500` | Gelb | Alternative |
+| `bg-pink-500` | Pink | Alternative |
+| `bg-indigo-500` | Indigo | Alternative |
+| `bg-teal-500` | Türkis | Alternative |
 
 ### JSON Schema
 
@@ -277,8 +277,8 @@ Enthält alle globalen Anwendungseinstellungen.
 
 ### Feldbeschreibung
 
-| Feld | Typ | Pflicht | Standard | Min | Max | Beschreibung |
-|------|-----|---------|---------|-----|-----|--------------|
+| Feld | Typ | Pflicht | Standardwert | Min | Max | Beschreibung |
+|------|-----|---------|--------------|-----|-----|--------------|
 | `darkMode` | `boolean` | Nein | `true` | - | - | **Veraltet!** Nutze `themeMode` |
 | `dailyGoal` | `number` | Nein | `60` | 1 | - | Tagesziel in **Minuten** |
 | `learningDays` | `number` | Nein | `5` | 1 | 7 | Lerntage pro Woche |
@@ -405,8 +405,8 @@ Repräsentiert ein akademisches Semester mit zugehörigen Modulen.
 
 ### Feldbeschreibung
 
-| Feld | Typ | Pflicht | Standard | Beschreibung |
-|------|-----|---------|----------|--------------|
+| Feld | Typ | Pflicht | Standardwert | Beschreibung |
+|------|-----|---------|--------------|--------------|
 | `id` | `string` | Ja | - | Eindeutige ID (timestamp-basiert) |
 | `name` | `string` | Ja | - | Anzeigename des Semesters |
 | `start` | `string` | Ja | - | Startdatum im Format `YYYY-MM-DD` |
@@ -487,16 +487,16 @@ Repräsentiert ein einzelnes Studienmodul innerhalb eines Semesters.
 
 ### Feldbeschreibung
 
-| Feld | Typ | Pflicht | Standard | Beschreibung |
-|------|-----|---------|----------|--------------|
+| Feld | Typ | Pflicht | Standardwert | Beschreibung |
+|------|-----|---------|--------------|--------------|
 | `id` | `string` | Ja | - | Eindeutige ID (timestamp-basiert) |
 | `subjectId` | `string \| null` | Nein | `null` | Verknüpfung zum Fach (optional) |
 | `name` | `string` | Ja | - | Vollständiger Modulname |
 | `code` | `string` | Nein | `""` | Modulcode (z.B. "52111") |
 | `ects` | `number` | Nein | `0` | Credits nach ECTS |
 | `hours` | `number` | Nein | `0` | Gesamtarbeitsstunden (Workload) |
-| `examPeriod` | `string` | Nein | `""` | Prüfungszeitraum (YYYY-MM-DD) |
-| `examDate` | `string` | Nein | `""` | Prüfungsdatum (YYYY-MM-DD) |
+| `examPeriod` | `string` | Nein | `""` | Prüfungszeitraum (Datum) |
+| `examDate` | `string` | Nein | `""` | Prüfungsdatum |
 | `notes` | `string` | Nein | `""` | Modulnotizen/Beschreibung |
 
 ### JSON Schema
@@ -577,8 +577,8 @@ Der Timer-Zustand wird in `localStorage` gespeichert, um bei Seitenreload fortge
 
 ### Feldbeschreibung
 
-| Feld | Typ | Pflicht | Standard | Beschreibung |
-|------|-----|---------|----------|--------------|
+| Feld | Typ | Pflicht | Standardwert | Beschreibung |
+|------|-----|---------|--------------|--------------|
 | `isRunning` | `boolean` | Nein | `false` | Zeigt an, ob Timer läuft |
 | `seconds` | `number` | Nein | `0` | Aktuelle Sekunden im Timer |
 | `subjectId` | `string` | Nein | `null` | Aktives Fach |
@@ -693,13 +693,13 @@ init() {
 
 Beim ersten Start werden folgende Fächer erstellt:
 
-| ID | Name | Farbe | Wochenziel |
-|----|------|-------|------------|
-| 1 | Höhere Mathematik 2 | `bg-blue-500` | 6 Stunden |
-| 2 | GET2 | `bg-green-500` | 8 Stunden |
-| 3 | Physik | `bg-purple-500` | 8 Stunden |
-| 4 | Bauelemente | `bg-orange-500` | 8 Stunden |
-| 5 | Digitaltechnik | `bg-red-500` | 5 Stunden |
+| ID | Name | Farbe | Wochenziel (Std.) |
+|----|------|-------|-------------------|
+| 1 | Höhere Mathematik 2 | `bg-blue-500` | 6 |
+| 2 | GET2 | `bg-green-500` | 8 |
+| 3 | Physik | `bg-purple-500` | 8 |
+| 4 | Bauelemente | `bg-orange-500` | 8 |
+| 5 | Digitaltechnik | `bg-red-500` | 5 |
 
 ```json
 [
@@ -805,7 +805,6 @@ Verknüpft bestehende Module automatisch mit Fächern basierend auf dem Namen:
 | `HM`, `mathematik` | Höhere Mathematik 2 |
 
 ```javascript
-// Beispiel-Mapping-Logik
 const subjectMappings = [
     { keywords: ['GET2', 'elektrotechnik'], subjectId: '2' },
     { keywords: ['HM', 'mathematik'], subjectId: '1' }
