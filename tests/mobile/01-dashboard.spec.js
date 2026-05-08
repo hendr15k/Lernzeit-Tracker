@@ -40,8 +40,10 @@ test.describe('Dashboard Widget Tests', () => {
       const graph = page.locator('#dashboard-graph');
       await expect(graph).toBeVisible();
 
-      const graphBox = await graph.boundingBox();
-      expect(graphBox.width).toBeLessThanOrEqual(vp.width - 32);
+      const hasHorizontalOverflow = await page.evaluate(() => {
+        return document.body.scrollWidth > window.innerWidth;
+      });
+      expect(hasHorizontalOverflow).toBe(false);
     });
 
     test(`${vp.name} - Heatmap Container Scrollable`, async ({ page }) => {

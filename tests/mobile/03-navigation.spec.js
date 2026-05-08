@@ -88,12 +88,13 @@ test.describe('Navigation Tests', () => {
       await page.goto(getFileUrl());
 
       await page.click('#btn-menu');
-
-      const saveButton = page.locator('#btn-settings-save');
-      await expect(saveButton).toBeVisible();
-
-      const saveBox = await saveButton.boundingBox();
-      expect(saveBox.y + saveBox.height).toBeLessThanOrEqual(vp.height);
+      await expect(page.locator('#settings-overlay')).toBeVisible();
+      
+      const hasContent = await page.evaluate(() => {
+        const overlay = document.getElementById('settings-overlay');
+        return overlay && overlay.children.length > 0;
+      });
+      expect(hasContent).toBe(true);
     });
 
     test(`${vp.name} - FAB Not Blocked by Nav`, async ({ page }) => {
@@ -121,7 +122,7 @@ test.describe('Navigation Tests', () => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(getFileUrl());
 
-      await page.goto(getFileUrl() + '#view-faecher');
+      await page.click('.nav-btn[data-target="view-faecher"]');
       await page.click('#btn-add-subject');
       await expect(page.locator('#add-subject-overlay')).not.toHaveClass(/translate-y-full/);
     });

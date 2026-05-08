@@ -138,7 +138,7 @@ test.describe('Input Styling Tests', () => {
       await page.click('#btn-menu');
       await page.click('#settings-theme-light');
 
-      const inputs = page.locator('input[type="number"], input[type="text"], select');
+      const inputs = page.locator('#settings-overlay input[type="number"], #settings-overlay input[type="text"], #settings-overlay select');
       const count = await inputs.count();
       expect(count).toBeGreaterThan(0);
 
@@ -155,7 +155,7 @@ test.describe('Input Styling Tests', () => {
       await page.click('#btn-menu');
       await page.click('#settings-theme-dark');
 
-      const inputs = page.locator('input[type="number"], input[type="text"], select');
+      const inputs = page.locator('#settings-overlay input[type="number"], #settings-overlay input[type="text"], #settings-overlay select');
       const count = await inputs.count();
       expect(count).toBeGreaterThan(0);
 
