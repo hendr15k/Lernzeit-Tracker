@@ -1,28 +1,31 @@
 # Testing-Dokumentation
 
-> **Voraussetzungen**: Stelle sicher, dass Node.js und npm installiert sind. Führe vor dem ersten Testdurchlauf `npm install` aus.
+> **Hinweis:** Diese Dokumentation ist Teil der [Projektdokumentation](./README.md).
+> **Voraussetzungen:** Node.js und npm installiert. Führe `npm install` vor dem ersten Testdurchlauf aus.
 
 ---
 
 ## Inhaltsverzeichnis
 
-1. [Test Framework](#test-framework)
-2. [Projektstruktur](#projektstruktur)
-3. [Test-Kategorien](#test-kategorien)
-4. [Tests ausführen](#tests-ausführen)
-5. [Playwright-Konfiguration](#playwright-konfiguration)
-6. [Test-Setup](#test-setup)
-7. [Hilfsfunktionen](#hilfsfunktionen)
-8. [CI-Workflow](#ci-workflow)
-9. [Test-Schreibweise](#test-schreibweise)
-10. [Troubleshooting](#troubleshooting)
-11. [Best Practices](#best-practices)
+1. [Test Framework](#1-test-framework)
+2. [Projektstruktur](#2-projektstruktur)
+3. [Test-Kategorien](#3-test-kategorien)
+4. [Tests ausführen](#4-tests-ausführen)
+5. [Playwright-Konfiguration](#5-playwright-konfiguration)
+6. [Test-Setup](#6-test-setup)
+7. [Hilfsfunktionen](#7-hilfsfunktionen)
+8. [CI-Workflow](#8-ci-workflow)
+9. [Test-Schreibweise](#9-test-schreibweise)
+10. [Troubleshooting](#10-troubleshooting)
+11. [Best Practices](#11-best-practices)
 
 ---
 
-## Test Framework
+## 1. Test Framework
 
-Das Projekt verwendet [Playwright](https://playwright.dev/) als End-to-End-Test-Framework. Playwright ermöglicht zuverlässige Tests für moderne Web-Anwendungen mit Unterstützung für:
+Das Projekt verwendet [Playwright](https://playwright.dev/) als End-to-End-Test-Framework.
+
+### Features
 
 | Feature | Beschreibung |
 |---------|--------------|
@@ -34,7 +37,7 @@ Das Projekt verwendet [Playwright](https://playwright.dev/) als End-to-End-Test-
 
 ---
 
-## Projektstruktur
+## 2. Projektstruktur
 
 ```
 tests/
@@ -47,14 +50,14 @@ tests/
 │   └── 05-heatmap.spec.js      # Heatmap-Tests
 ├── helpers.js                   # Hilfsfunktionen
 ├── index.js                     # Test-Index
-└── setup.js                     # Test-Setup/Konfiguration
+└── setup.js                     # Test-Setup
 ```
 
 ---
 
-## Test-Kategorien
+## 3. Test-Kategorien
 
-### `00-viewports.spec.js` — Responsive Layouts
+### 3.1 00-viewports.spec.js — Responsive Layouts
 
 Tests für verschiedene Bildschirmgrößen:
 
@@ -73,7 +76,7 @@ Geprüft werden:
 
 ---
 
-### `01-dashboard.spec.js` — Dashboard-Widgets
+### 3.2 01-dashboard.spec.js — Dashboard-Widgets
 
 Tests für alle Dashboard-Komponenten:
 
@@ -84,12 +87,10 @@ Tests für alle Dashboard-Komponenten:
 - Streak-Widget (`#dashboard-streak`)
 - Prüfungs-Countdown (`#exam-countdown-list`)
 - Wochenstatistiken (`#weekly-bar-chart`)
-- Lern-Trends (`#trend-best-time`)
-- Keine Widget-Überlappungen
 
 ---
 
-### `02-timer.spec.js` — Timer-Overlay
+### 3.3 02-timer.spec.js — Timer-Overlay
 
 Tests für den Timer-Overlay:
 
@@ -100,22 +101,22 @@ Tests für den Timer-Overlay:
 - Notizen-Toggle
 - FAB-Interaktion
 
+Siehe auch: [02-Timer.md](./02-Timer.md) für Timer-Dokumentation.
+
 ---
 
-### `03-navigation.spec.js` — Navigation und Overlays
+### 3.4 03-navigation.spec.js — Navigation und Overlays
 
 Tests für Navigation und Overlays:
 
 - Bottom Navigation (5 Buttons)
-- Navigation zwischen Views: Dashboard, Einheiten, Fächer, Kalender, Semester
 - Header-Buttons: Hinzufügen, Timer, Theme, Menü
 - Settings-Overlay
 - Eintrag hinzufügen Overlay
-- Schließen-Buttons
 
 ---
 
-### `04-themes.spec.js` — Dark/Light Mode
+### 3.5 04-themes.spec.js — Dark/Light Mode
 
 Tests für Theme-Umschaltung:
 
@@ -127,158 +128,78 @@ Tests für Theme-Umschaltung:
 
 ---
 
-### `05-heatmap.spec.js` — Heatmap-Komponente
+### 3.6 05-heatmap.spec.js — Heatmap-Komponente
 
 Tests für die Heatmap-Visualisierung:
 
 - Container und Zellen-Sichtbarkeit
-- Scroll-Verhalten bei breiten Heatmaps
+- Scroll-Verhalten
 - Legende mit 5 Farbstufen
-- Zusammenfassung-Label
-- Tag-Labels
 - Tooltip-Interaktionen
 - Theme-abhängige Farben
 
 ---
 
-## Tests ausführen
+## 4. Tests ausführen
 
-### Alle Tests ausführen
+### Alle Tests
 
 ```bash
 npm test
 ```
 
----
+### Spezifische Kategorie
 
-### Spezifische Kategorie testen
+| Skript | Beschreibung |
+|--------|--------------|
+| `npm run test:viewport` | Responsive Layouts |
+| `npm run test:dashboard` | Widgets und Charts |
+| `npm run test:timer` | Timer-Overlay |
+| `npm run test:nav` | Navigation |
+| `npm run test:themes` | Dark/Light Mode |
+| `npm run test:heatmap` | Heatmap |
 
-```bash
-# Viewport-Tests (responsive Layouts)
-npm run test:viewport
+### Mobile-spezifisch
 
-# Dashboard-Tests (Widgets und Charts)
-npm run test:dashboard
-
-# Timer-Tests (Timer-Overlay und Pomodoro)
-npm run test:timer
-
-# Navigations-Tests (Navigation und Overlays)
-npm run test:nav
-
-# Theme-Tests (Dark/Light Mode)
-npm run test:themes
-
-# Heatmap-Tests (Lernstatistik-Visualisierung)
-npm run test:heatmap
-```
-
----
-
-### Mobile-spezifische Tests
-
-```bash
-# Mobile-Tests (alle Viewports)
-npm run test:mobile
-
-# Android-spezifische Tests
-npm run test:android
-```
-
----
+| Skript | Beschreibung |
+|--------|--------------|
+| `npm run test:mobile` | Alle Viewports |
+| `npm run test:android` | Android-Emulation |
 
 ### Spezielle Modi
 
-```bash
-# Headed-Modus: Browser-GUI wird angezeigt (empfohlen für Debugging)
-npm run test:headed
-
-# UI-Modus: Interaktive Test-Entwicklung mit Playwright UI
-npm run test:ui
-```
+| Skript | Beschreibung |
+|--------|--------------|
+| `npm run test:headed` | Browser-GUI wird angezeigt |
+| `npm run test:ui` | Interaktiver Playwright UI-Modus |
 
 ---
 
-## Playwright-Konfiguration
+## 5. Playwright-Konfiguration
 
-Die Konfiguration befindet sich in `playwright.config.js`:
-
-```javascript
-const path = require('path');
-const { defineConfig, devices } = require('@playwright/test');
-
-module.exports = defineConfig({
-  testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
-  use: {
-    baseURL: `file://${path.resolve(__dirname)}`,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-  },
-  projects: [
-    {
-      name: 'chromium-mobile',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'chromium-mobile-small',
-      use: {
-        viewport: { width: 360, height: 640 },
-        userAgent: 'Mozilla/5.0 (Linux; Android 10; SM-G960F)...',
-        hasTouch: true,
-        isMobile: true,
-      },
-    },
-    {
-      name: 'chromium-mobile-large',
-      use: {
-        viewport: { width: 414, height: 896 },
-        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0...)',
-        hasTouch: true,
-        isMobile: true,
-      },
-    },
-  ],
-});
-```
-
----
+Siehe [07-Configuration.md](./07-Configuration.md) für vollständige Konfigurationsdetails.
 
 ### Konfigurationsoptionen
 
-| Option | Beschreibung | Standard |
-|--------|--------------|----------|
-| `testDir` | Verzeichnis mit Test-Dateien | `./tests` |
-| `fullyParallel` | Parallele Test-Ausführung | `true` |
-| `forbidOnly` | Verbot von `test.only` (aktiv im CI) | `true` in CI |
-| `retries` | Wiederholungen bei fehlgeschlagenen Tests | `0` lokal, `2` in CI |
-| `workers` | Anzahl paralleler Worker | `undefined` (auto) |
-| `reporter` | Test-Reporter Format | `list` |
-| `baseURL` | Basis-URL für `page.goto()` | — |
-| `trace` | Trace-Aufzeichnung | `on-first-retry` |
-| `screenshot` | Screenshots bei Fehlern | `only-on-failure` |
-
-> **Hinweis**: Trace-Aufzeichnungen erfassen alle DOM-Interaktionen, Screenshots und Netzwerk-Anfragen. Siehe [Trace ansehen](#trace-ansehen).
-
----
+| Option | Standard | Beschreibung |
+|--------|----------|--------------|
+| `testDir` | `./tests` | Verzeichnis mit Test-Dateien |
+| `fullyParallel` | `true` | Parallele Test-Ausführung |
+| `forbidOnly` | `true` in CI | Verbot von `test.only` |
+| `retries` | `0` (lokal) / `2` (CI) | Wiederholungen bei Fehlschlägen |
+| `reporter` | `list` | Test-Reporter Format |
 
 ### Projekt-Konfigurationen
 
-Drei mobile Projekte sind konfiguriert:
-
-| Projekt | Beschreibung | Viewport |
-|---------|--------------|----------|
-| `chromium-mobile` | Pixel 5 Standard-Emulation | Gerätedefinition |
-| `chromium-mobile-small` | Kleines Smartphone | 360 × 640 |
-| `chromium-mobile-large` | Großes Smartphone/Tablet | 414 × 896 |
+| Projekt | Viewport |
+|---------|----------|
+| `chromium-mobile` | Pixel 5 |
+| `chromium-mobile-small` | 360 × 640 |
+| `chromium-mobile-large` | 414 × 896 |
 
 ---
 
-## Test-Setup
+## 6. Test-Setup
 
 Die Datei `tests/setup.js` definiert ein erweitertes Test-Objekt:
 
@@ -294,13 +215,11 @@ const test = base.extend({
 module.exports = { test };
 ```
 
-Dies ermöglicht das Laden von gespeichertem State für authentifizierte Tests.
-
 ---
 
-## Hilfsfunktionen
+## 7. Hilfsfunktionen
 
-Die Datei `tests/helpers.js` (importiert aus `./helpers`) stellt nützliche Funktionen bereit:
+Die Datei `tests/helpers.js` stellt nützliche Funktionen bereit:
 
 ```javascript
 const { getFileUrl } = require('../helpers');
@@ -308,20 +227,13 @@ const { getFileUrl } = require('../helpers');
 // URL für index.html erstellen
 const url = getFileUrl();                 // → file:///path/to/index.html
 const url = getFileUrl('subpage.html');   // → file:///path/to/subpage.html
-
-// Weitere Hilfsfunktionen in helpers.js:
-// - date utilities
-// - DOM manipulation helpers
-// - Data generation helpers
 ```
 
-> **Empfehlung**: `getFileUrl()` ist die bevorzugte Methode zum Erstellen von URLs für Tests, da sie plattformunabhängig funktioniert.
+> **Empfehlung:** `getFileUrl()` ist die bevorzugte Methode zum Erstellen von URLs, da sie plattformunabhängig funktioniert.
 
 ---
 
-## CI-Workflow
-
-Das Projekt verwendet GitHub Actions für kontinuierliche Validierung:
+## 8. CI-Workflow
 
 ```yaml
 name: Validate
@@ -333,14 +245,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check files
         run: |
-          [ -f index.html ] && echo "HTML OK" || echo "No index.html"
-          for f in *.js; do
-            [ -f "$f" ] && node --check "$f" 2>/dev/null && echo "$f OK" || echo "$f syntax error"
-          done
-          echo "Done"
+          [ -f index.html ] && echo "HTML OK"
+          for f in *.js; do node --check "$f"; done
 ```
-
----
 
 ### CI-Optimierungen
 
@@ -352,7 +259,7 @@ jobs:
 
 ---
 
-## Test-Schreibweise
+## 9. Test-Schreibweise
 
 ### Grundlegendes Beispiel
 
@@ -363,23 +270,16 @@ const { getFileUrl } = require('../helpers');
 test('Timer-Overlay lässt sich öffnen und schließen', async ({ page }) => {
   await page.goto(getFileUrl());
 
-  // Auf FAB klicken
   const fab = page.locator('#timer-fab');
   await fab.click();
 
-  // Timer-Overlay prüfen
   await expect(page.locator('#timer-overlay')).toBeVisible();
 });
 ```
 
----
-
 ### Viewport-Tests
 
 ```javascript
-const { test, expect } = require('@playwright/test');
-const { getFileUrl } = require('../helpers');
-
 const viewports = [
   { name: 'iPhone SE', width: 375, height: 667 },
   { name: 'iPhone 12', width: 390, height: 844 },
@@ -391,15 +291,12 @@ test.describe('Responsive Layout Tests', () => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(getFileUrl());
 
-      // Kein horizontaler Scroll nötig
       const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
       expect(scrollWidth).toBeLessThanOrEqual(vp.width);
     });
   }
 });
 ```
-
----
 
 ### Erwartungen (Expectations)
 
@@ -416,29 +313,18 @@ await expect(locator).toHaveAttribute('data-theme', 'dark');
 // Inhalt
 await expect(locator).toContainText('Lernzeit');
 await expect(locator).toHaveText('2 Stunden');
-
-// Interaktionen
-await expect(locator).toBeChecked();
-await expect(locator).toBeEnabled();
 ```
-
----
 
 ### Tests überspringen
 
 ```javascript
-test.skip('Wird übersprungen', async ({ page }) => {
-  // ...
-});
-
-test.fixme('Muss noch implementiert werden', async ({ page }) => {
-  // ...
-});
+test.skip('Wird übersprungen', async ({ page }) => { ... });
+test.fixme('Muss noch implementiert werden', async ({ page }) => { ... });
 ```
 
 ---
 
-## Troubleshooting
+## 10. Troubleshooting
 
 ### Erste Einrichtung
 
@@ -450,12 +336,10 @@ npx playwright install
 npx playwright install chromium
 ```
 
----
-
 ### Debugging
 
 ```bash
-# Headed-Modus: Browser-GUI anzeigen
+# Headed-Modus
 npm run test:headed
 
 # Interaktiver UI-Modus
@@ -465,21 +349,12 @@ npm run test:ui
 npx playwright test tests/mobile/02-timer.spec.js --headed
 ```
 
----
-
 ### Trace ansehen
-
-Traces werden automatisch bei Retry-Versuchen im `test-results/` Verzeichnis gespeichert:
 
 ```bash
 # Trace öffnen
 npx playwright show-trace test-results/trace.zip
-
-# Trace in HTML exportieren
-npx playwright show-trace --open test-results/trace.zip
 ```
-
----
 
 ### Häufige Probleme
 
@@ -492,26 +367,30 @@ npx playwright show-trace --open test-results/trace.zip
 
 ---
 
-## Best Practices
+## 11. Best Practices
 
 ### Test-Organisation
 
 - **Viewport-Tests**: Teste immer mehrere Viewports für responsive Designs
-- **Beschreibende Namen**: Testnamen sollten das erwartete Verhalten beschreiben (z.B. `"Timer-Overlay lässt sich schließen"`)
+- **Beschreibende Namen**: Testnamen sollten das erwartete Verhalten beschreiben
 
 ### Debugging
 
-- **Screenshots**: Werden automatisch bei Fehlern erstellt (`test-results/`)
+- **Screenshots**: Werden automatisch bei Fehlern erstellt
 - **Traces**: Nützlich für das Debugging von Fehlschlägen
 - **Headed-Modus**: Nutze `npm run test:headed` für visuelles Debugging
 
 ### Performance
 
-- **Parallelisierung**: Lokal voll parallel, CI mit einzelnem Worker für Stabilität
+- **Parallelisierung**: Lokal voll parallel, CI mit einzelnem Worker
 - **CI-Optimierungen**: 2 Retries, 1 Worker, `forbidOnly` aktiviert
 
 ### Wartbarkeit
 
 - Nutze `helpers.js` für wiederverwendbare Funktionen
 - Verwende `test.skip()` für temporär deaktivierte Tests
-- Führe regelmäßig `npm run test` aus, um sicherzustellen, dass alle Tests bestehen
+- Führe regelmäßig `npm run test` aus
+
+---
+
+*Siehe auch: [01-Architecture.md](./01-Architecture.md) | [07-Configuration.md](./07-Configuration.md) | [09-Deployment.md](./09-Deployment.md)*

@@ -1,6 +1,7 @@
 # Datenmodelle und Speicherstruktur
 
-Diese Dokumentation beschreibt die Datenmodelle und die Persistenzschicht der Lernzeit-Tracker Anwendung. Der StorageManager bildet die zentrale Schnittstelle für alle Datenzugriffe.
+> **Hinweis:** Diese Dokumentation ist Teil der [Projektdokumentation](./README.md).
+> Siehe auch: [01-Architecture.md](./01-Architecture.md) für die architektonische Einordnung.
 
 ---
 
@@ -8,21 +9,23 @@ Diese Dokumentation beschreibt die Datenmodelle und die Persistenzschicht der Le
 
 1. [StorageManager Klasse](#storagemanager-klasse)
 2. [localStorage Schlüsselstruktur](#localstorage-schlüsselstruktur)
-3. [Entry Modell (Lernsitzung)](#entry-modell-lernsitzung)
-4. [Subject Modell (Fach)](#subject-modell-fach)
-5. [Settings Modell (Einstellungen)](#settings-modell-einstellungen)
+3. [Entry Modell](#entry-modell-lernsitzung)
+4. [Subject Modell](#subject-modell-fach)
+5. [Settings Modell](#settings-modell-einstellungen)
 6. [Semester Modell](#semester-modell)
 7. [Module Modell](#module-modell)
-8. [Timer-State (Persistiert)](#timer-state-persistiert)
+8. [Timer-State](#timer-state-persistiert)
 9. [Dateninitialisierung und Seeding](#dateninitialisierung-und-seeding)
 
 ---
 
-## StorageManager Klasse
+## 1. StorageManager Klasse
 
 Die `StorageManager`-Klasse bildet die **zentrale Schnittstelle** für alle Datenzugriffe in der Anwendung. Sie abstrahiert den Zugriff auf `localStorage` und bietet konsistente CRUD-Operationen für alle Datenmodelle.
 
-### Konstruktor und Initialisierung
+Siehe auch: [06-API-Reference.md](./06-API-Reference.md#windowstoragemanager) für die vollständige API-Referenz.
+
+### 1.1 Konstruktor und Initialisierung
 
 ```javascript
 class StorageManager {
@@ -38,7 +41,7 @@ class StorageManager {
 }
 ```
 
-### Öffentliche Methoden
+### 1.2 Öffentliche Methoden
 
 | Methode | Rückgabetyp | Beschreibung |
 |---------|-------------|--------------|
@@ -61,7 +64,7 @@ class StorageManager {
 | `updateModule(semesterId, module)` | `Module` | Aktualisiert ein Modul in einem Semester |
 | `deleteModule(semesterId, moduleId)` | `boolean` | Löscht ein Modul aus einem Semester |
 
-### Private Hilfsmethoden
+### 1.3 Private Hilfsmethoden
 
 | Methode | Rückgabetyp | Beschreibung |
 |---------|-------------|--------------|
@@ -71,7 +74,7 @@ class StorageManager {
 | `migrateExamDates()` | `void` | Migriert Prüfungsdaten basierend auf Mapping |
 | `initDefaultSemester()` | `void` | Erstellt Standard-Semester für FH Aachen ET |
 
-### Fehlerbehandlung
+### 1.4 Fehlerbehandlung
 
 Die `_save()`-Methode fängt Speicherfehler ab und zeigt dem Benutzer einen Toast mit Fehlermeldung:
 
@@ -91,7 +94,7 @@ _save(key, data) {
 
 ---
 
-## localStorage Schlüsselstruktur
+## 2. localStorage Schlüsselstruktur
 
 Die Anwendung verwendet vier **primäre Schlüssel** in localStorage:
 
@@ -102,7 +105,7 @@ Die Anwendung verwendet vier **primäre Schlüssel** in localStorage:
 | `lernzeit_settings` | `Settings` | Einstellungsobjekt |
 | `lernzeit_semesters` | `Semester[]` | Array aller Semester |
 
-### Zusätzliche lokale Schlüssel
+### 2.1 Zusätzliche lokale Schlüssel
 
 | Schlüssel | Datentyp | Beschreibung |
 |-----------|----------|--------------|
@@ -112,11 +115,11 @@ Die Anwendung verwendet vier **primäre Schlüssel** in localStorage:
 
 ---
 
-## Entry Modell (Lernsitzung)
+## 3. Entry Modell (Lernsitzung)
 
 Repräsentiert eine einzelne Lernsitzung mit Zeitmessung.
 
-### Feldbeschreibung
+### 3.1 Feldbeschreibung
 
 | Feld | Typ | Pflicht | Standardwert | Beschreibung |
 |------|-----|---------|--------------|--------------|
@@ -128,7 +131,7 @@ Repräsentiert eine einzelne Lernsitzung mit Zeitmessung.
 | `notes` | `string` | Nein | `""` | Freitext-Notizen zur Sitzung |
 | `topics` | `string` | Nein | `""` | Behandelte Themen (kommasepariert) |
 
-### JSON Schema
+### 3.2 JSON Schema
 
 ```json
 {
@@ -170,7 +173,7 @@ Repräsentiert eine einzelne Lernsitzung mit Zeitmessung.
 }
 ```
 
-### Beispiel
+### 3.3 Beispiel
 
 ```json
 {
@@ -184,7 +187,7 @@ Repräsentiert eine einzelne Lernsitzung mit Zeitmessung.
 }
 ```
 
-### Berechnungen
+### 3.4 Berechnungen
 
 Aus den Entry-Daten können folgende Werte berechnet werden:
 
@@ -197,11 +200,11 @@ Aus den Entry-Daten können folgende Werte berechnet werden:
 
 ---
 
-## Subject Modell (Fach)
+## 4. Subject Modell (Fach)
 
 Repräsentiert ein Studienfach mit Farbcodierung und Wochenziel.
 
-### Feldbeschreibung
+### 4.1 Feldbeschreibung
 
 | Feld | Typ | Pflicht | Standardwert | Beschreibung |
 |------|-----|---------|--------------|--------------|
@@ -210,7 +213,7 @@ Repräsentiert ein Studienfach mit Farbcodierung und Wochenziel.
 | `color` | `string` | Ja | - | CSS-Klasse für Farbdarstellung (Tailwind) |
 | `weeklyGoal` | `number` | Nein | `0` | Wochenziel in Stunden |
 
-### Farbcodierung
+### 4.2 Farbcodierung
 
 Die Farbe wird als **Tailwind CSS-Klasse** angegeben:
 
@@ -226,7 +229,7 @@ Die Farbe wird als **Tailwind CSS-Klasse** angegeben:
 | `bg-indigo-500` | Indigo | Alternative |
 | `bg-teal-500` | Türkis | Alternative |
 
-### JSON Schema
+### 4.3 JSON Schema
 
 ```json
 {
@@ -258,7 +261,7 @@ Die Farbe wird als **Tailwind CSS-Klasse** angegeben:
 }
 ```
 
-### Beispiel
+### 4.4 Beispiel
 
 ```json
 {
@@ -271,11 +274,11 @@ Die Farbe wird als **Tailwind CSS-Klasse** angegeben:
 
 ---
 
-## Settings Modell (Einstellungen)
+## 5. Settings Modell (Einstellungen)
 
 Enthält alle globalen Anwendungseinstellungen.
 
-### Feldbeschreibung
+### 5.1 Feldbeschreibung
 
 | Feld | Typ | Pflicht | Standardwert | Min | Max | Beschreibung |
 |------|-----|---------|--------------|-----|-----|--------------|
@@ -291,7 +294,7 @@ Enthält alle globalen Anwendungseinstellungen.
 | `pomoAutoBreak` | `boolean` | Nein | `true` | - | - | Automatischer Start der Pause |
 | `pomoAutoWork` | `boolean` | Nein | `false` | - | - | Automatischer Start der Arbeitsphase |
 
-### Theme-Modi
+### 5.2 Theme-Modi
 
 | Modus | Beschreibung |
 |-------|--------------|
@@ -299,7 +302,7 @@ Enthält alle globalen Anwendungseinstellungen.
 | `"light"` | Immer helles Theme |
 | `"auto"` | Folgt dem System-Theme (`prefers-color-scheme`) |
 
-### JSON Schema
+### 5.3 JSON Schema
 
 ```json
 {
@@ -379,7 +382,7 @@ Enthält alle globalen Anwendungseinstellungen.
 }
 ```
 
-### Beispiel
+### 5.4 Beispiel
 
 ```json
 {
@@ -399,11 +402,11 @@ Enthält alle globalen Anwendungseinstellungen.
 
 ---
 
-## Semester Modell
+## 6. Semester Modell
 
 Repräsentiert ein akademisches Semester mit zugehörigen Modulen.
 
-### Feldbeschreibung
+### 6.1 Feldbeschreibung
 
 | Feld | Typ | Pflicht | Standardwert | Beschreibung |
 |------|-----|---------|--------------|--------------|
@@ -413,7 +416,7 @@ Repräsentiert ein akademisches Semester mit zugehörigen Modulen.
 | `end` | `string` | Ja | - | Enddatum im Format `YYYY-MM-DD` |
 | `modules` | `Module[]` | Nein | `[]` | Array der Module |
 
-### JSON Schema
+### 6.2 JSON Schema
 
 ```json
 {
@@ -467,7 +470,7 @@ Repräsentiert ein akademisches Semester mit zugehörigen Modulen.
 }
 ```
 
-### Beispiel
+### 6.3 Beispiel
 
 ```json
 {
@@ -481,11 +484,11 @@ Repräsentiert ein akademisches Semester mit zugehörigen Modulen.
 
 ---
 
-## Module Modell
+## 7. Module Modell
 
 Repräsentiert ein einzelnes Studienmodul innerhalb eines Semesters.
 
-### Feldbeschreibung
+### 7.1 Feldbeschreibung
 
 | Feld | Typ | Pflicht | Standardwert | Beschreibung |
 |------|-----|---------|--------------|--------------|
@@ -499,7 +502,7 @@ Repräsentiert ein einzelnes Studienmodul innerhalb eines Semesters.
 | `examDate` | `string` | Nein | `""` | Prüfungsdatum |
 | `notes` | `string` | Nein | `""` | Modulnotizen/Beschreibung |
 
-### JSON Schema
+### 7.2 JSON Schema
 
 ```json
 {
@@ -553,7 +556,7 @@ Repräsentiert ein einzelnes Studienmodul innerhalb eines Semesters.
 }
 ```
 
-### Beispiel
+### 7.3 Beispiel
 
 ```json
 {
@@ -571,11 +574,11 @@ Repräsentiert ein einzelnes Studienmodul innerhalb eines Semesters.
 
 ---
 
-## Timer-State (Persistiert)
+## 8. Timer-State (Persistiert)
 
 Der Timer-Zustand wird in `localStorage` gespeichert, um bei Seitenreload fortgesetzt werden zu können.
 
-### Feldbeschreibung
+### 8.1 Feldbeschreibung
 
 | Feld | Typ | Pflicht | Standardwert | Beschreibung |
 |------|-----|---------|--------------|--------------|
@@ -589,7 +592,9 @@ Der Timer-Zustand wird in `localStorage` gespeichert, um bei Seitenreload fortge
 | `pomodoroCountdown` | `number` | Nein | `0` | Countdown in Sekunden |
 | `pomodoroWorkSeconds` | `number` | Nein | `0` | Arbeitssekunden dieses Pomodoros |
 
-### JSON Schema
+Siehe auch: [02-Timer.md](./02-Timer.md) für vollständige Timer-Dokumentation.
+
+### 8.2 JSON Schema
 
 ```json
 {
@@ -642,7 +647,7 @@ Der Timer-Zustand wird in `localStorage` gespeichert, um bei Seitenreload fortge
 }
 ```
 
-### Beispiel
+### 8.3 Beispiel
 
 ```json
 {
@@ -660,11 +665,11 @@ Der Timer-Zustand wird in `localStorage` gespeichert, um bei Seitenreload fortge
 
 ---
 
-## Dateninitialisierung und Seeding
+## 9. Dateninitialisierung und Seeding
 
 Beim ersten Start der Anwendung werden Standarddaten erstellt, wenn der Speicher leer ist.
 
-### Initialisierungslogik (`init()`)
+### 9.1 Initialisierungslogik (`init()`)
 
 ```javascript
 init() {
@@ -689,7 +694,7 @@ init() {
 }
 ```
 
-### Standard-Fächer
+### 9.2 Standard-Fächer
 
 Beim ersten Start werden folgende Fächer erstellt:
 
@@ -701,101 +706,15 @@ Beim ersten Start werden folgende Fächer erstellt:
 | 4 | Bauelemente | `bg-orange-500` | 8 |
 | 5 | Digitaltechnik | `bg-red-500` | 5 |
 
-```json
-[
-  { "id": "1", "name": "Höhere Mathematik 2", "color": "bg-blue-500", "weeklyGoal": 6 },
-  { "id": "2", "name": "GET2", "color": "bg-green-500", "weeklyGoal": 8 },
-  { "id": "3", "name": "Physik", "color": "bg-purple-500", "weeklyGoal": 8 },
-  { "id": "4", "name": "Bauelemente", "color": "bg-orange-500", "weeklyGoal": 8 },
-  { "id": "5", "name": "Digitaltechnik", "color": "bg-red-500", "weeklyGoal": 5 }
-]
-```
+### 9.3 Standard-Semester (FH Aachen ET 2. Semester)
 
-### Standard-Semester (FH Aachen ET 2. Semester)
+Das Standard-Semester enthält Module für das aktuelle Sommersemester mit Prüfungsdaten der FH Aachen.
 
-```json
-{
-  "id": "1712505600000",
-  "name": "2. Semester (Kernstudium) - 2026",
-  "start": "2026-04-01",
-  "end": "2026-09-30",
-  "modules": [
-    {
-      "id": "1712505600001",
-      "subjectId": "1",
-      "name": "Höhere Mathematik 2 für ET",
-      "code": "52111",
-      "ects": 5,
-      "hours": 150,
-      "examPeriod": "2026-07-14",
-      "examDate": "2026-07-28",
-      "notes": "Differenzial- und Integralrechnung mehrerer Veränderlicher, Differenzialgleichungen, Fourier- und Laplace-Transformation, Grundlagen der Wahrscheinlichkeitsrechnung und Statistik"
-    },
-    {
-      "id": "1712505600002",
-      "subjectId": "2",
-      "name": "Grundgebiete der Elektrotechnik 2",
-      "code": "52102",
-      "ects": 7,
-      "hours": 210,
-      "examPeriod": "2026-07-14",
-      "examDate": "2026-07-28",
-      "notes": "Elektrisches Feld, Magnetisches Feld, Induktionsgesetz, Wechselstrom"
-    },
-    {
-      "id": "1712505600003",
-      "subjectId": "3",
-      "name": "Physik",
-      "code": "52103",
-      "ects": 7,
-      "hours": 210,
-      "examPeriod": "2026-07-14",
-      "examDate": "2026-07-24",
-      "notes": "Mechanik, Thermodynamik, Elektrodynamik, Optik, Festkörperphysik"
-    },
-    {
-      "id": "1712505600004",
-      "subjectId": "4",
-      "name": "Bauelemente und Grundschaltungen",
-      "code": "52112",
-      "ects": 7,
-      "hours": 210,
-      "examPeriod": "2026-07-14",
-      "examDate": "2026-07-20",
-      "notes": "Halbleiter, Dioden, Transistoren, Operationsverstärker"
-    },
-    {
-      "id": "1712505600005",
-      "subjectId": "5",
-      "name": "Digitaltechnik",
-      "code": "52107",
-      "ects": 4,
-      "hours": 120,
-      "examPeriod": "2026-07-14",
-      "examDate": "2026-07-28",
-      "notes": "Boolesche Algebra, Karnaugh-Veitch-Diagramm, Flip-Flops, Schaltnetze, Schaltwerke"
-    }
-  ]
-}
-```
-
-### Standard-Einstellungen
-
-```json
-{
-  "darkMode": true,
-  "dailyGoal": 60,
-  "learningDays": 5,
-  "fontSize": 16,
-  "themeMode": "dark"
-}
-```
-
-### Migrationen
+### 9.4 Migrationen
 
 Die `init()`-Methode führt automatisch Migrationen durch, um bestehende Daten zu aktualisieren.
 
-#### 1. `migrateModulesSubjectId()`
+#### 9.4.1 `migrateModulesSubjectId()`
 
 Verknüpft bestehende Module automatisch mit Fächern basierend auf dem Namen:
 
@@ -804,27 +723,14 @@ Verknüpft bestehende Module automatisch mit Fächern basierend auf dem Namen:
 | `GET2`, `elektrotechnik` | GET2 |
 | `HM`, `mathematik` | Höhere Mathematik 2 |
 
-```javascript
-const subjectMappings = [
-    { keywords: ['GET2', 'elektrotechnik'], subjectId: '2' },
-    { keywords: ['HM', 'mathematik'], subjectId: '1' }
-];
-```
+#### 9.4.2 `migrateExamDates()`
 
-#### 2. `migrateExamDates()`
+Setzt Prüfungsdaten basierend auf einem festen Mapping.
 
-Setzt Prüfungsdaten basierend auf einem festen Mapping:
-
-```javascript
-const examDateMap = {
-    'Höhere Mathematik 2': '2026-07-28',
-    'Grundgebiete der Elektrotechnik 2': '2026-07-28',
-    'Physik': '2026-07-24',
-    'Bauelemente': '2026-07-20',
-    'Digitaltechnik': '2026-07-28'
-};
-```
-
-#### 3. Settings-Migration
+#### 9.4.3 Settings-Migration
 
 Fügt fehlende Felder (`fontSize`, `themeMode`) zu bestehenden Einstellungen hinzu und markiert `darkMode` als veraltet.
+
+---
+
+*Siehe auch: [01-Architecture.md](./01-Architecture.md) | [06-API-Reference.md](./06-API-Reference.md)*

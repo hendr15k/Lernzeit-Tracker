@@ -1,5 +1,9 @@
 # Lernzeit-Tracker — Technische Architektur
 
+> **Hinweis:** Diese Dokumentation ist Teil der [Projektdokumentation](./README.md).
+
+---
+
 ## Inhaltsverzeichnis
 
 1. [Projektübersicht](#1-projektübersicht)
@@ -12,13 +16,13 @@
 8. [Dashboard-Widgets](#8-dashboard-widgets)
 9. [Achievements-System](#9-achievements-system)
 10. [Export/Import](#10-exportimport)
-11. [Anhang: Abkürzungen](#11-anhang-abkürzungen)
+11. [Abkürzungen](#11-anhang-abkürzungen)
 
 ---
 
 ## 1. Projektübersicht
 
-Der **Lernzeit-Tracker** ist eine Progressive Web App (PWA) zur Erfassung, Visualisierung und Analyse von Lernzeiten für Studierende. Die Anwendung ermöglicht das Tracking von Lernsitzungen mittels Timer oder manueller Eingabe, die Verwaltung von Fächern und Semestern, sowie umfangreiche Statistiken und Visualisierungen.
+Der **Lernzeit-Tracker** ist eine Progressive Web App (PWA) zur Erfassung, Visualisierung und Analyse von Lernzeiten für Studierende.
 
 ### Hauptziele
 
@@ -28,6 +32,11 @@ Der **Lernzeit-Tracker** ist eine Progressive Web App (PWA) zur Erfassung, Visua
 | **Offline-Fähigkeit** | Vollständige Funktionalität ohne Internetverbindung |
 | **Datensouveränität** | Lokale Datenspeicherung ohne Backend-Abhängigkeit |
 | **Motivation** | Gamification mit Achievements und Streaks |
+
+### Zusammenhängende Dokumentation
+
+- [Projekt-README](../README.md) — Übersicht, Features, Installation
+- [Dokumentations-Index](./README.md) — Alle Dokumentationsressourcen
 
 ---
 
@@ -96,6 +105,8 @@ Lernzeit-Tracker/
 
 Der `StorageManager` bildet die zentrale Datenschicht der Anwendung und kapselt alle lokalen Speicheroperationen.
 
+Siehe auch: [03-Data-Models.md](./03-Data-Models.md) für vollständige Datenmodell-Dokumentation.
+
 #### Storage Keys
 
 ```javascript
@@ -143,7 +154,7 @@ interface Subject {
     id: string;           // UUID
     name: string;         // Fachbezeichnung
     color: string;        // Tailwind-Farbklasse (z.B. 'bg-blue-500')
-    weeklyGoal: number;    // Wochenziel in Stunden
+    weeklyGoal: number;   // Wochenziel in Stunden
 }
 ```
 
@@ -199,6 +210,8 @@ interface Settings {
 
 Enthält alle UI-Logik, Event-Handler und View-Updates. Strukturiert nach Funktionsbereichen.
 
+Siehe auch: [04-UI-Views.md](./04-UI-Views.md) für vollständige UI-Dokumentation.
+
 #### Hauptkomponenten
 
 | Funktion | Beschreibung |
@@ -230,6 +243,8 @@ Enthält alle UI-Logik, Event-Handler und View-Updates. Strukturiert nach Funkti
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+Siehe auch: [02-Timer.md](./02-Timer.md) für vollständige Timer-Dokumentation.
 
 **Zustandsvariablen**
 
@@ -293,7 +308,7 @@ Die Anwendung basiert auf einer Single-Page-Architektur mit View-basiertem Navig
 **Kompromisse:**
 
 | Einschränkung | Auswirkung |
-|---------------|------------|
+|---------------|-----------|
 | Keine plattformübergreifende Synchronisation | Daten sind an ein Gerät gebunden |
 | localStorage-Limit (~5 MB) | Begrenzte Datenmenge möglich |
 | Keine serverseitigen Berechnungen | Komplexe Analysen müssen client-seitig laufen |
@@ -435,8 +450,8 @@ function switchView(viewId) {
 │ storage.    │    │ check-      │    │ updateViews │
 │ addEntry()  │───>│ Achievements│───>│ ()          │
 └─────────────┘    └─────────────┘    └─────────────┘
-                                               │
-       ┌─────────────────────────────────────┘
+       │
+       ┌─────────────────────────────────────────────────────┘
        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 5. Wake Lock wird freigegeben                               │
@@ -450,6 +465,8 @@ function switchView(viewId) {
 ### 7.1 Service Worker (`sw.js`)
 
 Der Service Worker ermöglicht die Offline-Funktionalität der Anwendung.
+
+Siehe auch: [07-Configuration.md](./07-Configuration.md) und [09-Deployment.md](./09-Deployment.md).
 
 #### Cache-Strategie: Cache-First
 
@@ -565,7 +582,7 @@ self.addEventListener('activate', (event) => {
                                │
                                ▼
     ┌──────────────────────────────────────────────────────┐
-    │ 5. window.location.reload()                         │
+    │ 5. window.location.reload()                          │
     │    → Neue Version wird sofort aktiv                  │
     └──────────────────────────────────────────────────────┘
 ```
@@ -614,6 +631,8 @@ Das Dashboard besteht aus modularen, datengetriebenen Widgets:
 | **Prüfungs-Countdown** | Semesters.modules | `days until examDate` |
 | **Wochenstatistik** | Week entries | Summen, Durchschnitte, Vergleiche |
 
+Siehe auch: [04-UI-Views.md](./04-UI-Views.md#3-dashboard-widgets) für vollständige Widget-Dokumentation.
+
 ---
 
 ## 9. Achievements-System
@@ -632,6 +651,8 @@ Das Achievements-System motiviert durch Gamification:
 | **Streak: 3 Tage** | 3 Tage hintereinander |
 | **Streak: 7 Tage** | 7 Tage hintereinander |
 | **Streak: 30 Tage** | 30 Tage hintereinander |
+
+Siehe auch: [06-API-Reference.md](./06-API-Reference.md#achievements-system) für vollständige Achievement-API-Dokumentation.
 
 ---
 
@@ -666,6 +687,8 @@ Das Achievements-System motiviert durch Gamification:
 5. Views aktualisieren
 ```
 
+Siehe auch: [05-Features.md](./05-Features.md#7-export--import) für Details.
+
 ---
 
 ## 11. Anhang: Abkürzungen
@@ -682,4 +705,4 @@ Das Achievements-System motiviert durch Gamification:
 
 ---
 
-*Letzte Aktualisierung: Version 2.0.0*
+*Siehe auch: [Dokumentationsindex](./README.md) | [Projekt-README](../README.md) | [API-Referenz](./06-API-Reference.md)*

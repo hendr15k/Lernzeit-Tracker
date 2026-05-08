@@ -1,6 +1,28 @@
 # Timer-Dokumentation
 
-## Übersicht
+> **Hinweis:** Diese Dokumentation ist Teil der [Projektdokumentation](./README.md).
+> Siehe auch: [01-Architecture.md](./01-Architecture.md) für die architektonische Einordnung.
+
+---
+
+## Inhaltsverzeichnis
+
+1. [Übersicht](#übersicht)
+2. [Timer-Modi](#timer-modi)
+3. [Zustandsvariablen](#zustandsvariablen)
+4. [Persistenz](#persistenz)
+5. [Wake Lock API](#wake-lock-api)
+6. [Pomodoro-Konfiguration](#pomodorokonfiguration)
+7. [Audio-Benachrichtigungen](#audio-benachrichtigungen)
+8. [Zustandswiederherstellung](#zustandswiederherstellung)
+9. [Wichtige Funktionen](#wichtige-funktionen)
+10. [UI-Steuerelemente](#ui-steuerelemente)
+11. [Timer-Ablaufdiagramm](#timer-ablaufdiagramm)
+12. [Tipps zur Fehlerbehebung](#tipps-zur-fehlerbehebung)
+
+---
+
+## 1. Übersicht
 
 Der Timer ist eine zentrale Funktion der App und ermöglicht das präzise Erfassen von Lernzeit. Er unterstützt zwei Betriebsmodi:
 
@@ -11,9 +33,9 @@ Der Timer ist eine zentrale Funktion der App und ermöglicht das präzise Erfass
 
 ---
 
-## Timer-Modi
+## 2. Timer-Modi
 
-### Stoppuhr-Modus (Frei)
+### 2.1 Stoppuhr-Modus (Frei)
 
 Der Stoppuhr-Modus ist der Standardmodus beim Start der App.
 
@@ -22,7 +44,7 @@ Der Stoppuhr-Modus ist der Standardmodus beim Start der App.
 - Flexible Zeiterfassung ohne Zeitlimit
 - Geeignet für spontanes Lernen oder variable Sitzungen
 
-### Pomodoro-Modus
+### 2.2 Pomodoro-Modus
 
 Der Pomodoro-Modus verwendet einen Countdown-Timer mit vordefinierten Intervallen, um fokussiertes Arbeiten und regelmäßige Pausen zu fördern.
 
@@ -42,9 +64,9 @@ Der Pomodoro-Modus verwendet einen Countdown-Timer mit vordefinierten Intervalle
 
 ---
 
-## Zustandsvariablen
+## 3. Zustandsvariablen
 
-### Timer-Kernvariablen
+### 3.1 Timer-Kernvariablen
 
 ```javascript
 let timerInterval = null;      // Interval-ID für setInterval
@@ -53,7 +75,7 @@ let isTimerRunning = false;     // Läuft der Timer gerade?
 let timerStartTime = 0;        // Startzeit für Berechnung
 ```
 
-### Pomodoro-spezifische Variablen
+### 3.2 Pomodoro-spezifische Variablen
 
 ```javascript
 let pomodoroMode = false;       // false = Frei, true = Pomodoro
@@ -63,7 +85,7 @@ let pomodoroCountdown = 0;      // Verbleibende Sekunden im Countdown
 let pomodoroWorkSeconds = 0;    // Akkumulierte Arbeitssekunden
 ```
 
-### Wake Lock Handle
+### 3.3 Wake Lock Handle
 
 ```javascript
 let wakeLock = null;           // WakeLock-Objekt für Bildschirmaktivität
@@ -71,16 +93,16 @@ let wakeLock = null;           // WakeLock-Objekt für Bildschirmaktivität
 
 ---
 
-## Persistenz (localStorage)
+## 4.Persistenz
 
-### Speicherstruktur
+### 4.1 Speicherstruktur
 
 | Key | Inhalt | Beschreibung |
 |-----|--------|--------------|
 | `timer_state` | Vollständiger Timer-Zustand | Wird jede Sekunde aktualisiert |
 | `timer_notes` | Eingegebene Notizen | Wird bei Neuladung wiederhergestellt |
 
-### Timer-State (`timer_state`)
+### 4.2 Timer-State (`timer_state`)
 
 Der vollständige Zustand wird alle Sekunden in localStorage gespeichert, um bei einem Seitenreload oder Tab-Wechsel eine nahtlose Fortsetzung zu ermöglichen.
 
@@ -109,24 +131,24 @@ Der vollständige Zustand wird alle Sekunden in localStorage gespeichert, um bei
 | `pomodoroCountdown` | number | Verbleibende Sekunden im Countdown |
 | `pomodoroWorkSeconds` | number | Gesamte Arbeitssekunden der aktuellen Sitzung |
 
-### Timer-Notizen (`timer_notes`)
+### 4.3 Timer-Notizen (`timer_notes`)
 
 Eingegebene Notizen werden separat gespeichert und bei Neuladung wiederhergestellt.
 
 ---
 
-## Wake Lock API
+## 5. Wake Lock API
 
 Die Wake Lock API verhindert, dass der Bildschirm des Geräts in den Ruhezustand wechselt, solange der Timer läuft.
 
-### Funktionen
+### 5.1 Funktionen
 
 | Funktion | Beschreibung |
 |----------|--------------|
 | `requestWakeLock()` | Fordert Wake Lock an, um Bildschirm aktiv zu halten |
 | `releaseWakeLock()` | Gibt Wake Lock frei |
 
-### Implementierung
+### 5.2 Implementierung
 
 ```javascript
 async function requestWakeLock() {
@@ -140,7 +162,7 @@ async function requestWakeLock() {
 }
 ```
 
-### Automatische Verwaltung
+### 5.3 Automatische Verwaltung
 
 | Ereignis | Aktion |
 |----------|--------|
@@ -152,7 +174,7 @@ async function requestWakeLock() {
 
 ---
 
-## Pomodoro-Konfiguration
+## 6. Pomodoro-Konfiguration
 
 Die folgenden Werte werden in den Einstellungen gespeichert und können vom Benutzer angepasst werden:
 
@@ -165,7 +187,7 @@ Die folgenden Werte werden in den Einstellungen gespeichert und können vom Benu
 | Auto-Start Pause | `pomoAutoBreak` | true | Automatischer Start der Pause nach Arbeit |
 | Auto-Start Arbeit | `pomoAutoWork` | false | Automatischer Start der Arbeit nach Pause |
 
-### Abrufen der Einstellungen
+### 6.1 Abrufen der Einstellungen
 
 ```javascript
 function getPomodoroSettings() {
@@ -185,9 +207,9 @@ function getPomodoroSettings() {
 
 ---
 
-## Audio-Benachrichtigungen
+## 7. Audio-Benachrichtigungen
 
-### playBeep()
+### 7.1 playBeep()
 
 Erzeugt akustische Signale über die Web Audio API, um den Benutzer über Phasenwechsel im Pomodoro-Modus zu informieren.
 
@@ -212,11 +234,11 @@ function playBeep(freq = 800, duration = 200, count = 2)
 
 ---
 
-## Zustandswiederherstellung
+## 8. Zustandswiederherstellung
 
 Beim Laden der App wird der gespeicherte Zustand wiederhergestellt, damit der Timer im Hintergrund weiterlaufen kann.
 
-### Wiederherstellungsprozess (Zeile 1022-1078)
+### 8.1 Wiederherstellungsprozess
 
 1. Gespeicherten State aus localStorage laden
 2. Prüfen, ob `isRunning = true`:
@@ -226,7 +248,7 @@ Beim Laden der App wird der gespeicherte Zustand wiederhergestellt, damit der Ti
    - Fortsetzungs-Overlay anzeigen (zeigt verstrichene Zeit)
 3. Notizen wiederherstellen
 
-### Zeitberechnung
+### 8.2 Zeitberechnung
 
 ```javascript
 const now = Date.now();
@@ -238,21 +260,17 @@ timerSeconds = state.seconds + elapsedSinceSave;
 
 ---
 
-## Wichtige Funktionen
+## 9. Wichtige Funktionen
 
-### initTimer()
+### 9.1 initTimer()
 
 Initialisiert alle Timer-Events und UI-Elemente.
 
-**Speicherort:** Zeile 942-1323
-
-### startInterval()
+### 9.2 startInterval()
 
 Startet das 1-Sekunden-Intervall für den Timer.
 
-**Speicherort:** Zeile 1081-1102
-
-### transitionPomodoroPhase()
+### 9.3 transitionPomodoroPhase()
 
 Behandelt Phasenübergänge im Pomodoro-Modus und führt folgende Aktionen aus:
 
@@ -263,19 +281,15 @@ Behandelt Phasenübergänge im Pomodoro-Modus und führt folgende Aktionen aus:
 - Löst akustische Signale aus
 - Setzt Countdown für neue Phase zurück
 
-### saveState()
+### 9.4 saveState()
 
 Speichert den aktuellen Timer-Zustand in localStorage.
 
-**Speicherort:** Zeile 1176-1189
-
-### clearState()
+### 9.5 clearState()
 
 Entfernt den gespeicherten State aus localStorage. Wird beim Stoppen des Timers aufgerufen.
 
-**Speicherort:** Zeile 1191-1193
-
-### updateDisplay()
+### 9.6 updateDisplay()
 
 Aktualisiert die Timer-Anzeige:
 
@@ -284,13 +298,13 @@ Aktualisiert die Timer-Anzeige:
 | Stoppuhr-Modus | `HH:MM:SS` |
 | Pomodoro-Modus | `MM:SS` |
 
-### updatePomodoroDisplay()
+### 9.7 updatePomodoroDisplay()
 
 Aktualisiert die Pomodoro-Countdown-Anzeige und Farbcodierung.
 
 ---
 
-## UI-Steuerelemente
+## 10. UI-Steuerelemente
 
 | Element | ID | Funktion |
 |---------|-----|----------|
@@ -301,9 +315,11 @@ Aktualisiert die Pomodoro-Countdown-Anzeige und Farbcodierung.
 | Pomodoro-Toggle | `btn-pomodoro-toggle` | Zwischen Modi wechseln |
 | FAB | `fab-main` | Schnellzugriff auf Timer-Overlay |
 
+Siehe auch: [04-UI-Views.md](./04-UI-Views.md) für vollständige UI-Dokumentation.
+
 ---
 
-## Farbcodierung (Pomodoro)
+## 11. Farbcodierung (Pomodoro)
 
 | Phase | Farbe | CSS-Klasse |
 |-------|-------|------------|
@@ -313,7 +329,7 @@ Aktualisiert die Pomodoro-Countdown-Anzeige und Farbcodierung.
 
 ---
 
-## Timer-Ablaufdiagramm
+## 12. Timer-Ablaufdiagramm
 
 ```
                      ┌─────────────────┐
@@ -362,7 +378,7 @@ Aktualisiert die Pomodoro-Countdown-Anzeige und Farbcodierung.
 
 ---
 
-## Tipps zur Fehlerbehebung
+## 13. Tipps zur Fehlerbehebung
 
 | Problem | Mögliche Ursache | Lösung |
 |---------|------------------|--------|
@@ -371,3 +387,7 @@ Aktualisiert die Pomodoro-Countdown-Anzeige und Farbcodierung.
 | State wird nicht gespeichert | localStorage ist voll oder deaktiviert | Speicher prüfen/lehren, localStorage aktivieren |
 | Ton wird nicht abgespielt | Audio-Kontext wurde blockiert | Nach erstem Klick/Touch erneut versuchen |
 | Timer zeigt falsche Zeit nach Reload | Tab war im Hintergrund | Korrekte Zeit wird durch Zustandswiederherstellung berechnet |
+
+---
+
+*Siehe auch: [01-Architecture.md](./01-Architecture.md) | [06-API-Reference.md](./06-API-Reference.md)*
