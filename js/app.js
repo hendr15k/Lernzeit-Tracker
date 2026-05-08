@@ -1594,7 +1594,7 @@ function getExamBadge(examPeriod) {
 
     const periodNames = {
         '2026-03-30': 'Mär/Apr 2026',
-        '2026-07-20': 'Jul 2026',
+        '2026-07-14': 'Jul 2026',
         '2026-09-21': 'Sep 2026',
         '2027-02-01': 'Jan/Feb 2027'
     };

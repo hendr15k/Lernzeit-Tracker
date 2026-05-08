@@ -137,7 +137,7 @@ class StorageManager {
                     code: '52111',
                     ects: 5,
                     hours: 150,
-                    examPeriod: '2026-07-20',
+                    examPeriod: '2026-07-14',
                     notes: 'Differenzial- und Integralrechnung mehrerer Veränderlicher, Differenzialgleichungen, Fourier- und Laplace-Transformation, Grundlagen der Wahrscheinlichkeitsrechnung und Statistik'
                 },
                 {
@@ -147,7 +147,7 @@ class StorageManager {
                     code: '52102',
                     ects: 7,
                     hours: 210,
-                    examPeriod: '2026-07-20',
+                    examPeriod: '2026-07-14',
                     notes: 'Elektrisches Feld, Magnetisches Feld, Induktionsgesetz, Wechselstrom'
                 },
                 {
@@ -157,7 +157,7 @@ class StorageManager {
                     code: '52103',
                     ects: 7,
                     hours: 210,
-                    examPeriod: '2026-09-21',
+                    examPeriod: '2026-07-14',
                     notes: 'Mechanik, Thermodynamik, Elektrodynamik, Optik, Festkörperphysik'
                 },
                 {
@@ -167,7 +167,7 @@ class StorageManager {
                     code: '52112',
                     ects: 7,
                     hours: 210,
-                    examPeriod: '2026-09-21',
+                    examPeriod: '2026-07-14',
                     notes: 'Halbleiter, Dioden, Transistoren, Operationsverstärker'
                 },
                 {
@@ -177,7 +177,7 @@ class StorageManager {
                     code: '52107',
                     ects: 4,
                     hours: 120,
-                    examPeriod: '2026-07-20',
+                    examPeriod: '2026-07-14',
                     notes: 'Boolesche Algebra, Karnaugh-Veitch-Diagramm, Flip-Flops, Schaltnetze, Schaltwerke'
                 }
             ]
