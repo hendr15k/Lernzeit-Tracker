@@ -10,6 +10,7 @@
   "scripts": {
     "test": "playwright test",
     "test:store": "node tests/store.test.js",
+    "test:utils": "node tests/utils.test.js",
     "test:mobile": "playwright test --project=iPhone",
     "test:android": "playwright test --project=Android",
     "test:viewport": "playwright test tests/mobile/00-viewports.spec.js",
