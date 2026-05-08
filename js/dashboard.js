@@ -408,11 +408,6 @@ function renderRecommendedStudyTime() {
     }
 }
 
-// Todo functions are now in app.js, window functions are called from there
-    if (typeof window.updateStatisticsView === 'function') {
-        window.updateStatisticsView();
-    }
-
 // ==================== STATISTIKEN ====================
 
 /**
