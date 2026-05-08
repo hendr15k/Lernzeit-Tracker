@@ -19,7 +19,8 @@
     "test:themes": "playwright test tests/mobile/04-themes.spec.js",
     "test:heatmap": "playwright test tests/mobile/05-heatmap.spec.js",
     "test:headed": "playwright test --headed",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "test:utils": "node tests/utils.test.js"
   },
   "repository": {
     "type": "git",
