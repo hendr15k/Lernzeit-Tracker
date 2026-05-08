@@ -240,10 +240,14 @@ function renderHeatmap(entries) {
 
     const maxSeconds = Math.max(...Array.from(dayData.values()), 3600);
 
-    const tooltip = document.createElement('div');
-    tooltip.className = 'heatmap-tooltip hidden';
-    tooltip.innerHTML = '<div class="heatmap-tooltip-date"></div><div class="heatmap-tooltip-time"></div>';
-    document.body.appendChild(tooltip);
+    const tooltip = document.getElementById('heatmap-tooltip') || (() => {
+        const t = document.createElement('div');
+        t.id = 'heatmap-tooltip';
+        t.className = 'heatmap-tooltip hidden';
+        t.innerHTML = '<div class="heatmap-tooltip-date"></div><div class="heatmap-tooltip-time"></div>';
+        document.body.appendChild(t);
+        return t;
+    })();
 
     const fragment = document.createDocumentFragment();
 

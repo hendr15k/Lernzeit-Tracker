@@ -35,26 +35,29 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initCalendarViews();
     initSemesterHandlers();
+    initPWAInstall();
+    initUpdateChecker();
     initFAB();
     initTodoHandlers();
     initNotifications();
     initKeyboardShortcuts();
     initVoiceInput();
+
     function initTodoHandlers() {
-    // TODO handlers - implement when Todo UI is fully integrated
-}
+        // TODO handlers - implement when Todo UI is fully integrated
+    }
 
-function initNotifications() {
-    // Notification handlers - basic permission request (deferred to user interaction)
-}
+    function initNotifications() {
+        // Notification handlers - basic permission request (deferred to user interaction)
+    }
 
-function initKeyboardShortcuts() {
-    // Keyboard shortcut handlers
-}
+    function initKeyboardShortcuts() {
+        // Keyboard shortcut handlers
+    }
 
-function initVoiceInput() {
-    // Voice input handlers
-}
+    function initVoiceInput() {
+        // Voice input handlers
+    }
 
     initTouchGestures();
     initTodoWidget();
@@ -1643,6 +1646,7 @@ function updateViews() {
     renderSemesterList();
     checkAchievements(entries);
     renderHeatmap(entries);
+    renderGraph(entries);
 }
 
 /**
