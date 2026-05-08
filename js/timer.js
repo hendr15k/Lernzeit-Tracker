@@ -245,11 +245,22 @@ function clearState() {
  * Starts the timer interval
  */
 function startInterval() {
-    if (timerInterval) clearInterval(timerInterval);
-    timerStartTime = Date.now() - (timerSeconds * 1000);
+    // Clear any existing interval to prevent leaks and race conditions
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    // Reset timerStartTime relative to the current timerSeconds value.
+    // Store the "already elapsed" seconds so the new interval picks up
+    // exactly where it left off without drift from accumulated rounding.
+    const elapsedSeconds = timerSeconds;
+    timerStartTime = Date.now() - (elapsedSeconds * 1000);
+
     timerInterval = setInterval(() => {
         const now = Date.now();
-        timerSeconds = Math.floor((now - timerStartTime) / 1000);
+        const rawSeconds = (now - timerStartTime) / 1000;
+        timerSeconds = Math.floor(rawSeconds);
 
         if (pomodoroMode) {
             pomodoroCountdown = Math.max(0, pomodoroCountdown - 1);
@@ -257,6 +268,11 @@ function startInterval() {
                 pomodoroWorkSeconds++;
             }
             if (pomodoroCountdown <= 0) {
+                // Clear interval before transition to prevent the old
+                // callback from racing with transitionPomodoroPhase,
+                // which may call startInterval() again.
+                clearInterval(timerInterval);
+                timerInterval = null;
                 transitionPomodoroPhase();
             }
             updatePomodoroDisplay();
@@ -566,6 +582,8 @@ function initFAB() {
 
     if (!fab) return;
 
+    let fabUpdateInterval = null;
+
     function updateFABState() {
         if (isTimerRunning) {
             fab.classList.add('pulse');
@@ -597,7 +615,7 @@ function initFAB() {
         }
     });
 
-    setInterval(() => {
+    fabUpdateInterval = setInterval(() => {
         updateFABState();
     }, 1000);
 

@@ -563,8 +563,8 @@ function renderDonutChart(entries, subjects) {
     container.innerHTML = `
         <g>
             ${segments.map(s => `
-                <path d="${s.path}" fill="${s.color}" class="donut-segment" aria-label="${s.name}: ${Math.round(s.percentage * 100)}%">
-                    <title>${s.name}: ${Math.round(s.percentage * 100)}%</title>
+                <path d="${s.path}" fill="${s.color}" class="donut-segment" aria-label="${window.escapeHtml ? window.escapeHtml(s.name) : s.name}: ${Math.round(s.percentage * 100)}%">
+                    <title>${window.escapeHtml ? window.escapeHtml(s.name) : s.name}: ${Math.round(s.percentage * 100)}%</title>
                 </path>
             `).join('')}
             <circle cx="${cx}" cy="${cy}" r="${r * 0.6}" fill="var(--color-surface)" />
@@ -583,7 +583,7 @@ function renderDonutChart(entries, subjects) {
             return `
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${s.color}"></div>
-                    <span class="flex-1 truncate text-adaptive text-xs">${s.name}</span>
+                    <span class="flex-1 truncate text-adaptive text-xs">${window.escapeHtml ? window.escapeHtml(s.name) : s.name}</span>
                     <span class="text-adaptive-muted text-xs">${hours}h</span>
                 </div>
             `;
@@ -941,8 +941,9 @@ function renderWeeklyComparison(entries) {
 
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2';
+        const escapedName = window.escapeHtml ? window.escapeHtml(subject.name) : subject.name;
         row.innerHTML = `
-            <div class="w-14 text-xs font-bold text-adaptive truncate flex-shrink-0" title="${subject.name}">${subject.name.substring(0, 8)}</div>
+            <div class="w-14 text-xs font-bold text-adaptive truncate flex-shrink-0" title="${escapedName}">${escapedName.substring(0, 8)}</div>
             <div class="flex-1 min-w-0 space-y-1">
                 <div class="flex items-center gap-1.5">
                     <div class="h-2 bg-primary/60 rounded-full" style="width: ${subject.thisWeekSeconds > 0 ? thisBarPct : 0}%"></div>
@@ -1041,17 +1042,18 @@ function renderDashboardSubjects(entries) {
         const hrs = (duration / 3600).toFixed(1);
         const barWidth = Math.round((duration / maxDuration) * 100);
 
-        summaryParts.push(`${subject.name}: ${hrs}h`);
+        const escapedName = window.escapeHtml ? window.escapeHtml(subject.name) : subject.name;
+        summaryParts.push(`${escapedName}: ${hrs}h`);
 
         const tile = document.createElement('div');
         tile.className = 'flex items-center gap-3';
         tile.innerHTML = `
             <div class="w-8 h-8 rounded-full ${subject.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                ${subject.name.substring(0, 2)}
+                ${escapedName.substring(0, 2)}
             </div>
             <div class="flex-1 min-w-0">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-sm font-medium text-adaptive truncate">${subject.name}</span>
+                    <span class="text-sm font-medium text-adaptive truncate">${escapedName}</span>
                     <span class="text-sm font-bold text-adaptive ml-2">${hrs}h</span>
                 </div>
                 <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
@@ -1221,18 +1223,21 @@ function renderExamCountdown() {
         const urgencyClass = mod.diffDays <= 14 ? 'border-l-yellow-500' : mod.diffDays <= 60 ? 'border-l-blue-500' : 'border-l-gray-600';
         const badgeClass = mod.diffDays <= 14 ? 'bg-yellow-900/40 text-yellow-300' : mod.diffDays <= 60 ? 'bg-blue-900/40 text-blue-300' : 'bg-gray-700/60 text-gray-300';
         const timeText = mod.diffDays <= 0 ? 'Bald' : mod.diffDays === 1 ? 'Morgen!' : `${mod.diffDays} Tage`;
-        const dateText = mod.examDate ? formatDateShort(mod.examDate) : (periodNames[mod.examPeriod] || mod.examPeriod);
+        const escape = window.escapeHtml ? window.escapeHtml : (v) => v;
+        const escapedSubjectName = escape(mod.subjectName);
+        const escapedName = escape(mod.name);
+        const escapedDate = mod.examDate ? formatDateShort(mod.examDate) : (periodNames[mod.examPeriod] || mod.examPeriod);
 
         return `
             <div class="flex items-center gap-3 p-2 border-l-4 ${urgencyClass}">
                 <div class="w-8 h-8 rounded-full ${mod.subjectColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    ${mod.subjectName.substring(0, 2)}
+                    ${escapedSubjectName.substring(0, 2)}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium truncate">${mod.name}</div>
-                    <div class="text-xs text-adaptive-muted">${dateText} · ${mod.ects} ECTS</div>
+                    <div class="text-sm font-medium truncate">${escapedName}</div>
+                    <div class="text-xs text-adaptive-muted">${escapedDate} · ${mod.ects} ECTS</div>
                 </div>
-                <button onclick="window.exportExamToICS('${mod.examDate || mod.examPeriod}', '${window.escapeHtml ? window.escapeHtml(mod.name) : mod.name}')" class="p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" title="Zum Kalender hinzufügen">
+                <button onclick="window.exportExamToICS('${mod.examDate || mod.examPeriod}', '${escape(mod.name)}')" class="p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" title="Zum Kalender hinzufügen">
                     <i data-lucide="calendar-plus" class="w-4 h-4 text-adaptive-muted"></i>
                 </button>
                 <span class="text-xs ${badgeClass} px-2 py-0.5 rounded-full flex-shrink-0">${timeText}</span>

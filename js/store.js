@@ -196,14 +196,15 @@ class StorageManager {
         const ssStart = `${year}-04-01`;
         const ssEnd = `${year}-09-30`;
 
+        const timestamp = Date.now();
         const semester = {
-            id: Date.now().toString(),
+            id: timestamp.toString(),
             name: `2. Semester (Kernstudium) - ${year}`,
             start: ssStart,
             end: ssEnd,
             modules: [
                 {
-                    id: (Date.now() + 1).toString(),
+                    id: (timestamp + 1).toString(),
                     subjectId: '1',
                     name: 'Höhere Mathematik 2 für ET',
                     code: '52111',
@@ -214,7 +215,7 @@ class StorageManager {
                     notes: 'Differenzial- und Integralrechnung mehrerer Veränderlicher, Differenzialgleichungen, Fourier- und Laplace-Transformation, Grundlagen der Wahrscheinlichkeitsrechnung und Statistik'
                 },
                 {
-                    id: (Date.now() + 2).toString(),
+                    id: (timestamp + 2).toString(),
                     subjectId: '2',
                     name: 'Grundgebiete der Elektrotechnik 2',
                     code: '52102',
@@ -225,7 +226,7 @@ class StorageManager {
                     notes: 'Elektrisches Feld, Magnetisches Feld, Induktionsgesetz, Wechselstrom'
                 },
                 {
-                    id: (Date.now() + 3).toString(),
+                    id: (timestamp + 3).toString(),
                     subjectId: '3',
                     name: 'Physik',
                     code: '52103',
@@ -236,7 +237,7 @@ class StorageManager {
                     notes: 'Mechanik, Thermodynamik, Elektrodynamik, Optik, Festkörperphysik'
                 },
                 {
-                    id: (Date.now() + 4).toString(),
+                    id: (timestamp + 4).toString(),
                     subjectId: '4',
                     name: 'Bauelemente und Grundschaltungen',
                     code: '52112',
@@ -247,7 +248,7 @@ class StorageManager {
                     notes: 'Halbleiter, Dioden, Transistoren, Operationsverstärker'
                 },
                 {
-                    id: (Date.now() + 5).toString(),
+                    id: (timestamp + 5).toString(),
                     subjectId: '5',
                     name: 'Digitaltechnik',
                     code: '52107',

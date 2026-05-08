@@ -20,23 +20,5 @@ module.exports = defineConfig({
         ...devices['Pixel 5'],
       },
     },
-    {
-      name: 'chromium-mobile-small',
-      use: {
-        viewport: { width: 360, height: 640 },
-        userAgent: 'Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36',
-        hasTouch: true,
-        isMobile: true,
-      },
-    },
-    {
-      name: 'chromium-mobile-large',
-      use: {
-        viewport: { width: 414, height: 896 },
-        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
-        hasTouch: true,
-        isMobile: true,
-      },
-    },
   ],
 });
