@@ -1112,21 +1112,34 @@ function renderWeeklyComparison(entries) {
     const lastWeekStart = lastMonday.getTime();
     const lastWeekEnd = lastSunday.getTime();
 
+    const subjectTotals = new Map();
+    for (const sub of subjects) {
+        subjectTotals.set(sub.id, { thisWeekSeconds: 0, lastWeekSeconds: 0 });
+    }
+
+    let orphanThis = 0;
+    let orphanLast = 0;
+
+    for (const e of entries) {
+        const isThisWeek = e.startTime >= thisWeekStart && e.startTime <= thisWeekEnd;
+        const isLastWeek = e.startTime >= lastWeekStart && e.startTime <= lastWeekEnd;
+
+        if (!isThisWeek && !isLastWeek) continue;
+
+        const totals = subjectTotals.get(e.subjectId);
+        if (totals) {
+            if (isThisWeek) totals.thisWeekSeconds += e.duration;
+            if (isLastWeek) totals.lastWeekSeconds += e.duration;
+        } else {
+            if (isThisWeek) orphanThis += e.duration;
+            if (isLastWeek) orphanLast += e.duration;
+        }
+    }
+
     const subjectData = subjects.map(subject => {
-        const thisWeekEntries = entries.filter(e => e.subjectId === subject.id && e.startTime >= thisWeekStart && e.startTime <= thisWeekEnd);
-        const lastWeekEntries = entries.filter(e => e.subjectId === subject.id && e.startTime >= lastWeekStart && e.startTime <= lastWeekEnd);
-
-        const thisWeekSeconds = thisWeekEntries.reduce((acc, e) => acc + e.duration, 0);
-        const lastWeekSeconds = lastWeekEntries.reduce((acc, e) => acc + e.duration, 0);
-
-        return { ...subject, thisWeekSeconds, lastWeekSeconds };
+        const totals = subjectTotals.get(subject.id);
+        return { ...subject, thisWeekSeconds: totals.thisWeekSeconds, lastWeekSeconds: totals.lastWeekSeconds };
     });
-
-    const knownSubjectIds = new Set(subjects.map(s => s.id));
-    const orphanThis = entries.filter(e => !knownSubjectIds.has(e.subjectId) && e.startTime >= thisWeekStart && e.startTime <= thisWeekEnd)
-        .reduce((acc, e) => acc + e.duration, 0);
-    const orphanLast = entries.filter(e => !knownSubjectIds.has(e.subjectId) && e.startTime >= lastWeekStart && e.startTime <= lastWeekEnd)
-        .reduce((acc, e) => acc + e.duration, 0);
 
     if (orphanThis > 0 || orphanLast > 0) {
         subjectData.push({ name: 'Sonstige', color: 'bg-gray-400', thisWeekSeconds: orphanThis, lastWeekSeconds: orphanLast });
