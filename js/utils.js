@@ -135,3 +135,19 @@ function safeJsonParse(jsonString, fallback = null) {
         return fallback;
     }
 }
+
+// Export for Node.js testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        debounce,
+        isValidPositiveNumber,
+        isValidDateFormat,
+        isValidTimeFormat,
+        sanitizeInput,
+        isValidDuration,
+        isValidDateRange,
+        createLazyInitializer,
+        generateId,
+        safeJsonParse
+    };
+}
