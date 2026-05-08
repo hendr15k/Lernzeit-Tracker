@@ -268,6 +268,7 @@ function runTests() {
 
     const corruptedData = 'not valid json';
     localStorage.setItem(storageManager.STORAGE_KEYS.ENTRIES, corruptedData);
+    storageManager._entriesCache = null; // Clear cache so it reads corrupted data
     const entriesWithCorruptedData = storageManager.getEntries();
     tests.assert(Array.isArray(entriesWithCorruptedData), 'getEntries should return array on corrupted data');
     tests.assertEqual(entriesWithCorruptedData.length, 0, 'getEntries should return empty array on corrupted data');
