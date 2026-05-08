@@ -74,6 +74,7 @@ class StorageManager {
                     this.initDefaultSemester();
                 } else {
                     this.migrateModulesSubjectId();
+                    this.migrateExamDates();
                 }
             } catch (e) {
                 console.error('Corrupted semester data, reseeding:', e);
@@ -107,6 +108,36 @@ class StorageManager {
                     });
                     if (matched) {
                         mod.subjectId = matched.id;
+                        needsUpdate = true;
+                    }
+                }
+            });
+        });
+
+        if (needsUpdate) {
+            this.saveSemesters(semesters);
+        }
+    }
+
+    migrateExamDates() {
+        const semesters = this.getSemesters();
+        const examDateMap = {
+            'Höhere Mathematik 2': '2026-07-28',
+            'Grundgebiete der Elektrotechnik 2': '2026-07-28',
+            'Physik': '2026-07-24',
+            'Bauelemente': '2026-07-20',
+            'Digitaltechnik': '2026-07-28'
+        };
+
+        let needsUpdate = false;
+        semesters.forEach(semester => {
+            (semester.modules || []).forEach(mod => {
+                if (!mod.examDate && mod.examPeriod === '2026-07-14') {
+                    const match = Object.keys(examDateMap).find(name =>
+                        mod.name.includes(name) || name.includes(mod.name)
+                    );
+                    if (match) {
+                        mod.examDate = examDateMap[match];
                         needsUpdate = true;
                     }
                 }
