@@ -113,11 +113,46 @@
                         </div>
                     </div>
 
+                    <!-- Heatmap Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">Lernaktivität</h2>
+                            <span id="heatmap-summary" class="text-xs text-adaptive-muted">Letzte 12 Wochen</span>
+                        </div>
+                        <div id="heatmap-container" class="overflow-x-auto pb-2">
+                            <div class="flex gap-1">
+                                <div class="flex flex-col gap-1 text-[10px] text-adaptive-muted mr-1 justify-start pt-0.5">
+                                    <span class="h-3">Mo</span>
+                                    <span class="h-3"></span>
+                                    <span class="h-3">Mi</span>
+                                    <span class="h-3"></span>
+                                    <span class="h-3">Fr</span>
+                                    <span class="h-3"></span>
+                                    <span class="h-3">So</span>
+                                </div>
+                                <div id="heatmap-grid" class="flex gap-[3px]">
+                                    <!-- Dynamic heatmap cells -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-1 mt-2 text-[10px] text-adaptive-muted">
+                            <span>Weniger</span>
+                            <div class="flex gap-[2px]">
+                                <div class="w-3 h-3 rounded-sm bg-gray-800 heatmap-legend-level-0"></div>
+                                <div class="w-3 h-3 rounded-sm bg-green-900 heatmap-legend-level-1"></div>
+                                <div class="w-3 h-3 rounded-sm bg-green-700 heatmap-legend-level-2"></div>
+                                <div class="w-3 h-3 rounded-sm bg-green-500 heatmap-legend-level-3"></div>
+                                <div class="w-3 h-3 rounded-sm bg-green-400 heatmap-legend-level-4"></div>
+                            </div>
+                            <span>Mehr</span>
+                        </div>
+                    </div>
+
                     <!-- Achievements Widget -->
                     <div class="surface-card p-4 border border-gray-800">
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-lg font-semibold">Achievements</h2>
-                            <span id="achievements-summary" class="text-xs text-adaptive-muted">0/8 freigeschaltet</span>
+                            <span id="achievements-summary" class="text-xs text-adaptive-muted">0/16 freigeschaltet</span>
                         </div>
                         <div id="achievements-list" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             <!-- Dynamic achievements -->
@@ -191,6 +226,44 @@
                         </div>
                         <div id="weekly-compare-list" class="space-y-3">
                             <!-- Dynamic rows -->
+                        </div>
+                    </div>
+
+                    <!-- Lern-Trends Widget -->
+                    <div class="surface-card p-4 border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">📈 Lern-Trends</h2>
+                            <span id="trends-period" class="text-xs text-adaptive-muted"></span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🕐</span>
+                                    <span class="text-sm text-adaptive-muted">Beste Zeit</span>
+                                </div>
+                                <span id="trend-best-time" class="text-sm font-semibold">—</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">📊</span>
+                                    <span class="text-sm text-adaptive-muted">Ø Sitzung</span>
+                                </div>
+                                <span id="trend-avg-session" class="text-sm font-semibold">—</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">📅</span>
+                                    <span class="text-sm text-adaptive-muted">Trend</span>
+                                </div>
+                                <span id="trend-direction" class="text-sm font-semibold flex items-center gap-1">—</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🏆</span>
+                                    <span class="text-sm text-adaptive-muted">Top Tag</span>
+                                </div>
+                                <span id="trend-top-day" class="text-sm font-semibold">—</span>
+                            </div>
                         </div>
                     </div>
 
@@ -436,6 +509,11 @@
             </div>
         </nav>
 
+        <!-- Floating Action Button -->
+        <button id="fab-main" class="fixed bottom-24 right-4 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center z-30 hover:scale-110 transition-transform" title="Timer starten">
+            <i data-lucide="plus" class="w-6 h-6 text-white"></i>
+        </button>
+
         <!-- Timer Overlay -->
         <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <!-- Timer Header -->
@@ -674,6 +752,25 @@
                     <div class="text-center text-xs text-adaptive-muted mt-1" id="settings-font-size-label">16px</div>
                 </div>
 
+                <!-- Theme Mode -->
+                <div class="w-full">
+                    <label class="block text-sm text-adaptive-muted mb-2">Design</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="settings-theme-light" class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center">
+                            <span class="text-2xl mb-1 block">☀️</span>
+                            <span class="text-xs text-adaptive-muted">Hell</span>
+                        </button>
+                        <button id="settings-theme-dark" class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center">
+                            <span class="text-2xl mb-1 block">🌙</span>
+                            <span class="text-xs text-adaptive-muted">Dunkel</span>
+                        </button>
+                        <button id="settings-theme-auto" class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center">
+                            <span class="text-2xl mb-1 block">⚙️</span>
+                            <span class="text-xs text-adaptive-muted">Auto</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Pomodoro Settings -->
                 <div class="w-full pt-8 border-t border-gray-800">
                     <h3 class="text-lg font-bold mb-4">🍅 Pomodoro</h3>
@@ -719,9 +816,13 @@
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             <span>Importieren</span>
                         </button>
-                        <button id="btn-settings-export-csv" class="col-span-2 py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                        <button id="btn-settings-export-csv" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
                             <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                            <span>Exportieren (CSV)</span>
+                            <span>CSV</span>
+                        </button>
+                        <button id="btn-settings-export-pdf" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span>Wochen-PDF</span>
                         </button>
                         <input type="file" id="settings-import-input" class="hidden" accept=".json">
                     </div>

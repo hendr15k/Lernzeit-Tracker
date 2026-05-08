@@ -48,14 +48,22 @@ class StorageManager {
         // Settings — only seed defaults if no saved settings exist
         const storedSettings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
         if (!storedSettings) {
-            const defaults = { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
+            const defaults = { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16, themeMode: 'dark' };
             this._save(this.STORAGE_KEYS.SETTINGS, defaults);
         } else {
-            // Ensure fontSize key exists in existing settings (migration)
+            // Ensure fontSize and themeMode keys exist in existing settings (migration)
             try {
                 const parsed = JSON.parse(storedSettings);
+                let needsUpdate = false;
                 if (parsed.fontSize === undefined) {
                     parsed.fontSize = 16;
+                    needsUpdate = true;
+                }
+                if (parsed.themeMode === undefined) {
+                    parsed.themeMode = parsed.darkMode === false ? 'light' : 'dark';
+                    needsUpdate = true;
+                }
+                if (needsUpdate) {
                     this._save(this.STORAGE_KEYS.SETTINGS, parsed);
                 }
             } catch (e) {

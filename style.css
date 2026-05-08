@@ -70,3 +70,72 @@ body {
 
 /* NOTE: We removed the global text-white/text-gray-400 overrides to avoid breaking buttons. */
 /* You must update HTML to use text-adaptive where needed. */
+
+/* Heatmap Styles */
+.heatmap-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.2);
+}
+
+.heatmap-level-0 { background: var(--color-surface); }
+.heatmap-level-1 { background: #064e3b; }
+.heatmap-level-2 { background: #047857; }
+.heatmap-level-3 { background: #059669; }
+.heatmap-level-4 { background: #34d399; }
+
+/* Light mode heatmap levels */
+.light .heatmap-level-0 { background: #e5e7eb; }
+.light .heatmap-level-1 { background: #a7f3d0; }
+.light .heatmap-level-2 { background: #6ee7b7; }
+.light .heatmap-level-3 { background: #34d399; }
+.light .heatmap-level-4 { background: #10b981; }
+
+/* Floating Action Button */
+#fab-main {
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+}
+
+#fab-main.pulse {
+    animation: fab-pulse 2s infinite;
+}
+
+@keyframes fab-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 12px rgba(59, 130, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+}
+
+/* Tooltip for heatmap */
+.heatmap-tooltip {
+    position: fixed;
+    background: var(--color-surface);
+    border: 1px solid var(--color-text-muted);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.heatmap-tooltip-date {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.heatmap-tooltip-time {
+    color: var(--color-text-muted);
+}

@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initCalendarViews();
     initSemesterHandlers();
+    initFAB();
 
     updateViews();
     lucide.createIcons();
@@ -167,15 +168,36 @@ function initTheme() {
     const btnTheme = document.getElementById('btn-theme');
     const settings = window.storageManager.getSettings();
 
-    // Apply initial theme
-    applyTheme(settings.darkMode);
+    // Apply initial theme based on mode
+    const themeMode = settings.themeMode || 'dark';
+    if (themeMode === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyTheme(prefersDark);
+    } else {
+        applyTheme(themeMode === 'dark');
+    }
 
     if (btnTheme) {
         btnTheme.addEventListener('click', () => {
             const currentSettings = window.storageManager.getSettings();
-            const newMode = !currentSettings.darkMode;
-            window.storageManager.updateSettings({ darkMode: newMode });
-            applyTheme(newMode);
+            const currentTheme = currentSettings.themeMode || 'dark';
+            let newTheme;
+            if (currentTheme === 'dark') {
+                newTheme = 'light';
+            } else if (currentTheme === 'light') {
+                newTheme = 'auto';
+            } else {
+                newTheme = 'dark';
+            }
+            window.storageManager.updateSettings({ themeMode: newTheme });
+            if (newTheme === 'auto') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark);
+                showToast('Theme: Auto (folgt System)', 'info');
+            } else {
+                applyTheme(newTheme === 'dark');
+                showToast(`Theme: ${newTheme === 'dark' ? 'Dunkel' : 'Hell'}`, 'info');
+            }
         });
     }
 }
@@ -304,6 +326,82 @@ function initSettings() {
     const pomoIntervalInput = document.getElementById('settings-pomo-interval');
     const pomoAutoBreakInput = document.getElementById('settings-pomo-auto-break');
     const pomoAutoWorkInput = document.getElementById('settings-pomo-auto-work');
+    const themeLightBtn = document.getElementById('settings-theme-light');
+    const themeDarkBtn = document.getElementById('settings-theme-dark');
+    const themeAutoBtn = document.getElementById('settings-theme-auto');
+
+    let currentThemeMode = 'dark';
+
+    function updateThemeButtons(mode) {
+        const btns = [themeLightBtn, themeDarkBtn, themeAutoBtn];
+        btns.forEach(btn => {
+            if (btn) {
+                btn.classList.remove('border-primary', 'bg-primary/10');
+                btn.classList.add('border-gray-700');
+            }
+        });
+
+        if (mode === 'light' && themeLightBtn) {
+            themeLightBtn.classList.remove('border-gray-700');
+            themeLightBtn.classList.add('border-primary', 'bg-primary/10');
+        } else if (mode === 'dark' && themeDarkBtn) {
+            themeDarkBtn.classList.remove('border-gray-700');
+            themeDarkBtn.classList.add('border-primary', 'bg-primary/10');
+        } else if (mode === 'auto' && themeAutoBtn) {
+            themeAutoBtn.classList.remove('border-gray-700');
+            themeAutoBtn.classList.add('border-primary', 'bg-primary/10');
+        }
+    }
+
+    function applyThemeFromSettings(settings) {
+        const mode = settings.themeMode || 'dark';
+        currentThemeMode = mode;
+
+        if (mode === 'auto') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(prefersDark);
+        } else {
+            applyTheme(mode === 'dark');
+        }
+
+        updateThemeButtons(mode);
+    }
+
+    // Theme button listeners
+    if (themeLightBtn) {
+        themeLightBtn.addEventListener('click', () => {
+            currentThemeMode = 'light';
+            window.storageManager.updateSettings({ themeMode: 'light' });
+            applyTheme(false);
+            updateThemeButtons('light');
+        });
+    }
+
+    if (themeDarkBtn) {
+        themeDarkBtn.addEventListener('click', () => {
+            currentThemeMode = 'dark';
+            window.storageManager.updateSettings({ themeMode: 'dark' });
+            applyTheme(true);
+            updateThemeButtons('dark');
+        });
+    }
+
+    if (themeAutoBtn) {
+        themeAutoBtn.addEventListener('click', () => {
+            currentThemeMode = 'auto';
+            window.storageManager.updateSettings({ themeMode: 'auto' });
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(prefersDark);
+            updateThemeButtons('auto');
+        });
+    }
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (currentThemeMode === 'auto') {
+            applyTheme(e.matches);
+        }
+    });
 
     // Open Settings
     btnMenu.addEventListener('click', () => {
@@ -321,6 +419,8 @@ function initSettings() {
         if (pomoIntervalInput) pomoIntervalInput.value = settings.pomoLongBreakInterval || 4;
         if (pomoAutoBreakInput) pomoAutoBreakInput.checked = settings.pomoAutoBreak !== false;
         if (pomoAutoWorkInput) pomoAutoWorkInput.checked = settings.pomoAutoWork === true;
+        // Theme
+        applyThemeFromSettings(settings);
         overlay.classList.remove('translate-y-full');
     });
 
@@ -338,10 +438,12 @@ function initSettings() {
         }
 
         if (newGoal > 0 && learningDays >= 1 && learningDays <= 7) {
+            const currentSettings = window.storageManager.getSettings();
             const newSettings = {
                 dailyGoal: newGoal,
                 learningDays: learningDays,
-                fontSize: parseInt(fontSizeInput.value) || 16
+                fontSize: parseInt(fontSizeInput.value) || 16,
+                themeMode: currentThemeMode
             };
             // Pomodoro settings
             if (pomoWorkInput) newSettings.pomoWork = parseInt(pomoWorkInput.value) || 25;
@@ -417,6 +519,14 @@ function initSettings() {
 
             // Clean up
             setTimeout(() => URL.revokeObjectURL(url), 100);
+        });
+    }
+
+    // Export Data (PDF)
+    const btnExportPDF = document.getElementById('btn-settings-export-pdf');
+    if (btnExportPDF) {
+        btnExportPDF.addEventListener('click', () => {
+            generateWeeklyPDFReport();
         });
     }
 
@@ -734,6 +844,62 @@ function updatePomodoroIndicator() {
         const phaseLabel = pomodoroPhase === 'work' ? 'Arbeit' : pomodoroPhase === 'shortBreak' ? 'Pause' : 'Lange Pause';
         indicator.textContent = `🍅 ${pomodoroCount}/${pomo.longBreakInterval} · ${phaseLabel}`;
     }
+}
+
+function initFAB() {
+    const fab = document.getElementById('fab-main');
+    const btnToggle = document.getElementById('btn-timer-toggle');
+    const timerOverlay = document.getElementById('timer-overlay');
+
+    if (!fab) return;
+
+    function updateFABState() {
+        if (isTimerRunning) {
+            fab.classList.add('pulse');
+            fab.innerHTML = '<i data-lucide="pause" class="w-6 h-6 text-white"></i>';
+        } else {
+            fab.classList.remove('pulse');
+            fab.innerHTML = '<i data-lucide="plus" class="w-6 h-6 text-white"></i>';
+        }
+        lucide.createIcons();
+    }
+
+    fab.addEventListener('click', () => {
+        if (isTimerRunning) {
+            // Pause timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTimerRunning = false;
+            releaseWakeLock();
+            if (btnToggle) {
+                btnToggle.innerHTML = '<i data-lucide="play" class="w-5 h-5 fill-current"></i>';
+            }
+            updateFABState();
+            showToast('Timer pausiert', 'info');
+        } else {
+            // Open timer overlay
+            timerOverlay.classList.remove('translate-y-full');
+            if (timerSeconds > 0) {
+                // Resume - just show overlay with current state
+            } else {
+                // New session - ensure start button is visible
+                const btnStart = document.getElementById('btn-timer-start');
+                const btnPause = document.getElementById('btn-timer-pause');
+                if (btnStart) btnStart.classList.remove('hidden');
+                if (btnPause) btnPause.classList.add('hidden');
+            }
+        }
+    });
+
+    // Watch for timer state changes
+    const originalStartInterval = () => {};
+    setInterval(() => {
+        updateFABState();
+    }, 1000);
+
+    updateFABState();
 }
 
 function initTimer() {
@@ -1186,14 +1352,22 @@ function getTopTopicsForSubject(subjectId, limit = 3) {
 }
 
 const ACHIEVEMENT_DEFINITIONS = [
-    { id: 'first_timer', icon: '🏃', name: 'Erste Schritte' },
-    { id: 'streak_7', icon: '🔥', name: '7-Tage-Streak' },
-    { id: 'hours_10', icon: '⏰', name: 'Stunden-Jäger' },
-    { id: 'hours_100', icon: '📚', name: '100-Stunden-Krieger' },
-    { id: 'pomodoro_1', icon: '🍅', name: 'Pomodoro-Anfänger' },
-    { id: 'pomodoro_10', icon: '🍅', name: 'Pomodoro-Meister' },
-    { id: 'weekly_goal', icon: '📅', name: 'Wochenziel erreicht' },
-    { id: 'monthly_goal', icon: '🎯', name: 'Monatsziel erreicht' }
+    { id: 'first_timer', icon: '🏃', name: 'Erste Schritte', desc: 'Erste Lernsession' },
+    { id: 'streak_7', icon: '🔥', name: '7-Tage-Streak', desc: '7 Tage hintereinander' },
+    { id: 'hours_10', icon: '⏰', name: 'Stunden-Jäger', desc: '10 Stunden gesamt' },
+    { id: 'hours_100', icon: '📚', name: '100-Stunden-Krieger', desc: '100 Stunden gesamt' },
+    { id: 'pomodoro_1', icon: '🍅', name: 'Pomodoro-Anfänger', desc: 'Erste Pomodoro-Session' },
+    { id: 'pomodoro_10', icon: '🍅', name: 'Pomodoro-Meister', desc: '10 Pomodoro-Sessions' },
+    { id: 'weekly_goal', icon: '📅', name: 'Wochenziel erreicht', desc: 'Wochenziel erfüllt' },
+    { id: 'monthly_goal', icon: '🎯', name: 'Monatsziel erreicht', desc: 'Monatsziel erfüllt' },
+    { id: 'early_bird', icon: '🌅', name: 'Früher Vogel', desc: 'Vor 8 Uhr gelernt' },
+    { id: 'night_owl', icon: '🦉', name: 'Nachteule', desc: 'Nach 22 Uhr gelernt' },
+    { id: 'marathon', icon: '🏃', name: 'Marathon', desc: '3h am Stück' },
+    { id: 'all_subjects', icon: '🎓', name: 'Allrounder', desc: 'Alle Fächer an einem Tag' },
+    { id: 'perfect_week', icon: '⭐', name: 'Perfekte Woche', desc: '7 Tage hintereinander' },
+    { id: 'hours_50', icon: '💪', name: 'Halbzeit', desc: '50 Stunden gesamt' },
+    { id: 'consistency_30', icon: '📈', name: 'Beständigkeit', desc: '30-Tage Streak' },
+    { id: 'first_hour', icon: '⏱️', name: 'Erste Stunde', desc: 'Erste 60 Minuten' }
 ];
 
 function getStoredAchievements() {
@@ -1262,15 +1436,44 @@ function getAchievementProgress(entries) {
         .filter(e => e.startTime >= monthRange.start.getTime() && e.startTime <= monthRange.end.getTime())
         .reduce((acc, curr) => acc + curr.duration, 0);
 
+    const subjects = window.storageManager.getSubjects();
+    const uniqueSubjectsToday = new Set();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    entries.forEach(e => {
+        if (e.startTime >= todayStart.getTime()) {
+            uniqueSubjectsToday.add(e.subjectId);
+        }
+    });
+
+    let earlyBird = false;
+    let nightOwl = false;
+    let marathon = false;
+    entries.forEach(e => {
+        const d = new Date(e.startTime);
+        const hour = d.getHours();
+        if (hour < 8) earlyBird = true;
+        if (hour >= 22) nightOwl = true;
+        if (e.duration >= 3 * 3600) marathon = true;
+    });
+
     return {
         first_timer: entries.length >= 1,
         streak_7: streak >= 7,
         hours_10: totalSeconds >= 10 * 3600,
         hours_100: totalSeconds >= 100 * 3600,
+        hours_50: totalSeconds >= 50 * 3600,
         pomodoro_1: pomodoroEntries.length >= 1,
         pomodoro_10: pomodoroEntries.length >= 10,
         weekly_goal: weekSeconds >= dailyGoalSeconds * 5,
-        monthly_goal: monthSeconds >= dailyGoalSeconds * 20
+        monthly_goal: monthSeconds >= dailyGoalSeconds * 20,
+        early_bird: earlyBird,
+        night_owl: nightOwl,
+        marathon: marathon,
+        all_subjects: subjects.length > 0 && uniqueSubjectsToday.size >= subjects.length,
+        perfect_week: streak >= 7,
+        consistency_30: streak >= 30,
+        first_hour: totalSeconds >= 3600
     };
 }
 
@@ -1324,7 +1527,8 @@ function renderAchievements(entries) {
                 <div class="text-2xl leading-none ${isUnlocked ? '' : 'grayscale opacity-60'}">${isUnlocked ? def.icon : '🔒'}</div>
                 <div class="min-w-0">
                     <div class="text-sm font-semibold ${isUnlocked ? 'text-adaptive' : 'text-adaptive-muted'}">${isUnlocked ? def.name : '? ??? ???'}</div>
-                    <div class="text-[11px] mt-1 ${isUnlocked ? 'text-adaptive-muted' : 'text-adaptive-muted'}">${isUnlocked ? `freigeschaltet am ${formatAchievementDate(unlockedEntry.unlockedAt)}` : 'Noch gesperrt'}</div>
+                    <div class="text-[10px] mt-0.5 ${isUnlocked ? 'text-adaptive-muted' : 'text-adaptive-muted'}">${def.desc || ''}</div>
+                    <div class="text-[11px] mt-1 ${isUnlocked ? 'text-adaptive-muted' : 'text-adaptive-muted'}">${isUnlocked ? formatAchievementDate(unlockedEntry.unlockedAt) : 'Noch gesperrt'}</div>
                 </div>
             </div>
         `;
@@ -1334,6 +1538,99 @@ function renderAchievements(entries) {
     if (summary) {
         summary.textContent = `${unlocked.length}/${ACHIEVEMENT_DEFINITIONS.length} freigeschaltet`;
     }
+}
+
+// ==================== HEATMAP ====================
+
+function renderHeatmap(entries) {
+    const container = document.getElementById('heatmap-grid');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const weeksToShow = 12;
+    const daysToShow = weeksToShow * 7;
+
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - daysToShow + 1);
+
+    const mondayOffset = startDate.getDay() === 0 ? 6 : startDate.getDay() - 1;
+    startDate.setDate(startDate.getDate() - mondayOffset);
+
+    const dayData = new Map();
+    entries.forEach(e => {
+        const date = new Date(e.startTime);
+        date.setHours(0, 0, 0, 0);
+        const key = date.toDateString();
+        dayData.set(key, (dayData.get(key) || 0) + e.duration);
+    });
+
+    const maxSeconds = Math.max(...Array.from(dayData.values()), 3600);
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'heatmap-tooltip hidden';
+    tooltip.innerHTML = '<div class="heatmap-tooltip-date"></div><div class="heatmap-tooltip-time"></div>';
+    document.body.appendChild(tooltip);
+
+    for (let w = 0; w < weeksToShow; w++) {
+        const weekCol = document.createElement('div');
+        weekCol.className = 'flex flex-col gap-[3px]';
+
+        for (let d = 0; d < 7; d++) {
+            const cellDate = new Date(startDate);
+            cellDate.setDate(startDate.getDate() + w * 7 + d);
+            cellDate.setHours(0, 0, 0, 0);
+
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
+
+            const isFuture = cellDate > today;
+            const key = cellDate.toDateString();
+            const seconds = dayData.get(key) || 0;
+
+            if (isFuture) {
+                cell.classList.add('heatmap-level-0');
+                cell.style.opacity = '0.3';
+            } else {
+                const level = getHeatmapLevel(seconds, maxSeconds);
+                cell.classList.add(`heatmap-level-${level}`);
+            }
+
+            cell.dataset.date = cellDate.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+            cell.dataset.seconds = seconds;
+
+            cell.addEventListener('mouseenter', (e) => {
+                tooltip.querySelector('.heatmap-tooltip-date').textContent = cell.dataset.date;
+                tooltip.querySelector('.heatmap-tooltip-time').textContent = seconds > 0
+                    ? formatDuration(seconds)
+                    : 'Keine Aktivität';
+                tooltip.classList.remove('hidden');
+                const rect = e.target.getBoundingClientRect();
+                tooltip.style.left = `${rect.left + window.scrollX}px`;
+                tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+            });
+
+            cell.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+            });
+
+            weekCol.appendChild(cell);
+        }
+
+        container.appendChild(weekCol);
+    }
+}
+
+function getHeatmapLevel(seconds, maxSeconds) {
+    if (seconds === 0) return 0;
+    const ratio = seconds / maxSeconds;
+    if (ratio < 0.25) return 1;
+    if (ratio < 0.5) return 2;
+    if (ratio < 0.75) return 3;
+    return 4;
 }
 
 function renderTopicBadges(topics) {
@@ -1357,6 +1654,7 @@ function updateViews() {
     renderFaecher(entries, subjects);
     renderSemester(entries, subjects);
     checkAchievements(entries);
+    renderHeatmap(entries);
 }
 
 function renderSemester(entries, subjects) {
@@ -1629,6 +1927,15 @@ function formatDateShort(dateStr) {
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+}
+
 // ==================== SEMESTER MODAL ====================
 
 function openAddSemesterModal() {
@@ -1897,8 +2204,119 @@ function updateDashboard(entries) {
     // Render Subject Tiles
     renderDashboardSubjects(entries);
 
-    // Render Exam Countdown
-    renderExamCountdown();
+    // Render Trends
+    renderTrends(entries);
+}
+
+function renderTrends(entries) {
+    const bestTimeEl = document.getElementById('trend-best-time');
+    const avgSessionEl = document.getElementById('trend-avg-session');
+    const trendDirEl = document.getElementById('trend-direction');
+    const topDayEl = document.getElementById('trend-top-day');
+    const trendsPeriodEl = document.getElementById('trends-period');
+
+    if (!entries || entries.length === 0) {
+        if (bestTimeEl) bestTimeEl.textContent = '—';
+        if (avgSessionEl) avgSessionEl.textContent = '—';
+        if (trendDirEl) trendDirEl.innerHTML = '—';
+        if (topDayEl) topDayEl.textContent = '—';
+        if (trendsPeriodEl) trendsPeriodEl.textContent = '';
+        return;
+    }
+
+    const hourCounts = {};
+    const dayOfWeekCounts = {};
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+    entries.forEach(e => {
+        const d = new Date(e.startTime);
+        const hour = d.getHours();
+        const dow = d.getDay();
+
+        hourCounts[hour] = (hourCounts[hour] || 0) + e.duration;
+        dayOfWeekCounts[dow] = (dayOfWeekCounts[dow] || 0) + e.duration;
+    });
+
+    // Best time of day
+    let bestHour = null;
+    let bestHourSeconds = 0;
+    Object.entries(hourCounts).forEach(([hour, seconds]) => {
+        if (seconds > bestHourSeconds) {
+            bestHourSeconds = seconds;
+            bestHour = parseInt(hour);
+        }
+    });
+
+    if (bestHour !== null) {
+        const startHour = bestHour;
+        const endHour = (bestHour + 2) % 24;
+        const formatHour = (h) => h < 10 ? `0${h}` : h;
+        if (bestTimeEl) bestTimeEl.textContent = `${formatHour(startHour)}–${formatHour(endHour)} Uhr`;
+    }
+
+    // Average session length
+    const avgSession = entries.length > 0 ? entries.reduce((a, b) => a + b.duration, 0) / entries.length : 0;
+    const avgMin = Math.round(avgSession / 60);
+    if (avgSessionEl) avgSessionEl.textContent = `${avgMin} min`;
+
+    // Week comparison trend
+    const thisWeekStart = getWeekStart(new Date());
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const thisWeekSeconds = entries
+        .filter(e => e.startTime >= thisWeekStart.getTime())
+        .reduce((a, b) => a + b.duration, 0);
+
+    const lastWeekSeconds = entries
+        .filter(e => e.startTime >= lastWeekStart.getTime() && e.startTime < thisWeekStart.getTime())
+        .reduce((a, b) => a + b.duration, 0);
+
+    if (lastWeekSeconds > 0) {
+        const change = ((thisWeekSeconds - lastWeekSeconds) / lastWeekSeconds) * 100;
+        const roundedChange = Math.round(change);
+        if (trendDirEl) {
+            if (roundedChange > 0) {
+                trendDirEl.innerHTML = `<span class="text-success">↑ +${roundedChange}%</span>`;
+            } else if (roundedChange < 0) {
+                trendDirEl.innerHTML = `<span class="text-red-400">↓ ${roundedChange}%</span>`;
+            } else {
+                trendDirEl.innerHTML = '<span class="text-adaptive-muted">→ 0%</span>';
+            }
+        }
+    } else if (thisWeekSeconds > 0) {
+        if (trendDirEl) trendDirEl.innerHTML = '<span class="text-success">↑ Neu!</span>';
+    } else {
+        if (trendDirEl) trendDirEl.textContent = '—';
+    }
+
+    // Top day of week
+    let topDay = null;
+    let topDaySeconds = 0;
+    Object.entries(dayOfWeekCounts).forEach(([dow, seconds]) => {
+        if (seconds > topDaySeconds) {
+            topDaySeconds = seconds;
+            topDay = parseInt(dow);
+        }
+    });
+
+    if (topDay !== null) {
+        if (topDayEl) topDayEl.textContent = dayNames[topDay];
+    }
+
+    // Period label
+    if (trendsPeriodEl) {
+        trendsPeriodEl.textContent = 'Diese Woche';
+    }
+}
+
+function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
 }
 
 function renderHistory(entries, subjects) {
@@ -2826,10 +3244,58 @@ function renderExamCountdown() {
                     <div class="text-sm font-medium truncate">${mod.name}</div>
                     <div class="text-xs text-adaptive-muted">${dateText} · ${mod.ects} ECTS</div>
                 </div>
+                <button onclick="exportExamToICS('${mod.examDate || mod.examPeriod}', '${escapeHtml(mod.name)}')" class="p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" title="Zum Kalender hinzufügen">
+                    <i data-lucide="calendar-plus" class="w-4 h-4 text-adaptive-muted"></i>
+                </button>
                 <span class="text-xs ${badgeClass} px-2 py-0.5 rounded-full flex-shrink-0">${timeText}</span>
             </div>
         `;
     }).join('');
+
+    lucide.createIcons();
+}
+
+function exportExamToICS(examDate, moduleName) {
+    if (!examDate) {
+        showToast('Kein Prüfungsdatum verfügbar', 'error');
+        return;
+    }
+
+    const date = new Date(examDate);
+    const dateStr = date.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+    const dateEnd = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+    const endStr = dateEnd.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+
+    const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Lernzeit Tracker//DE
+BEGIN:VEVENT
+UID:${Date.now()}@lernzeit-tracker
+DTSTAMP:${new Date().toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z'}
+DTSTART:${dateStr}
+DTEND:${endStr}
+SUMMARY:Prüfung: ${moduleName}
+DESCRIPTION:Prüfung für ${moduleName} - Lernzeit Tracker
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pruefung_${moduleName.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(`${moduleName} zum Kalender hinzugefügt`, 'success');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML.replace(/'/g, "\\'");
 }
 
 function updateStudyRecommendation() {
@@ -2901,4 +3367,107 @@ function updateStudyRecommendation() {
             ${top.reason ? `<span class="text-xs text-yellow-400">${top.reason}</span>` : ''}
         </div>
     `;
+}
+
+function generateWeeklyPDFReport() {
+    const entries = window.storageManager.getEntries();
+    const subjects = window.storageManager.getSubjects();
+
+    const weekStart = getWeekStart(new Date());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const weekEntries = entries.filter(e =>
+        e.startTime >= weekStart.getTime() &&
+        e.startTime <= weekEnd.getTime() + 86400000
+    );
+
+    const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+
+    let report = `=======================================
+LERNZEIT TRACKER - WOCHENBERICHT
+=======================================
+
+Zeitraum: ${weekStart.toLocaleDateString('de-DE')} - ${weekEnd.toLocaleDateString('de-DE')}
+
+ZUSAMMENFASSUNG
+---------------
+`;
+
+    const totalSeconds = weekEntries.reduce((a, b) => a + b.duration, 0);
+    const totalHours = Math.floor(totalSeconds / 3600);
+    const totalMin = Math.round((totalSeconds % 3600) / 60);
+
+    report += `Gesamtzeit:     ${totalHours}h ${totalMin}m
+Anzahl Sessions: ${weekEntries.length}
+
+TÄGLICHE ÜBERSICHT
+------------------
+`;
+
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(weekStart);
+        day.setDate(day.getDate() + i);
+        const dayEnd = new Date(day);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const dayEntries = weekEntries.filter(e =>
+            e.startTime >= day.getTime() && e.startTime <= dayEnd.getTime()
+        );
+
+        const daySeconds = dayEntries.reduce((a, b) => a + b.duration, 0);
+        const dayHours = Math.floor(daySeconds / 3600);
+        const dayMin = Math.round((daySeconds % 3600) / 60);
+
+        report += `${dayNames[i].padEnd(12)} ${dayHours}h ${String(dayMin).padStart(2, '0')}m`;
+        if (dayEntries.length > 0) {
+            report += ` (${dayEntries.length} Sessions)`;
+        }
+        report += '\n';
+    }
+
+    report += `
+NACH FACH
+---------
+`;
+
+    const subjectTotals = {};
+    subjects.forEach(s => {
+        subjectTotals[s.id] = { name: s.name, seconds: 0 };
+    });
+
+    weekEntries.forEach(e => {
+        if (subjectTotals[e.subjectId]) {
+            subjectTotals[e.subjectId].seconds += e.duration;
+        }
+    });
+
+    Object.values(subjectTotals)
+        .filter(s => s.seconds > 0)
+        .sort((a, b) => b.seconds - a.seconds)
+        .forEach(s => {
+            const hours = Math.floor(s.seconds / 3600);
+            const min = Math.round((s.seconds % 3600) / 60);
+            report += `${s.name.padEnd(20)} ${hours}h ${String(min).padStart(2, '0')}m\n`;
+        });
+
+    report += `
+=======================================
+Generiert am: ${new Date().toLocaleString('de-DE')}
+Lernzeit Tracker
+=======================================
+`;
+
+    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const weekNum = Math.ceil(weekStart.getDate() / 7);
+    link.download = `lernzeit_kw${weekStart.toISOString().split('W')[1]}_bericht.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('Wochenbericht exportiert!', 'success');
 }
