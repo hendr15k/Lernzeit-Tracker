@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTodoWidget();
     initGoalsHandlers();
     initExportHandlers();
+    initBackupHandler();
 
     updateViews();
     lucide.createIcons();
@@ -501,6 +502,20 @@ window.getTodos = getTodos;
 window.saveTodos = saveTodos;
 window.renderTodos = renderTodos;
 
+
+// ==================== BACKUP HANDLER ====================
+
+/**
+ * Initializes the backup button handler
+ */
+function initBackupHandler() {
+    const btnBackup = document.getElementById('btn-backup');
+    if (btnBackup) {
+        btnBackup.addEventListener('click', () => {
+            exportDataAsJSON();
+        });
+    }
+}
 
 // ==================== GOALS MANAGEMENT ====================
 
@@ -1656,7 +1671,8 @@ function getExamBadge(examPeriod, examDate) {
         '2026-03-30': 'Mär/Apr 2026',
         '2026-07-14': 'Jul 2026',
         '2026-09-21': 'Sep 2026',
-        '2027-02-01': 'Jan/Feb 2027'
+        '2027-02-01': 'Jan/Feb 2027',
+        '2026-03-14': 'Mär 2026 (WiSe)'
     };
 
     const displayDate = examDate ? formatDateShort(examDate) : (periodNames[examPeriod] || formatDateShort(examPeriod));

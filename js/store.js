@@ -70,7 +70,10 @@ class StorageManager {
                 { id: '2', name: 'GET2', color: 'bg-green-500', weeklyGoal: 8 },
                 { id: '3', name: 'Physik', color: 'bg-purple-500', weeklyGoal: 8 },
                 { id: '4', name: 'Bauelemente', color: 'bg-orange-500', weeklyGoal: 8 },
-                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500', weeklyGoal: 5 }
+                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500', weeklyGoal: 5 },
+                { id: '6', name: 'Höhere Mathematik 1', color: 'bg-cyan-500', weeklyGoal: 6 },
+                { id: '7', name: 'GET1', color: 'bg-emerald-500', weeklyGoal: 8 },
+                { id: '8', name: 'Programmierung & TI', color: 'bg-violet-500', weeklyGoal: 6 }
             ];
             this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
         }
@@ -110,6 +113,7 @@ class StorageManager {
                 } else {
                     this.migrateModulesSubjectId();
                     this.migrateExamDates();
+                    this.migrateWiSe2025();
                 }
             } catch (e) {
                 console.error('Corrupted semester data, reseeding:', e);
@@ -188,6 +192,88 @@ class StorageManager {
         if (needsUpdate) {
             this.saveSemesters(semesters);
         }
+    }
+
+    /**
+     * Migrates WiSe 2025/26 semester if not already present
+     * @private
+     */
+    migrateWiSe2025() {
+        const semesters = this.getSemesters();
+        const hasWiSe = semesters.some(s =>
+            s.name.toLowerCase().includes('wse') ||
+            s.name.toLowerCase().includes('wintersemester') ||
+            s.name.toLowerCase().includes('2025/26')
+        );
+        if (hasWiSe) return;
+
+        const subjects = this.getSubjects();
+        const getSubjectId = (name) => {
+            const s = subjects.find(sub => sub.name.toLowerCase() === name.toLowerCase());
+            return s ? s.id : null;
+        };
+
+        const wiSeSemester = {
+            id: 'wse202526',
+            name: 'Wintersemester 2025/26',
+            start: '2025-10-01',
+            end: '2026-03-31',
+            modules: [
+                {
+                    id: 'wse-hm1',
+                    subjectId: getSubjectId('Höhere Mathematik 1'),
+                    name: 'Höhere Mathematik 1 für Elektrotechnik',
+                    code: '51114',
+                    ects: 9,
+                    hours: 270,
+                    examPeriod: '2026-07-14',
+                    examDate: '2026-07-21',
+                    notes: 'Reelle und komplexe Zahlen, Elementare Funktionen, Folgen und Reihen, Differenzial- und Integralrechnung einer Veränderlichen, Vektoren und Matrizen, Lineare Gleichungssysteme'
+                },
+                {
+                    id: 'wse-get1',
+                    subjectId: getSubjectId('GET1'),
+                    name: 'Grundlagen der Elektrotechnik 1',
+                    code: '51102',
+                    ects: 11,
+                    hours: 330,
+                    examPeriod: '2026-07-14',
+                    examDate: '2026-07-23',
+                    notes: 'Gleichstromnetzwerke, Wechselspannung und Wechselstrom, Schaltvorgänge in einfachen elektrischen Netzwerken, Praktikum (5 Versuche + Lernzielkontrollen)'
+                },
+                {
+                    id: 'wse-prog',
+                    subjectId: getSubjectId('Programmierung & TI'),
+                    name: 'Grundlagen der Programmierung und technische Informatik',
+                    code: '51111',
+                    ects: 10,
+                    hours: 300,
+                    examPeriod: '2026-07-14',
+                    examDate: '2026-07-22',
+                    notes: 'Darstellung von Zahlen in EDV-Systemen, Boolesche Algebra, Programmierung in C++, Objektorientiertes Programmieren, Endliche Automaten, Mikroprozessortechnik'
+                }
+            ]
+        };
+
+        // Ensure subject IDs match existing or future subjects
+        wiSeSemester.modules.forEach(mod => {
+            if (!mod.subjectId) {
+                const fallbackMap = {
+                    'Höhere Mathematik 1 für Elektrotechnik': 'Höhere Mathematik 1',
+                    'Grundlagen der Elektrotechnik 1': 'GET1',
+                    'Grundlagen der Programmierung und technische Informatik': 'Programmierung & TI'
+                };
+                const searchName = fallbackMap[mod.name] || mod.name;
+                const found = subjects.find(s =>
+                    s.name.toLowerCase() === searchName.toLowerCase() ||
+                    mod.name.toLowerCase().includes(s.name.toLowerCase())
+                );
+                if (found) mod.subjectId = found.id;
+            }
+        });
+
+        semesters.push(wiSeSemester);
+        this.saveSemesters(semesters);
     }
 
     /**
@@ -433,7 +519,12 @@ class StorageManager {
             return [
                 { id: '1', name: 'HM2', color: 'bg-blue-500' },
                 { id: '2', name: 'GET2', color: 'bg-green-500' },
-                { id: '3', name: 'Bauelemente', color: 'bg-orange-500' }
+                { id: '3', name: 'Bauelemente', color: 'bg-orange-500' },
+                { id: '4', name: 'Physik', color: 'bg-purple-500' },
+                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500' },
+                { id: '6', name: 'Höhere Mathematik 1', color: 'bg-cyan-500' },
+                { id: '7', name: 'GET1', color: 'bg-emerald-500' },
+                { id: '8', name: 'Programmierung & TI', color: 'bg-violet-500' }
             ];
         }
     }

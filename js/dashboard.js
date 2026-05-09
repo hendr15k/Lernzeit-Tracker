@@ -1450,7 +1450,8 @@ function renderExamCountdown() {
         '2026-03-30': 'Mär/Apr 26',
         '2026-07-14': 'Jul 26',
         '2026-09-21': 'Sep 26',
-        '2027-02-01': 'Jan/Feb 27'
+        '2027-02-01': 'Jan/Feb 27',
+        '2026-03-14': 'Mär 26 (WiSe)'
     };
 
     container.innerHTML = examModules.slice(0, 5).map(mod => {
