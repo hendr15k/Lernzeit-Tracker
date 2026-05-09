@@ -44,19 +44,339 @@ document.addEventListener('DOMContentLoaded', () => {
     initVoiceInput();
 
     function initTodoHandlers() {
-        // TODO handlers - implement when Todo UI is fully integrated
+        const overlay = document.getElementById('add-todo-overlay');
+        const btnClose = document.getElementById('btn-add-todo-close');
+        const btnSave = document.getElementById('btn-add-todo-save');
+        const titleInput = document.getElementById('add-todo-title-input');
+        const subjectSelect = document.getElementById('add-todo-subject');
+        const prioritySelect = document.getElementById('add-todo-priority');
+        const showAllBtn = document.getElementById('btn-show-all-todos');
+
+        if (showAllBtn) {
+            showAllBtn.addEventListener('click', () => {
+                const overlay = document.getElementById('add-todo-overlay');
+                if (overlay) {
+                    const subjects = window.storageManager.getSubjects();
+                    subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+                    titleInput.value = '';
+                    prioritySelect.value = 'medium';
+                    overlay.classList.remove('translate-y-full');
+                }
+            });
+        }
+
+        if (btnClose) {
+            btnClose.addEventListener('click', () => {
+                if (overlay) overlay.classList.add('translate-y-full');
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target.id === 'add-todo-overlay') overlay.classList.add('translate-y-full');
+            });
+        }
+
+        if (btnSave) {
+            btnSave.addEventListener('click', () => {
+                const text = titleInput.value.trim();
+                if (!text) { showToast('Bitte gib einen Titel ein.', 'error'); return; }
+
+                const subjectId = subjectSelect.value || null;
+                const priority = prioritySelect.value || 'medium';
+                const todos = getTodos();
+                todos.push({ id: Date.now().toString(), text, completed: false, subjectId, priority });
+                saveTodos(todos);
+                renderTodos();
+                renderMiniTodos();
+                overlay.classList.add('translate-y-full');
+                showToast('Lernziel gespeichert!', 'success');
+            });
+        }
+
+        renderMiniTodos();
+    }
+
+    function renderMiniTodos() {
+        const container = document.getElementById('todo-list-mini');
+        const progressText = document.getElementById('todo-progress-text');
+        const progressBar = document.getElementById('todo-progress-bar');
+        if (!container) return;
+
+        const todos = getTodos();
+        const subjects = window.storageManager.getSubjects();
+
+        if (todos.length === 0) {
+            container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-2">Keine Lernziele vorhanden</div>';
+            if (progressText) progressText.textContent = '0/0';
+            if (progressBar) progressBar.style.width = '0%';
+            return;
+        }
+
+        const total = todos.length;
+        const completed = todos.filter(t => t.completed).length;
+
+        if (progressText) progressText.textContent = completed + '/' + total;
+        if (progressBar) progressBar.style.width = Math.round((completed / total) * 100) + '%';
+
+        // Group by subject
+        const grouped = {};
+        todos.forEach(todo => {
+            const key = todo.subjectId || '_none';
+            if (!grouped[key]) grouped[key] = { subjectId: todo.subjectId, todos: [] };
+            grouped[key].todos.push(todo);
+        });
+
+        let html = '';
+        const subjectKeys = Object.keys(grouped);
+        subjectKeys.forEach(key => {
+            const group = grouped[key];
+            const subject = group.subjectId ? subjects.find(s => String(s.id) === String(group.subjectId)) : null;
+            const subjectName = subject ? subject.name : 'Allgemein';
+            const subjectColor = subject ? subject.color : 'bg-gray-500';
+            const groupCompleted = group.todos.filter(t => t.completed).length;
+
+            html += '<div class="mb-3">';
+            html += '<div class="flex items-center justify-between mb-1">';
+            html += '<div class="flex items-center gap-2">';
+            html += '<div class="w-3 h-3 rounded-full ' + subjectColor + ' flex-shrink-0"></div>';
+            html += '<span class="text-xs font-medium text-adaptive truncate">' + escapeHtml(subjectName) + '</span>';
+            html += '</div>';
+            html += '<span class="text-xs text-adaptive-muted">' + groupCompleted + '/' + group.todos.length + '</span>';
+            html += '</div>';
+
+            group.todos.forEach((todo, i) => {
+                html += '<div class="flex items-center gap-2 py-1">';
+                html += '<button class="todo-checkbox-mini btn-interactive w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ' + (todo.completed ? 'checked' : '') + '" data-todo-id="' + todo.id + '" aria-label="' + (todo.completed ? 'Als unerledigt markieren' : 'Als erledigt markieren') + '" aria-checked="' + todo.completed + '">';
+                if (todo.completed) html += '<i data-lucide="check" class="w-2.5 h-2.5 text-white"></i>';
+                html += '</button>';
+                const priorityBadge = { low: 'text-green-400', medium: 'text-yellow-400', high: 'text-red-400' };
+                html += '<span class="text-xs flex-1 truncate ' + (todo.completed ? 'line-through text-adaptive-muted' : 'text-adaptive') + '">' + escapeHtml(todo.text) + '</span>';
+                html += '<span class="text-[10px] ' + (priorityBadge[todo.priority] || 'text-yellow-400') + '">' + (todo.priority === 'high' ? 'HOCH' : todo.priority === 'medium' ? 'MITTEL' : 'NIEDRIG') + '</span>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+
+        // Event listeners for checkboxes
+        container.querySelectorAll('.todo-checkbox-mini').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const todos2 = getTodos();
+                const todo = todos2.find(t => t.id === btn.dataset.todoId);
+                if (todo) {
+                    todo.completed = !todo.completed;
+                    saveTodos(todos2);
+                    renderTodos();
+                    renderMiniTodos();
+                }
+            });
+        });
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     }
 
     function initNotifications() {
-        // Notification handlers - basic permission request (deferred to user interaction)
+        // Request notification permission on user interaction
+        if ('Notification' in window && Notification.permission === 'default') {
+            document.addEventListener('click', function requestNotifPermission() {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+                document.removeEventListener('click', requestNotifPermission);
+            }, { once: true });
+        }
+
+        // Restore notification settings from storage
+        const settings = window.storageManager.getSettings();
+        const notifyPomo = document.getElementById('settings-notify-pomodoro');
+        const notifyDaily = document.getElementById('settings-notify-daily');
+        const notifySound = document.getElementById('settings-notify-sound');
+
+        if (notifyPomo) notifyPomo.checked = settings.notifyPomodoro !== false;
+        if (notifyDaily) notifyDaily.checked = settings.notifyDaily !== false;
+        if (notifySound) notifySound.checked = settings.notifySound !== false;
+
+        function saveNotifSettings() {
+            window.storageManager.updateSettings({
+                notifyPomodoro: notifyPomo ? notifyPomo.checked : true,
+                notifyDaily: notifyDaily ? notifyDaily.checked : true,
+                notifySound: notifySound ? notifySound.checked : true
+            });
+        }
+
+        if (notifyPomo) notifyPomo.addEventListener('change', saveNotifSettings);
+        if (notifyDaily) notifyDaily.addEventListener('change', saveNotifSettings);
+        if (notifySound) notifySound.addEventListener('change', saveNotifSettings);
+
+        // Test notification button
+        const btnTest = document.getElementById('btn-test-notification');
+        if (btnTest) {
+            btnTest.addEventListener('click', () => {
+                if (Notification.permission === 'granted') {
+                    if (notifySound && notifySound.checked) {
+                        try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAARKwAAIhYAQACABAAZGF0YQ==').play(); } catch(e) {}
+                    }
+                    new Notification('Lernzeit-Tracker', {
+                        body: 'Dies ist eine Test-Benachrichtigung!',
+                        icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">📚</text></svg>')
+                    });
+                } else {
+                    showToast('Benachrichtigungen nicht erlaubt. Bitte in den Browser-Einstellungen aktivieren.', 'error');
+                }
+            });
+        }
+
+        // Daily reminder
+        function scheduleDailyReminder() {
+            if (!notifyDaily || !notifyDaily.checked) return;
+            if (Notification.permission !== 'granted') return;
+
+            const now = new Date();
+            const target = new Date(now);
+            target.setHours(18, 0, 0, 0); // 6 PM daily
+            if (now >= target) target.setDate(target.getDate() + 1);
+
+            const delay = target.getTime() - now.getTime();
+            setTimeout(() => {
+                if (notifySound && notifySound.checked) {
+                    try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAARKwAAIhYAQACABAAZGF0YQ==').play(); } catch(e) {}
+                }
+                new Notification('Lernzeit-Tracker', {
+                    body: 'Hast du heute schon gelernt? Öffne die App und logge deine Sitzung!',
+                    icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">📚</text></svg>')
+                });
+                scheduleDailyReminder(); // Re-schedule for next day
+            }, delay);
+        }
+        scheduleDailyReminder();
     }
 
     function initKeyboardShortcuts() {
-        // Keyboard shortcut handlers
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+N: New entry
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                const btn = document.getElementById('btn-add-entry');
+                if (btn) btn.click();
+            }
+            // Ctrl+Enter: Save entry (when overlay is open)
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                const entryOverlay = document.getElementById('add-entry-overlay');
+                if (entryOverlay && !entryOverlay.classList.contains('translate-y-full')) {
+                    const btnSave = document.getElementById('btn-add-entry-save');
+                    if (btnSave) btnSave.click();
+                }
+                const goalOverlay = document.getElementById('add-goal-overlay');
+                if (goalOverlay && !goalOverlay.classList.contains('translate-y-full')) {
+                    const btnSave = document.getElementById('btn-add-goal-save');
+                    if (btnSave) btnSave.click();
+                }
+                const todoOverlay = document.getElementById('add-todo-overlay');
+                if (todoOverlay && !todoOverlay.classList.contains('translate-y-full')) {
+                    const btnSave = document.getElementById('btn-add-todo-save');
+                    if (btnSave) btnSave.click();
+                }
+            }
+            // Space: Toggle timer
+            if (e.key === ' ' && !e.ctrlKey && !e.altKey) {
+                e.preventDefault();
+                const timerOverlay = document.getElementById('timer-overlay');
+                if (timerOverlay && !timerOverlay.classList.contains('translate-y-full')) {
+                    const startBtn = document.getElementById('btn-timer-start');
+                    const pauseBtn = document.getElementById('btn-timer-pause');
+                    if (startBtn && !startBtn.classList.contains('hidden')) {
+                        startBtn.click();
+                    } else if (pauseBtn && !pauseBtn.classList.contains('hidden')) {
+                        pauseBtn.click();
+                    }
+                }
+            }
+            // Ctrl+M: Voice input
+            if (e.ctrlKey && e.key === 'm') {
+                e.preventDefault();
+                startVoiceInput();
+            }
+            // Escape: Close overlays
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.fixed.inset-0.translate-y-full, .fixed.inset-0:not(.translate-y-full)').forEach(overlay => {
+                    if (!overlay.classList.contains('translate-y-full')) {
+                        overlay.classList.add('translate-y-full');
+                    }
+                });
+            }
+        });
     }
 
     function initVoiceInput() {
-        // Voice input handlers
+        // Voice input button handler
+        const btnVoice = document.getElementById('btn-voice-input');
+        if (btnVoice) {
+            btnVoice.addEventListener('click', startVoiceInput);
+        }
+    }
+
+    function startVoiceInput() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            showToast('Sprach­eingabe wird in diesem Browser nicht unterstützt.', 'error');
+            return;
+        }
+
+        const notesInput = document.getElementById('timer-notes-input');
+        if (!notesInput) return;
+        if (!notesInput.value) notesInput.value = '';
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'de-DE';
+        recognition.interimResults = true;
+        recognition.continuous = false;
+        recognition.maxAlternatives = 1;
+
+        const btnVoice = document.getElementById('btn-voice-input');
+        if (btnVoice) {
+            btnVoice.classList.add('bg-primary/20', 'border-primary');
+            btnVoice.querySelector('i')?.classList.add('animate-pulse');
+        }
+
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            if (notesInput.value && !notesInput.value.endsWith(' ')) {
+                notesInput.value += ' ';
+            }
+            notesInput.value += transcript;
+        };
+
+        recognition.onerror = (event) => {
+            if (event.error !== 'no-speech') {
+                showToast('Spracherkennungsfehler: ' + event.error, 'error');
+            }
+            resetVoiceButton();
+        };
+
+        recognition.onend = () => {
+            resetVoiceButton();
+        };
+
+        try {
+            recognition.start();
+        } catch (e) {
+            showToast('Fehler beim Starten der Sprach­eingabe.', 'error');
+            resetVoiceButton();
+        }
+
+        function resetVoiceButton() {
+            if (btnVoice) {
+                btnVoice.classList.remove('bg-primary/20', 'border-primary');
+                btnVoice.querySelector('i')?.classList.remove('animate-pulse');
+            }
+        }
     }
 
     initTouchGestures();
