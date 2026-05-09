@@ -494,13 +494,22 @@ initStatisticsHandlers;
 filterEntriesForExport;
 exportFilteredCSV;
 exportFilteredJSON;
-exportFilteredJSON;
 window.updateStudyRecommendation = updateStudyRecommendation;
 window.exportExamToICS = exportExamToICS;
 window.showToast = showToast;
 window.getTodos = getTodos;
 window.saveTodos = saveTodos;
 window.renderTodos = renderTodos;
+window.saveGoals = saveGoals;
+window.openAddGoalModal = openAddGoalModal;
+window.closeAddGoalModal = closeAddGoalModal;
+window.saveGoal = saveGoal;
+window.initGoalsHandlers = initGoalsHandlers;
+window.initExportHandlers = initExportHandlers;
+window.initStatisticsHandlers = initStatisticsHandlers;
+window.filterEntriesForExport = filterEntriesForExport;
+window.exportFilteredCSV = exportFilteredCSV;
+window.exportFilteredJSON = exportFilteredJSON;
 
 
 // ==================== BACKUP HANDLER ====================
@@ -1194,13 +1203,15 @@ function exportDataAsJSON() {
         semesters: window.storageManager.getSemesters(),
         exportDate: new Date().toISOString()
     };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "lernzeit_backup_" + new Date().toISOString().split('T')[0] + ".json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'lernzeit_backup_' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 /**

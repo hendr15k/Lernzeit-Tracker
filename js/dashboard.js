@@ -383,11 +383,11 @@ function renderRecommendedStudyTime() {
     });
     
     if (recValue) {
-        if (recommendation && recommendation.recommendedMinutes > 0) {
+        if (recommendation && recommendation.recommendedMinutes > 0 && progress < 1) {
             const hours = Math.floor(recommendation.recommendedMinutes / 60);
             const mins = recommendation.recommendedMinutes % 60;
             recValue.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-            
+
             if (recSubject) {
                 recSubject.textContent = recommendation.subject.substring(0, 12);
             }

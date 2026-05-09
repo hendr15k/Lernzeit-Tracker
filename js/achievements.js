@@ -163,7 +163,7 @@ function getAchievementProgress(entries) {
         hours_50: totalSeconds >= 50 * 3600,
         pomodoro_1: pomodoroEntries.length >= 1,
         pomodoro_10: pomodoroEntries.length >= 10,
-        weekly_goal: weekSeconds >= dailyGoalSeconds * 5,
+        weekly_goal: weekSeconds >= dailyGoalSeconds * (settings.learningDays || 5),
         monthly_goal: monthSeconds >= dailyGoalSeconds * 20,
         early_bird: earlyBird,
         night_owl: nightOwl,
