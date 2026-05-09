@@ -2308,6 +2308,7 @@ function updateViews() {
     renderAchievementsPage();
     renderHeatmap(entries);
     renderGraph(entries);
+    renderGoals();
     if (typeof window.updateStatisticsView === "function") window.updateStatisticsView();
 }
 

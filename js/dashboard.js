@@ -322,6 +322,7 @@ function renderRecommendedStudyTime() {
     const entries = window.storageManager.getEntries();
     const now = new Date();
     
+    let progress = 0;
     let recommendation = null;
     
     semesters.forEach(semester => {
@@ -334,7 +335,7 @@ function renderRecommendedStudyTime() {
             const spentSeconds = subjectEntries.reduce((acc, e) => acc + e.duration, 0);
             const spentHours = spentSeconds / 3600;
             const estimatedHours = mod.hours || 1;
-            const progress = spentHours / estimatedHours;
+            progress = spentHours / estimatedHours;
             
             let priority = 0;
             let reason = '';
