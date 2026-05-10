@@ -493,6 +493,81 @@ function renderStatisticsPage(entries, subjects) {
     renderMonthlyBars(entries);
     renderSubjectComparison(entries, subjects);
     renderWeeklyProgressLine(entries);
+
+    // --- 5. Notenverteilung ---
+    const exams = window.storageManager.getExams ? window.storageManager.getExams() : [];
+    renderGradeDistribution(exams);
+}
+
+/**
+ * Rendert die Notenverteilung in der Statistiken-Ansicht
+ */
+function renderGradeDistribution(exams) {
+    const distEl = document.getElementById('stat-grade-distribution');
+    const avgEl = document.getElementById('stat-avg-grade');
+    if (!distEl) return;
+
+    const bins = [
+        { label: '1,0', grade: '1.0', count: 0, color: '#22c55e' },
+        { label: '1,3', grade: '1.3', count: 0, color: '#4ade80' },
+        { label: '1,7', grade: '1.7', count: 0, color: '#86efac' },
+        { label: '2,0', grade: '2.0', count: 0, color: '#a3e635' },
+        { label: '2,3', grade: '2.3', count: 0, color: '#bef264' },
+        { label: '2,7', grade: '2.7', count: 0, color: '#facc15' },
+        { label: '3,0', grade: '3.0', count: 0, color: '#fb923c' },
+        { label: '3,3', grade: '3.3', count: 0, color: '#f97316' },
+        { label: '3,7', grade: '3.7', count: 0, color: '#ef4444' },
+        { label: '4,0', grade: '4.0', count: 0, color: '#dc2626' },
+        { label: '5,0', grade: '5.0', count: 0, color: '#991b1b' },
+        { label: 'NB', grade: 'NB', count: 0, color: '#6b7280' },
+        { label: 'N/A', grade: '__ungraded__', count: 0, color: '#374151' },
+    ];
+
+    exams.forEach(exam => {
+        const g = exam.grade;
+        if (!g || g === '') {
+            bins.find(b => b.grade === '__ungraded__').count++;
+        } else if (g === 'NB' || g === 'nb') {
+            bins.find(b => b.grade === 'NB').count++;
+        } else {
+            const num = parseFloat(String(g).replace(',', '.'));
+            const bin = bins.find(b => parseFloat(b.grade) === num);
+            if (bin) {
+                bin.count++;
+            } else {
+                bins.find(b => b.grade === '__ungraded__').count++;
+            }
+        }
+    });
+
+    const maxCount = Math.max(...bins.map(b => b.count), 1);
+
+    distEl.innerHTML = bins.map(b => {
+        const pct = Math.round((b.count / maxCount) * 100);
+        return `
+            <div class="flex items-center gap-2 text-sm">
+                <span class="w-8 text-right text-adaptive-muted text-xs font-mono">${b.label}</span>
+                <div class="flex-1 h-4 rounded overflow-hidden bg-gray-700">
+                    <div class="h-full rounded transition-all duration-300" style="width: ${pct}%; background: ${b.color};"></div>
+                </div>
+                <span class="w-6 text-right text-adaptive-muted text-xs">${b.count}</span>
+            </div>`;
+    }).join('');
+
+    // Ø Note bestandene
+    const passed = exams.filter(e => {
+        if (!e.grade || e.grade === '' || e.grade === 'NB' || e.grade === 'nb') return false;
+        const n = parseFloat(String(e.grade).replace(',', '.'));
+        return !isNaN(n) && n >= 1.0 && n <= 4.0;
+    });
+    if (avgEl) {
+        if (passed.length > 0) {
+            const avg = passed.reduce((s, e) => s + parseFloat(String(e.grade).replace(',', '.')), 0) / passed.length;
+            avgEl.textContent = avg.toFixed(2).replace('.', ',');
+        } else {
+            avgEl.textContent = '—';
+        }
+    }
 }
 
 function getLast6MonthsData(entries) {
