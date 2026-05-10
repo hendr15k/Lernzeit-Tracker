@@ -319,6 +319,10 @@
                                 <div class="text-[10px] text-adaptive-muted">Ø Note</div>
                             </div>
                         </div>
+                        <div class="flex justify-between items-center px-1 mb-3">
+                            <span class="text-[10px] text-adaptive-muted">ECTS-gewichtete Ø</span>
+                            <span id="exam-avg-grade-ects" class="text-sm font-bold text-primary">—</span>
+                        </div>
                         <div id="pruefungen-widget" class="space-y-2 max-h-48 overflow-y-auto">
                             <!-- Dynamic exam results -->
                         </div>
@@ -646,6 +650,13 @@
                         <p class="text-adaptive-muted">Keine Module vorhanden</p>
                         <p class="text-adaptive-muted text-sm">Füge dein erstes Modul hinzu</p>
                     </div>
+                    <div id="semester-exams-section" class="hidden mt-6">
+                        <h2 class="text-sm font-medium text-adaptive-muted uppercase tracking-wider mb-3">Verknüpfte Prüfungen</h2>
+                        <div id="semester-exams-list" class="space-y-2"></div>
+                        <div id="semester-exams-empty" class="hidden text-center py-4">
+                            <p class="text-adaptive-muted text-sm">Keine Prüfungen für dieses Semester</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -694,11 +705,18 @@
 
                     <!-- Notenverteilung -->
                     <div class="surface-card p-4 border border-gray-800 mb-6">
-                        <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Notenverteilung (Prüfungen)</div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-[10px] text-adaptive-muted uppercase tracking-wider">Notenverteilung (Prüfungen)</span>
+                            <button id="btn-export-grades" class="text-[10px] text-primary hover:text-blue-300 transition uppercase tracking-wider" title="Noten als CSV exportieren">CSV Export</button>
+                        </div>
                         <div id="stat-grade-distribution" class="space-y-2"></div>
                         <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-700">
                             <span class="text-[10px] text-adaptive-muted uppercase tracking-wider">Ø Note (bestanden)</span>
                             <span id="stat-avg-grade" class="text-lg font-bold text-primary">—</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[10px] text-adaptive-muted uppercase tracking-wider">ECTS-gewichtete Ø</span>
+                            <span id="stat-avg-grade-ects" class="text-lg font-bold text-primary">—</span>
                         </div>
                     </div>
                 </div>
@@ -952,6 +970,12 @@
                         <label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
                         <select id="add-exam-subject" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
                             <option value="">— Kein Fach —</option>
+                        </select>
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-sm text-adaptive-muted mb-2">Semester (optional)</label>
+                        <select id="add-exam-semester" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
+                            <option value="">— Kein Semester —</option>
                         </select>
                     </div>
                     <div class="w-full">

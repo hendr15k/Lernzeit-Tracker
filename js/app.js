@@ -964,6 +964,7 @@ function initPruefungenHandlers() {
     const nameInput = document.getElementById('add-exam-name');
     const codeInput = document.getElementById('add-exam-code');
     const subjectSelect = document.getElementById('add-exam-subject');
+    const semesterSelect = document.getElementById('add-exam-semester');
     const dateInput = document.getElementById('add-exam-date');
     const gradeSelect = document.getElementById('add-exam-grade');
     const ectsInput = document.getElementById('add-exam-ects');
@@ -975,6 +976,9 @@ function initPruefungenHandlers() {
         const subjects = window.storageManager.getSubjects();
         subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
 
+        const semesters = window.storageManager.getSemesters();
+        semesterSelect.innerHTML = '<option value="">— Kein Semester —</option>' + semesters.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+
         if (editExamId) {
             const exams = window.storageManager.getExams();
             const exam = exams.find(e => String(e.id) === String(editExamId));
@@ -985,6 +989,7 @@ function initPruefungenHandlers() {
                 nameInput.value = exam.name || '';
                 codeInput.value = exam.code || '';
                 subjectSelect.value = exam.subjectId || '';
+                semesterSelect.value = exam.semesterId || '';
                 dateInput.value = exam.date || '';
                 gradeSelect.value = exam.grade || '';
                 ectsInput.value = exam.ects || '';
@@ -999,6 +1004,7 @@ function initPruefungenHandlers() {
             nameInput.value = '';
             codeInput.value = '';
             subjectSelect.value = '';
+            semesterSelect.value = '';
             dateInput.value = new Date().toISOString().split('T')[0];
             gradeSelect.value = '';
             ectsInput.value = '';
@@ -1032,6 +1038,7 @@ function initPruefungenHandlers() {
             const name = nameInput.value.trim();
             const code = codeInput.value.trim();
             const subjectId = subjectSelect.value || null;
+            const semesterId = semesterSelect.value || null;
             const date = dateInput.value;
             const grade = gradeSelect.value;
             const ects = ectsInput.value !== '' ? parseInt(ectsInput.value) : null;
@@ -1040,7 +1047,7 @@ function initPruefungenHandlers() {
             if (!name) { showToast('Bitte gib einen Modulnamen ein.', 'error'); return; }
             if (!date) { showToast('Bitte gib ein Prüfungsdatum ein.', 'error'); return; }
 
-            const examData = { name, code, subjectId, date, grade, ects, notes };
+            const examData = { name, code, subjectId, semesterId, date, grade, ects, notes };
 
             if (_editingExamId) {
                 window.storageManager.updateExam({ ...examData, id: _editingExamId });
@@ -1892,7 +1899,46 @@ function renderModuleList(semesterId) {
         });
     }
 
+    renderSemesterExams(semesterId);
     lucide.createIcons();
+}
+
+/**
+ * Renders linked exams in semester detail view
+ * @param {string} semesterId - Semester ID
+ */
+function renderSemesterExams(semesterId) {
+    const exams = window.storageManager.getExams();
+    const semesterExams = exams.filter(e => String(e.semesterId) === String(semesterId));
+    const section = document.getElementById('semester-exams-section');
+    const list = document.getElementById('semester-exams-list');
+    const emptyEl = document.getElementById('semester-exams-empty');
+    if (!section || !list) return;
+
+    if (semesterExams.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+    section.classList.remove('hidden');
+    list.innerHTML = '';
+
+    semesterExams.forEach(exam => {
+        const badge = isExamPassed(exam);
+        const gradeNum = exam.grade && !isNaN(parseFloat(exam.grade)) ? parseFloat(exam.grade) : null;
+        const gradeColor = gradeNum ? (gradeNum <= 1.5 ? 'text-success' : gradeNum <= 2.5 ? 'text-primary' : gradeNum <= 3.5 ? 'text-yellow-400' : 'text-red-400') : 'text-adaptive-muted';
+
+        const card = document.createElement('div');
+        card.className = 'surface-card p-3 border border-gray-800 flex items-center gap-3 cursor-pointer hover:border-gray-600 transition';
+        card.innerHTML = `
+            <div class="flex-1">
+                <div class="font-medium text-sm">${escapeHtml(exam.name)}</div>
+                <div class="text-xs text-adaptive-muted">${exam.date || '—'} ${exam.code ? '· ' + escapeHtml(exam.code) : ''} ${exam.ects ? '· ' + exam.ects + ' ECTS' : ''}</div>
+            </div>
+            ${exam.grade ? `<span class="text-sm font-bold ${gradeColor}">${exam.grade}</span>` : ''}
+        `;
+        card.addEventListener('click', () => window.openAddExamOverlay(exam.id));
+        list.appendChild(card);
+    });
 }
 
 /**
@@ -2541,6 +2587,7 @@ function renderPruefungen() {
 
     const exams = window.storageManager.getExams();
     const subjects = window.storageManager.getSubjects();
+    const semesters = window.storageManager.getSemesters();
 
     let filtered = [...exams];
     if (_examFilter === 'bestanden') {
@@ -2564,6 +2611,7 @@ function renderPruefungen() {
 
         filtered.forEach(exam => {
             const subject = exam.subjectId ? subjects.find(s => String(s.id) === String(exam.subjectId)) : null;
+            const semester = exam.semesterId ? semesters.find(s => String(s.id) === String(exam.semesterId)) : null;
             const passed = isExamPassed(exam);
             const gradeClass = getExamGradeClass(exam);
             const gradeDisplay = exam.grade || '—';
@@ -2591,6 +2639,7 @@ function renderPruefungen() {
                 </div>
                 <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2" style="margin-left: 52px">
                     ${subject ? '<span>' + escapeHtml(subject.name) + '</span>' : ''}
+                    ${semester ? '<span>' + escapeHtml(semester.name) + '</span>' : ''}
                     ${ectsDisplay ? '<span>' + ectsDisplay + '</span>' : ''}
                     ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
                 </div>

@@ -568,6 +568,56 @@ function renderGradeDistribution(exams) {
             avgEl.textContent = '—';
         }
     }
+
+    // ECTS-gewichteter Ø
+    const ectsEl = document.getElementById('stat-avg-grade-ects');
+    const ectsGrades = passed.filter(e => e.ects && e.ects > 0);
+    if (ectsEl) {
+        if (ectsGrades.length > 0) {
+            const totalEcts = ectsGrades.reduce((s, e) => s + e.ects, 0);
+            const weightedSum = ectsGrades.reduce((s, e) => s + parseFloat(String(e.grade).replace(',', '.')) * e.ects, 0);
+            ectsEl.textContent = (weightedSum / totalEcts).toFixed(2).replace('.', ',');
+        } else {
+            ectsEl.textContent = '—';
+        }
+    }
+
+    // CSV Export
+    const exportBtn = document.getElementById('btn-export-grades');
+    if (exportBtn) {
+        exportBtn.onclick = () => exportGradesCSV(exams);
+    }
+}
+
+function exportGradesCSV(exams) {
+    const header = 'Name,Modulcode,Fach,Semester,Datum,Note,ECTS,Status,Notizen\n';
+    const semesters = window.storageManager.getSemesters();
+    const subjects = window.storageManager.getSubjects();
+    const rows = exams.map(e => {
+        const subject = subjects.find(s => String(s.id) === String(e.subjectId));
+        const semester = semesters.find(s => String(s.id) === String(e.semesterId));
+        const status = isExamPassed(e) ? 'Bestanden' : (e.grade ? 'Nicht bestanden' : 'Offen');
+        return [
+            '"' + (e.name || '').replace(/"/g, '""') + '"',
+            '"' + (e.code || '').replace(/"/g, '""') + '"',
+            '"' + (subject ? subject.name : '').replace(/"/g, '""') + '"',
+            '"' + (semester ? semester.name : '').replace(/"/g, '""') + '"',
+            '"' + (e.date || '') + '"',
+            '"' + (e.grade || '') + '"',
+            '"' + (e.ects || '') + '"',
+            '"' + status + '"',
+            '"' + (e.notes || '').replace(/"/g, '""') + '"'
+        ].join(',');
+    }).join('\n');
+
+    const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pruefungen_noten.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exportiert!', 'success');
 }
 
 function getLast6MonthsData(entries) {
@@ -1632,13 +1682,15 @@ function renderExamStats(exams) {
     const totalEl = document.getElementById('exam-count-total');
     const passedEl = document.getElementById('exam-count-passed');
     const avgGradeEl = document.getElementById('exam-avg-grade');
+    const avgEctsEl = document.getElementById('exam-avg-grade-ects');
 
-    if (!totalEl && !passedEl && !avgGradeEl) return;
+    if (!totalEl && !passedEl && !avgGradeEl && !avgEctsEl) return;
 
     if (exams.length === 0) {
         if (totalEl) totalEl.textContent = '0';
         if (passedEl) passedEl.textContent = '0';
         if (avgGradeEl) avgGradeEl.textContent = '—';
+        if (avgEctsEl) avgEctsEl.textContent = '—';
         return;
     }
 
@@ -1646,7 +1698,17 @@ function renderExamStats(exams) {
     const numGrades = passed.filter(e => !isNaN(parseFloat(e.grade)) && e.grade !== 'B').map(e => parseFloat(e.grade));
     const avgGrade = numGrades.length > 0 ? (numGrades.reduce((a, b) => a + b, 0) / numGrades.length).toFixed(1) : '—';
 
+    // ECTS-gewichteter Durchschnitt
+    const ectsGrades = passed.filter(e => !isNaN(parseFloat(e.grade)) && e.grade !== 'B' && e.ects && e.ects > 0);
+    let avgGradeEcts = '—';
+    if (ectsGrades.length > 0) {
+        const totalEcts = ectsGrades.reduce((s, e) => s + e.ects, 0);
+        const weightedSum = ectsGrades.reduce((s, e) => s + parseFloat(e.grade) * e.ects, 0);
+        avgGradeEcts = (weightedSum / totalEcts).toFixed(2).replace('.', ',');
+    }
+
     if (totalEl) totalEl.textContent = exams.length;
     if (passedEl) passedEl.textContent = passed.length;
     if (avgGradeEl) avgGradeEl.textContent = avgGrade;
+    if (avgEctsEl) avgEctsEl.textContent = avgGradeEcts;
 }
