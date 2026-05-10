@@ -1568,7 +1568,7 @@ function renderExamStats(exams) {
     }
 
     const passed = exams.filter(e => isExamPassed(e));
-    const numGrades = exams.filter(e => e.grade && !isNaN(parseFloat(e.grade)) && e.grade !== 'B' && e.grade !== 'NB').map(e => parseFloat(e.grade));
+    const numGrades = passed.filter(e => !isNaN(parseFloat(e.grade)) && e.grade !== 'B').map(e => parseFloat(e.grade));
     const avgGrade = numGrades.length > 0 ? (numGrades.reduce((a, b) => a + b, 0) / numGrades.length).toFixed(1) : '—';
 
     if (totalEl) totalEl.textContent = exams.length;
