@@ -191,7 +191,7 @@ function initUpdateChecker() {
     if (!banner) return;
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').then(registration => {
+        navigator.serviceWorker.ready.then(registration => {
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 newWorker.addEventListener('statechange', () => {
@@ -708,7 +708,7 @@ function openAddGoalModal() {
     document.getElementById('add-goal-target-hours').value = '';
     const subjects = window.storageManager.getSubjects();
     const subjectSelect = document.getElementById('add-goal-subject');
-    subjectSelect.innerHTML = '<option value="">— Alle Faetcher —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+    if (subjectSelect) subjectSelect.innerHTML = '<option value="">— Alle Faetcher —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
     const today = new Date();
     document.getElementById('add-goal-start-date').value = today.toISOString().split('T')[0];
     const defEnd = new Date(today);
@@ -922,7 +922,7 @@ function initFontSize() {
 
     if (fontSizeInput) {
         fontSizeInput.addEventListener('input', () => {
-            fontSizeLabel.textContent = fontSizeInput.value + 'px';
+            if (fontSizeLabel) fontSizeLabel.textContent = fontSizeInput.value + 'px';
         });
     }
 }
@@ -1177,12 +1177,15 @@ function initSubjectManagement() {
         });
     }
 
-    btnClose.addEventListener('click', () => {
-        overlay.classList.add('translate-y-full');
-    });
+    if (btnClose) {
+        btnClose.addEventListener('click', () => {
+            overlay.classList.add('translate-y-full');
+        });
+    }
 
-    btnSave.addEventListener('click', () => {
-        const name = nameInput.value.trim();
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            const name = nameInput.value.trim();
         const color = colorInput.value;
         const weeklyGoal = parseFloat(weeklyGoalInput.value) || 0;
         const editId = overlay.getAttribute('data-edit-id');
@@ -1202,6 +1205,7 @@ function initSubjectManagement() {
             showToast('Bitte geben Sie einen Namen ein.', 'error');
         }
     });
+    }
 }
 
 // ==================== SETTINGS MANAGEMENT ====================
@@ -1305,14 +1309,15 @@ function initSettings() {
         }
     });
 
-    btnMenu.addEventListener('click', () => {
-        const settings = window.storageManager.getSettings();
-        dailyGoalInput.value = settings.dailyGoal || 60;
-        if (learningDaysInput) learningDaysInput.value = settings.learningDays || 5;
-        if (fontSizeInput && settings.fontSize) {
-            fontSizeInput.value = settings.fontSize;
-            fontSizeLabel.textContent = settings.fontSize + 'px';
-        }
+    if (btnMenu) {
+        btnMenu.addEventListener('click', () => {
+            const settings = window.storageManager.getSettings();
+            if (dailyGoalInput) dailyGoalInput.value = settings.dailyGoal || 60;
+            if (learningDaysInput) learningDaysInput.value = settings.learningDays || 5;
+            if (fontSizeInput && settings.fontSize) {
+                fontSizeInput.value = settings.fontSize;
+                if (fontSizeLabel) fontSizeLabel.textContent = settings.fontSize + 'px';
+            }
         if (pomoWorkInput) pomoWorkInput.value = settings.pomoWork || 25;
         if (pomoShortInput) pomoShortInput.value = settings.pomoShortBreak || 5;
         if (pomoLongInput) pomoLongInput.value = settings.pomoLongBreak || 15;
@@ -1322,13 +1327,17 @@ function initSettings() {
         applyThemeFromSettings(settings);
         overlay.classList.remove('translate-y-full');
     });
+    }
 
-    btnClose.addEventListener('click', () => {
-        overlay.classList.add('translate-y-full');
-    });
+    if (btnClose) {
+        btnClose.addEventListener('click', () => {
+            overlay.classList.add('translate-y-full');
+        });
+    }
 
-    btnSave.addEventListener('click', () => {
-        const newGoal = parseInt(dailyGoalInput.value);
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            const newGoal = dailyGoalInput ? parseInt(dailyGoalInput.value) : NaN;
         let learningDays = 5;
         if (learningDaysInput) {
             learningDays = parseInt(learningDaysInput.value);
@@ -1339,7 +1348,7 @@ function initSettings() {
             const newSettings = {
                 dailyGoal: newGoal,
                 learningDays: learningDays,
-                fontSize: parseInt(fontSizeInput.value) || 16,
+                fontSize: fontSizeInput ? (parseInt(fontSizeInput.value) || 16) : 16,
                 themeMode: currentThemeMode
             };
             if (pomoWorkInput) newSettings.pomoWork = parseInt(pomoWorkInput.value) || 25;
@@ -1350,7 +1359,7 @@ function initSettings() {
             if (pomoAutoWorkInput) newSettings.pomoAutoWork = pomoAutoWorkInput.checked;
 
             window.storageManager.updateSettings(newSettings);
-            applyFontSize(parseInt(fontSizeInput.value) || 16);
+            applyFontSize(fontSizeInput ? (parseInt(fontSizeInput.value) || 16) : 16);
             overlay.classList.add('translate-y-full');
             updateViews();
             showToast('Einstellungen gespeichert!', 'success');
@@ -1358,6 +1367,7 @@ function initSettings() {
             showToast('Bitte geben Sie gültige Werte ein.', 'error');
         }
     });
+    }
 
     if (btnExport) {
         btnExport.addEventListener('click', () => {
@@ -1512,9 +1522,11 @@ function initAddEntry() {
         topicsDatalist.innerHTML = pastTopics.map(topic => `<option value="${escapeHtml(topic)}">`).join('');
     }
 
-    subjectSelect.addEventListener('change', () => {
-        updateAddTopicsDatalist(subjectSelect.value);
-    });
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', () => {
+            updateAddTopicsDatalist(subjectSelect.value);
+        });
+    }
 
     window.openAddEntryOverlay = (editEntryId = null) => {
         updateSubjectSelects();
@@ -1573,9 +1585,11 @@ function initAddEntry() {
         overlay.classList.remove('translate-y-full');
     };
 
-    btnAdd.addEventListener('click', () => {
-        window.openAddEntryOverlay();
-    });
+    if (btnAdd) {
+        btnAdd.addEventListener('click', () => {
+            window.openAddEntryOverlay();
+        });
+    }
 
     const quickButtons = document.querySelectorAll('.btn-quick-duration');
     quickButtons.forEach(btn => {
@@ -1584,12 +1598,15 @@ function initAddEntry() {
         });
     });
 
-    btnClose.addEventListener('click', () => {
-        overlay.classList.add('translate-y-full');
-    });
+    if (btnClose) {
+        btnClose.addEventListener('click', () => {
+            overlay.classList.add('translate-y-full');
+        });
+    }
 
-    btnSave.addEventListener('click', () => {
-        const subjectId = subjectSelect.value;
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            const subjectId = subjectSelect ? subjectSelect.value : '';
         const dateVal = dateInput.value;
         const timeVal = timeInput ? timeInput.value : '00:00';
         const durationMin = parseInt(durationInput.value);
@@ -1668,6 +1685,7 @@ function initAddEntry() {
         updateViews();
         showToast('Eintrag gespeichert!', 'success');
     });
+    }
 }
 
 // ==================== SEMESTER MANAGEMENT ====================

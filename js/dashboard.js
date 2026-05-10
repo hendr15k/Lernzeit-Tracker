@@ -333,7 +333,6 @@ function renderRecommendedStudyTime() {
     const entries = window.storageManager.getEntries();
     const now = new Date();
     
-    let progress = 0;
     let recommendation = null;
     
     semesters.forEach(semester => {
@@ -346,7 +345,7 @@ function renderRecommendedStudyTime() {
             const spentSeconds = subjectEntries.reduce((acc, e) => acc + e.duration, 0);
             const spentHours = spentSeconds / 3600;
             const estimatedHours = mod.hours || 1;
-            progress = spentHours / estimatedHours;
+            let progress = spentHours / estimatedHours;
             
             let priority = 0;
             let reason = '';
@@ -388,14 +387,15 @@ function renderRecommendedStudyTime() {
                     color: subject.color,
                     priority,
                     reason,
-                    recommendedMinutes
+                    recommendedMinutes,
+                    progress
                 };
             }
         });
     });
     
     if (recValue) {
-        if (recommendation && recommendation.recommendedMinutes > 0 && progress < 1) {
+        if (recommendation && recommendation.recommendedMinutes > 0 && recommendation.progress < 1) {
             const hours = Math.floor(recommendation.recommendedMinutes / 60);
             const mins = recommendation.recommendedMinutes % 60;
             recValue.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
@@ -1609,13 +1609,19 @@ function renderExamCountdown() {
                     <div class="text-sm font-medium truncate">${escapedName}</div>
                     <div class="text-xs text-adaptive-muted">${escapedDate} · ${mod.ects} ECTS</div>
                 </div>
-                <button onclick="window.exportExamToICS('${mod.examDate || mod.examPeriod}', '${escape(mod.name)}')" class="p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" title="Zum Kalender hinzufügen">
+                <button class="btn-export-ics p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" data-exam-date="${mod.examDate || mod.examPeriod}" data-exam-name="${escape(mod.name)}" title="Zum Kalender hinzufügen">
                     <i data-lucide="calendar-plus" class="w-4 h-4 text-adaptive-muted"></i>
                 </button>
                 <span class="text-xs ${badgeClass} px-2 py-0.5 rounded-full flex-shrink-0">${timeText}</span>
             </div>
         `;
     }).join('');
+
+    container.querySelectorAll('.btn-export-ics').forEach(btn => {
+        btn.addEventListener('click', () => {
+            window.exportExamToICS(btn.dataset.examDate, btn.dataset.examName);
+        });
+    });
 
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons();
