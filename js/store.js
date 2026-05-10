@@ -21,7 +21,8 @@ class StorageManager {
             ENTRIES: 'lernzeit_entries',
             SUBJECTS: 'lernzeit_subjects',
             SETTINGS: 'lernzeit_settings',
-            SEMESTERS: 'lernzeit_semesters'
+            SEMESTERS: 'lernzeit_semesters',
+            EXAMS: 'lernzeit_exams'
         };
         this._entriesCache = null;
         this.init();
@@ -600,6 +601,64 @@ class StorageManager {
         const currentSettings = this.getSettings();
         const settings = { ...currentSettings, ...newSettings };
         this._save(this.STORAGE_KEYS.SETTINGS, settings);
+    }
+
+    // ==================== EXAM METHODS ====================
+
+    /**
+     * Gets all exam results
+     * @returns {Array} Array of exam objects
+     */
+    getExams() {
+        try {
+            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.EXAMS) || '[]');
+        } catch (e) {
+            console.error('Error parsing exams:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Saves exams array
+     * @param {Array} exams - Array of exams
+     */
+    saveExams(exams) {
+        this._save(this.STORAGE_KEYS.EXAMS, exams);
+    }
+
+    /**
+     * Adds a new exam result
+     * @param {Object} exam - Exam object
+     * @returns {Object} Added exam with id
+     */
+    addExam(exam) {
+        const exams = this.getExams();
+        const newExam = { ...exam, id: Date.now().toString() };
+        exams.push(newExam);
+        this._save(this.STORAGE_KEYS.EXAMS, exams);
+        return newExam;
+    }
+
+    /**
+     * Updates an existing exam
+     * @param {Object} updatedExam - Exam object with id
+     */
+    updateExam(updatedExam) {
+        const exams = this.getExams();
+        const index = exams.findIndex(e => String(e.id) === String(updatedExam.id));
+        if (index !== -1) {
+            exams[index] = { ...exams[index], ...updatedExam };
+            this._save(this.STORAGE_KEYS.EXAMS, exams);
+        }
+    }
+
+    /**
+     * Deletes an exam by ID
+     * @param {string|number} id - Exam ID
+     */
+    deleteExam(id) {
+        const exams = this.getExams().filter(e => String(e.id) !== String(id));
+        this._save(this.STORAGE_KEYS.EXAMS, exams);
     }
 }
 

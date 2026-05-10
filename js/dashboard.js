@@ -89,13 +89,18 @@ function formatDateShort(dateStr) {
 function updateDashboard(entries) {
     const subjects = window.storageManager.getSubjects();
     const streak = calculateStreak(entries);
-    
+
     // Update streak display with animation
     updateStreakDisplay(streak);
 
     if (typeof window.renderAchievements === 'function') {
         window.renderAchievements(entries);
     }
+
+    // Exams
+    const exams = window.storageManager.getExams();
+    renderRecentExams(exams);
+    renderExamStats(exams);
 
     const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
     const totalHours = (totalSeconds / 3600).toFixed(1);
@@ -1484,4 +1489,76 @@ function renderExamCountdown() {
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons();
     }
+}
+
+/**
+ * Renders the recent exams widget on the dashboard
+ * @param {Array} exams - Array of exam results
+ */
+function renderRecentExams(exams) {
+    const container = document.getElementById('pruefungen-widget');
+    if (!container) return;
+
+    const subjects = window.storageManager.getSubjects();
+    const recentExams = exams
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5);
+
+    if (recentExams.length === 0) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-4">Keine Prüfungen eingetragen</div>';
+        return;
+    }
+
+    container.innerHTML = recentExams.map(exam => {
+        const subject = exam.subjectId ? subjects.find(s => String(s.id) === String(exam.subjectId)) : null;
+        const isPassed = isExamPassed(exam);
+        const gradeDisplay = exam.grade || '—';
+        const dateStr = exam.date ? new Date(exam.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+
+        return `
+            <div class="surface-card p-3 border border-gray-800 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <div class="w-8 h-8 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        ${subject ? subject.name.substring(0, 2) : '?'}
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm font-medium text-adaptive truncate">${escapeHtml(exam.name)}</div>
+                        <div class="text-xs text-adaptive-muted">${dateStr}${exam.code ? ' · ' + exam.code : ''}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${isPassed ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}">
+                        ${isPassed ? '✓ ' : '✗ '}${gradeDisplay}
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Renders exam statistics on dashboard
+ * @param {Array} exams - Array of exam results
+ */
+function renderExamStats(exams) {
+    const totalEl = document.getElementById('exam-count-total');
+    const passedEl = document.getElementById('exam-count-passed');
+    const avgGradeEl = document.getElementById('exam-avg-grade');
+
+    if (!totalEl && !passedEl && !avgGradeEl) return;
+
+    if (exams.length === 0) {
+        if (totalEl) totalEl.textContent = '0';
+        if (passedEl) passedEl.textContent = '0';
+        if (avgGradeEl) avgGradeEl.textContent = '—';
+        return;
+    }
+
+    const passed = exams.filter(e => isExamPassed(e));
+    const numGrades = exams.filter(e => e.grade && !isNaN(parseFloat(e.grade)) && e.grade !== 'B' && e.grade !== 'NB').map(e => parseFloat(e.grade));
+    const avgGrade = numGrades.length > 0 ? (numGrades.reduce((a, b) => a + b, 0) / numGrades.length).toFixed(1) : '—';
+
+    if (totalEl) totalEl.textContent = exams.length;
+    if (passedEl) passedEl.textContent = passed.length;
+    if (avgGradeEl) avgGradeEl.textContent = avgGrade;
 }

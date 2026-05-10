@@ -37,347 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initSemesterHandlers();
     initPWAInstall();
     initUpdateChecker();
-    initFAB();
+initFAB();
     initTodoHandlers();
     initNotifications();
     initKeyboardShortcuts();
     initVoiceInput();
-
-    function initTodoHandlers() {
-        const overlay = document.getElementById('add-todo-overlay');
-        const btnClose = document.getElementById('btn-add-todo-close');
-        const btnSave = document.getElementById('btn-add-todo-save');
-        const titleInput = document.getElementById('add-todo-title-input');
-        const subjectSelect = document.getElementById('add-todo-subject');
-        const prioritySelect = document.getElementById('add-todo-priority');
-        const showAllBtn = document.getElementById('btn-show-all-todos');
-
-        if (showAllBtn) {
-            showAllBtn.addEventListener('click', () => {
-                const overlay = document.getElementById('add-todo-overlay');
-                if (overlay) {
-                    const subjects = window.storageManager.getSubjects();
-                    subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
-                    titleInput.value = '';
-                    prioritySelect.value = 'medium';
-                    overlay.classList.remove('translate-y-full');
-                }
-            });
-        }
-
-        if (btnClose) {
-            btnClose.addEventListener('click', () => {
-                if (overlay) overlay.classList.add('translate-y-full');
-            });
-        }
-
-        if (overlay) {
-            overlay.addEventListener('click', (e) => {
-                if (e.target.id === 'add-todo-overlay') overlay.classList.add('translate-y-full');
-            });
-        }
-
-        if (btnSave) {
-            btnSave.addEventListener('click', () => {
-                const text = titleInput.value.trim();
-                if (!text) { showToast('Bitte gib einen Titel ein.', 'error'); return; }
-
-                const subjectId = subjectSelect.value || null;
-                const priority = prioritySelect.value || 'medium';
-                const todos = getTodos();
-                todos.push({ id: Date.now().toString(), text, completed: false, subjectId, priority });
-                saveTodos(todos);
-                renderTodos();
-                renderMiniTodos();
-                overlay.classList.add('translate-y-full');
-                showToast('Lernziel gespeichert!', 'success');
-            });
-        }
-
-        renderMiniTodos();
-    }
-
-    function renderMiniTodos() {
-        const container = document.getElementById('todo-list-mini');
-        const progressText = document.getElementById('todo-progress-text');
-        const progressBar = document.getElementById('todo-progress-bar');
-        if (!container) return;
-
-        const todos = getTodos();
-        const subjects = window.storageManager.getSubjects();
-
-        if (todos.length === 0) {
-            container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-2">Keine Lernziele vorhanden</div>';
-            if (progressText) progressText.textContent = '0/0';
-            if (progressBar) progressBar.style.width = '0%';
-            return;
-        }
-
-        const total = todos.length;
-        const completed = todos.filter(t => t.completed).length;
-
-        if (progressText) progressText.textContent = completed + '/' + total;
-        if (progressBar) progressBar.style.width = Math.round((completed / total) * 100) + '%';
-
-        // Group by subject
-        const grouped = {};
-        todos.forEach(todo => {
-            const key = todo.subjectId || '_none';
-            if (!grouped[key]) grouped[key] = { subjectId: todo.subjectId, todos: [] };
-            grouped[key].todos.push(todo);
-        });
-
-        let html = '';
-        const subjectKeys = Object.keys(grouped);
-        subjectKeys.forEach(key => {
-            const group = grouped[key];
-            const subject = group.subjectId ? subjects.find(s => String(s.id) === String(group.subjectId)) : null;
-            const subjectName = subject ? subject.name : 'Allgemein';
-            const subjectColor = subject ? subject.color : 'bg-gray-500';
-            const groupCompleted = group.todos.filter(t => t.completed).length;
-
-            html += '<div class="mb-3">';
-            html += '<div class="flex items-center justify-between mb-1">';
-            html += '<div class="flex items-center gap-2">';
-            html += '<div class="w-3 h-3 rounded-full ' + subjectColor + ' flex-shrink-0"></div>';
-            html += '<span class="text-xs font-medium text-adaptive truncate">' + escapeHtml(subjectName) + '</span>';
-            html += '</div>';
-            html += '<span class="text-xs text-adaptive-muted">' + groupCompleted + '/' + group.todos.length + '</span>';
-            html += '</div>';
-
-            group.todos.forEach((todo, i) => {
-                html += '<div class="flex items-center gap-2 py-1">';
-                html += '<button class="todo-checkbox-mini btn-interactive w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ' + (todo.completed ? 'checked' : '') + '" data-todo-id="' + todo.id + '" aria-label="' + (todo.completed ? 'Als unerledigt markieren' : 'Als erledigt markieren') + '" aria-checked="' + todo.completed + '">';
-                if (todo.completed) html += '<i data-lucide="check" class="w-2.5 h-2.5 text-white"></i>';
-                html += '</button>';
-                const priorityBadge = { low: 'text-green-400', medium: 'text-yellow-400', high: 'text-red-400' };
-                html += '<span class="text-xs flex-1 truncate ' + (todo.completed ? 'line-through text-adaptive-muted' : 'text-adaptive') + '">' + escapeHtml(todo.text) + '</span>';
-                html += '<span class="text-[10px] ' + (priorityBadge[todo.priority] || 'text-yellow-400') + '">' + (todo.priority === 'high' ? 'HOCH' : todo.priority === 'medium' ? 'MITTEL' : 'NIEDRIG') + '</span>';
-                html += '</div>';
-            });
-
-            html += '</div>';
-        });
-
-        container.innerHTML = html;
-
-        // Event listeners for checkboxes
-        container.querySelectorAll('.todo-checkbox-mini').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const todos2 = getTodos();
-                const todo = todos2.find(t => t.id === btn.dataset.todoId);
-                if (todo) {
-                    todo.completed = !todo.completed;
-                    saveTodos(todos2);
-                    renderTodos();
-                    renderMiniTodos();
-                }
-            });
-        });
-
-        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-    }
-
-    function initNotifications() {
-        // Request notification permission on user interaction
-        if ('Notification' in window && Notification.permission === 'default') {
-            document.addEventListener('click', function requestNotifPermission() {
-                if (Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
-                document.removeEventListener('click', requestNotifPermission);
-            }, { once: true });
-        }
-
-        // Restore notification settings from storage
-        const settings = window.storageManager.getSettings();
-        const notifyPomo = document.getElementById('settings-notify-pomodoro');
-        const notifyDaily = document.getElementById('settings-notify-daily');
-        const notifySound = document.getElementById('settings-notify-sound');
-
-        if (notifyPomo) notifyPomo.checked = settings.notifyPomodoro !== false;
-        if (notifyDaily) notifyDaily.checked = settings.notifyDaily !== false;
-        if (notifySound) notifySound.checked = settings.notifySound !== false;
-
-        function saveNotifSettings() {
-            window.storageManager.updateSettings({
-                notifyPomodoro: notifyPomo ? notifyPomo.checked : true,
-                notifyDaily: notifyDaily ? notifyDaily.checked : true,
-                notifySound: notifySound ? notifySound.checked : true
-            });
-        }
-
-        if (notifyPomo) notifyPomo.addEventListener('change', saveNotifSettings);
-        if (notifyDaily) notifyDaily.addEventListener('change', saveNotifSettings);
-        if (notifySound) notifySound.addEventListener('change', saveNotifSettings);
-
-        // Test notification button
-        const btnTest = document.getElementById('btn-test-notification');
-        if (btnTest) {
-            btnTest.addEventListener('click', () => {
-                if (Notification.permission === 'granted') {
-                    if (notifySound && notifySound.checked) {
-                        try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAARKwAAIhYAQACABAAZGF0YQ==').play(); } catch(e) {}
-                    }
-                    new Notification('Lernzeit-Tracker', {
-                        body: 'Dies ist eine Test-Benachrichtigung!',
-                        icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">📚</text></svg>')
-                    });
-                } else {
-                    showToast('Benachrichtigungen nicht erlaubt. Bitte in den Browser-Einstellungen aktivieren.', 'error');
-                }
-            });
-        }
-
-        // Daily reminder
-        function scheduleDailyReminder() {
-            if (!notifyDaily || !notifyDaily.checked) return;
-            if (Notification.permission !== 'granted') return;
-
-            const now = new Date();
-            const target = new Date(now);
-            target.setHours(18, 0, 0, 0); // 6 PM daily
-            if (now >= target) target.setDate(target.getDate() + 1);
-
-            const delay = target.getTime() - now.getTime();
-            setTimeout(() => {
-                if (notifySound && notifySound.checked) {
-                    try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAARKwAAIhYAQACABAAZGF0YQ==').play(); } catch(e) {}
-                }
-                new Notification('Lernzeit-Tracker', {
-                    body: 'Hast du heute schon gelernt? Öffne die App und logge deine Sitzung!',
-                    icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">📚</text></svg>')
-                });
-                scheduleDailyReminder(); // Re-schedule for next day
-            }, delay);
-        }
-        scheduleDailyReminder();
-    }
-
-    function initKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ctrl+N: New entry
-            if (e.ctrlKey && e.key === 'n') {
-                e.preventDefault();
-                const btn = document.getElementById('btn-add-entry');
-                if (btn) btn.click();
-            }
-            // Ctrl+Enter: Save entry (when overlay is open)
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                const entryOverlay = document.getElementById('add-entry-overlay');
-                if (entryOverlay && !entryOverlay.classList.contains('translate-y-full')) {
-                    const btnSave = document.getElementById('btn-add-entry-save');
-                    if (btnSave) btnSave.click();
-                }
-                const goalOverlay = document.getElementById('add-goal-overlay');
-                if (goalOverlay && !goalOverlay.classList.contains('translate-y-full')) {
-                    const btnSave = document.getElementById('btn-add-goal-save');
-                    if (btnSave) btnSave.click();
-                }
-                const todoOverlay = document.getElementById('add-todo-overlay');
-                if (todoOverlay && !todoOverlay.classList.contains('translate-y-full')) {
-                    const btnSave = document.getElementById('btn-add-todo-save');
-                    if (btnSave) btnSave.click();
-                }
-            }
-            // Space: Toggle timer
-            if (e.key === ' ' && !e.ctrlKey && !e.altKey) {
-                e.preventDefault();
-                const timerOverlay = document.getElementById('timer-overlay');
-                if (timerOverlay && !timerOverlay.classList.contains('translate-y-full')) {
-                    const startBtn = document.getElementById('btn-timer-start');
-                    const pauseBtn = document.getElementById('btn-timer-pause');
-                    if (startBtn && !startBtn.classList.contains('hidden')) {
-                        startBtn.click();
-                    } else if (pauseBtn && !pauseBtn.classList.contains('hidden')) {
-                        pauseBtn.click();
-                    }
-                }
-            }
-            // Ctrl+M: Voice input
-            if (e.ctrlKey && e.key === 'm') {
-                e.preventDefault();
-                startVoiceInput();
-            }
-            // Escape: Close overlays
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.fixed.inset-0.translate-y-full, .fixed.inset-0:not(.translate-y-full)').forEach(overlay => {
-                    if (!overlay.classList.contains('translate-y-full')) {
-                        overlay.classList.add('translate-y-full');
-                    }
-                });
-            }
-        });
-    }
-
-    function initVoiceInput() {
-        // Voice input button handler
-        const btnVoice = document.getElementById('btn-voice-input');
-        if (btnVoice) {
-            btnVoice.addEventListener('click', startVoiceInput);
-        }
-    }
-
-    function startVoiceInput() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            showToast('Sprach­eingabe wird in diesem Browser nicht unterstützt.', 'error');
-            return;
-        }
-
-        const notesInput = document.getElementById('timer-notes-input');
-        if (!notesInput) return;
-        if (!notesInput.value) notesInput.value = '';
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'de-DE';
-        recognition.interimResults = true;
-        recognition.continuous = false;
-        recognition.maxAlternatives = 1;
-
-        const btnVoice = document.getElementById('btn-voice-input');
-        if (btnVoice) {
-            btnVoice.classList.add('bg-primary/20', 'border-primary');
-            btnVoice.querySelector('i')?.classList.add('animate-pulse');
-        }
-
-        recognition.onresult = (event) => {
-            let transcript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript;
-            }
-            if (notesInput.value && !notesInput.value.endsWith(' ')) {
-                notesInput.value += ' ';
-            }
-            notesInput.value += transcript;
-        };
-
-        recognition.onerror = (event) => {
-            if (event.error !== 'no-speech') {
-                showToast('Spracherkennungsfehler: ' + event.error, 'error');
-            }
-            resetVoiceButton();
-        };
-
-        recognition.onend = () => {
-            resetVoiceButton();
-        };
-
-        try {
-            recognition.start();
-        } catch (e) {
-            showToast('Fehler beim Starten der Sprach­eingabe.', 'error');
-            resetVoiceButton();
-        }
-
-        function resetVoiceButton() {
-            if (btnVoice) {
-                btnVoice.classList.remove('bg-primary/20', 'border-primary');
-                btnVoice.querySelector('i')?.classList.remove('animate-pulse');
-            }
-        }
-    }
+    initPruefungenHandlers();
+    initExamFilterHandlers();
 
     initTouchGestures();
     initTodoWidget();
@@ -1169,6 +835,136 @@ function applyFontSize(size) {
     document.documentElement.style.fontSize = size + 'px';
 }
 
+// ==================== PRÜFUNGEN MANAGEMENT ====================
+
+/**
+ * Initializes Prüfungen handlers
+ */
+function initPruefungenHandlers() {
+    const overlay = document.getElementById('add-exam-overlay');
+    const btnAdd = document.getElementById('btn-add-exam');
+    const btnClose = document.getElementById('btn-add-exam-close');
+    const btnSave = document.getElementById('btn-add-exam-save');
+    const btnCancel = document.getElementById('btn-add-exam-cancel');
+    const btnDelete = document.getElementById('btn-delete-exam');
+    const nameInput = document.getElementById('add-exam-name');
+    const codeInput = document.getElementById('add-exam-code');
+    const subjectSelect = document.getElementById('add-exam-subject');
+    const dateInput = document.getElementById('add-exam-date');
+    const gradeSelect = document.getElementById('add-exam-grade');
+    const ectsInput = document.getElementById('add-exam-ects');
+    const notesInput = document.getElementById('add-exam-notes');
+
+    let _editingExamId = null;
+
+    window.openAddExamOverlay = (editExamId = null) => {
+        const subjects = window.storageManager.getSubjects();
+        subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+
+        if (editExamId) {
+            const exams = window.storageManager.getExams();
+            const exam = exams.find(e => String(e.id) === String(editExamId));
+            if (exam) {
+                overlay.setAttribute('data-edit-id', exam.id);
+                const titleEl = document.querySelector('#add-exam-overlay .text-sm.font-medium');
+                if (titleEl) titleEl.textContent = 'Prüfung bearbeiten';
+                nameInput.value = exam.name || '';
+                codeInput.value = exam.code || '';
+                subjectSelect.value = exam.subjectId || '';
+                dateInput.value = exam.date || '';
+                gradeSelect.value = exam.grade || '';
+                ectsInput.value = exam.ects || '';
+                notesInput.value = exam.notes || '';
+                _editingExamId = exam.id;
+                btnDelete.classList.remove('hidden');
+            }
+        } else {
+            overlay.removeAttribute('data-edit-id');
+            const titleEl2 = document.querySelector('#add-exam-overlay .text-sm.font-medium');
+            if (titleEl2) titleEl2.textContent = 'Prüfung eintragen';
+            nameInput.value = '';
+            codeInput.value = '';
+            subjectSelect.value = '';
+            dateInput.value = '';
+            gradeSelect.value = '';
+            ectsInput.value = '';
+            notesInput.value = '';
+            _editingExamId = null;
+            btnDelete.classList.add('hidden');
+        }
+        overlay.classList.remove('translate-y-full');
+    };
+
+    if (btnAdd) {
+        btnAdd.addEventListener('click', () => window.openAddExamOverlay());
+    }
+
+    if (btnClose) {
+        btnClose.addEventListener('click', () => overlay.classList.add('translate-y-full'));
+    }
+
+    if (btnCancel) {
+        btnCancel.addEventListener('click', () => overlay.classList.add('translate-y-full'));
+    }
+
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target.id === 'add-exam-overlay') overlay.classList.add('translate-y-full');
+        });
+    }
+
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const code = codeInput.value.trim();
+            const subjectId = subjectSelect.value || null;
+            const date = dateInput.value;
+            const grade = gradeSelect.value;
+            const ects = parseInt(ectsInput.value) || null;
+            const notes = notesInput.value.trim();
+
+            if (!name) { showToast('Bitte gib einen Modulnamen ein.', 'error'); return; }
+            if (!date) { showToast('Bitte gib ein Prüfungsdatum ein.', 'error'); return; }
+
+            const examData = { name, code, subjectId, date, grade, ects, notes };
+
+            if (_editingExamId) {
+                window.storageManager.updateExam({ ...examData, id: _editingExamId });
+                showToast('Prüfung aktualisiert!', 'success');
+            } else {
+                window.storageManager.addExam(examData);
+                showToast('Prüfung eingetragen!', 'success');
+            }
+
+            overlay.classList.add('translate-y-full');
+            updateViews();
+        });
+    }
+
+    if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+            if (_editingExamId && confirm('Prüfung wirklich löschen?')) {
+                window.storageManager.deleteExam(_editingExamId);
+                overlay.classList.add('translate-y-full');
+                showToast('Prüfung gelöscht!', 'info');
+                updateViews();
+            }
+        });
+    }
+
+    window.deleteExam = (id) => {
+        if (id && confirm('Prüfung wirklich löschen?')) {
+            window.storageManager.deleteExam(id);
+            showToast('Prüfung gelöscht!', 'info');
+            updateViews();
+        }
+    };
+
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    if (dateInput) dateInput.value = today;
+}
+
 /**
  * Initializes theme management
  */
@@ -1485,6 +1281,9 @@ function initSettings() {
                             if (data.semesters) {
                                 localStorage.setItem(window.storageManager.STORAGE_KEYS.SEMESTERS, JSON.stringify(data.semesters));
                             }
+                            if (data.exams) {
+                                localStorage.setItem(window.storageManager.STORAGE_KEYS.EXAMS, JSON.stringify(data.exams));
+                            }
                             location.reload();
                         }
                     } else {
@@ -1521,6 +1320,7 @@ function exportDataAsJSON() {
         subjects: window.storageManager.getSubjects(),
         settings: window.storageManager.getSettings(),
         semesters: window.storageManager.getSemesters(),
+        exams: window.storageManager.getExams(),
         exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
@@ -2309,6 +2109,7 @@ function updateViews() {
     renderHeatmap(entries);
     renderGraph(entries);
     renderGoals();
+    renderPruefungen();
     if (typeof window.updateStatisticsView === "function") window.updateStatisticsView();
 }
 
@@ -2574,4 +2375,150 @@ Lernzeit Tracker
     URL.revokeObjectURL(url);
 
     showToast('Wochenbericht exportiert!', 'success');
+}
+
+// ==================== EXAM RENDERING ====================
+
+let _examFilter = 'all';
+
+function setExamFilter(filter) {
+    _examFilter = filter;
+    document.querySelectorAll('.pruefung-filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+            btn.className = 'pruefung-filter-btn px-4 py-2 bg-primary/20 text-primary rounded-full text-sm font-medium border border-primary/30';
+        } else {
+            btn.className = 'pruefung-filter-btn px-4 py-2 bg-surface text-adaptive-muted rounded-full text-sm font-medium border border-gray-700';
+        }
+    });
+    renderPruefungen();
+}
+
+function isExamPassed(exam) {
+    if (!exam.grade) return false;
+    const g = exam.grade;
+    if (g === 'B' || g === 'bestanden') return true;
+    if (g === 'NB' || g === 'nicht bestanden') return false;
+    const num = parseFloat(g);
+    if (!isNaN(num)) return num <= 4.0;
+    return false;
+}
+
+function getExamGradeClass(exam) {
+    if (!exam.grade) return 'bg-gray-700/60 text-gray-300';
+    if (isExamPassed(exam)) {
+        if (exam.grade === 'B') return 'bg-green-900/40 text-green-300';
+        const num = parseFloat(exam.grade);
+        if (!isNaN(num)) {
+            if (num <= 1.7) return 'bg-green-900/40 text-green-300';
+            if (num <= 2.7) return 'bg-green-700/40 text-green-200';
+            if (num <= 4.0) return 'bg-green-500/40 text-green-100';
+        }
+        return 'bg-green-900/40 text-green-300';
+    }
+    return 'bg-red-900/40 text-red-300';
+}
+
+function renderPruefungen() {
+    const container = document.getElementById('pruefungen-list');
+    const emptyState = document.getElementById('pruefungen-empty-state');
+    if (!container) return;
+
+    const exams = window.storageManager.getExams();
+    const subjects = window.storageManager.getSubjects();
+
+    let filtered = [...exams];
+    if (_examFilter === 'bestanden') {
+        filtered = filtered.filter(e => isExamPassed(e));
+    } else if (_examFilter === 'nicht-bestanden') {
+        filtered = filtered.filter(e => !isExamPassed(e));
+    }
+
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    container.innerHTML = '';
+
+    if (filtered.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        container.classList.add('hidden');
+    } else {
+        if (emptyState) emptyState.classList.add('hidden');
+        container.classList.remove('hidden');
+
+        const fragment = document.createDocumentFragment();
+
+        filtered.forEach(exam => {
+            const subject = exam.subjectId ? subjects.find(s => String(s.id) === String(exam.subjectId)) : null;
+            const passed = isExamPassed(exam);
+            const gradeClass = getExamGradeClass(exam);
+            const gradeDisplay = exam.grade || '—';
+            const dateStr = exam.date ? new Date(exam.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+            const ectsDisplay = exam.ects ? exam.ects + ' ECTS' : '';
+
+            const card = document.createElement('div');
+            card.className = 'surface-card p-4 border border-gray-800';
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white font-bold flex-shrink-0">
+                            ${subject ? subject.name.substring(0, 2) : '?'}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-adaptive">${escapeHtml(exam.name)}</div>
+                            <div class="text-sm text-adaptive-muted">${dateStr}${exam.code ? ' · ' + exam.code : ''}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-3">
+                        <span class="text-sm font-bold ${gradeClass} px-3 py-1 rounded-full border ${passed ? 'border-green-500/30' : 'border-red-500/30'}">
+                            ${passed ? '✓ ' : '✗ '}${gradeDisplay}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2 ml-13">
+                    ${subject ? '<span>' + escapeHtml(subject.name) + '</span>' : ''}
+                    ${ectsDisplay ? '<span>' + ectsDisplay + '</span>' : ''}
+                    ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
+                </div>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button class="btn-edit-exam btn-interactive p-2 hover:bg-surface rounded-lg transition text-adaptive-muted" data-id="${exam.id}" aria-label="Prüfung bearbeiten">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
+                    <button class="btn-delete-exam-item btn-interactive p-2 hover:bg-red-900/30 rounded-lg transition text-red-400" data-id="${exam.id}" aria-label="Prüfung löschen">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            fragment.appendChild(card);
+        });
+
+        container.appendChild(fragment);
+
+        // Event listeners
+        container.querySelectorAll('.btn-edit-exam').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.openAddExamOverlay(btn.dataset.id);
+            });
+        });
+
+        container.querySelectorAll('.btn-delete-exam-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Prüfung wirklich löschen?')) {
+                    window.storageManager.deleteExam(btn.dataset.id);
+                    showToast('Prüfung gelöscht!', 'info');
+                    renderPruefungen();
+                }
+            });
+        });
+
+        lucide.createIcons();
+    }
+}
+
+function initExamFilterHandlers() {
+    document.querySelectorAll('.pruefung-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setExamFilter(btn.dataset.filter);
+        });
+    });
 }
