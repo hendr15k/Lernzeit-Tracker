@@ -1540,9 +1540,9 @@ function renderRecentExams(exams) {
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${isPassed ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}">
+                    ${exam.grade ? `<span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${isPassed ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}">
                         ${isPassed ? '✓ ' : '✗ '}${gradeDisplay}
-                    </span>
+                    </span>` : ''}
                 </div>
             </div>
         `;

@@ -97,6 +97,25 @@ function initNavigation() {
             });
         });
     });
+
+    const showAllBtn = document.getElementById('btn-show-all-todos');
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', () => {
+            navButtons.forEach(b => {
+                b.classList.remove('active', 'text-adaptive');
+                b.classList.add('text-adaptive-muted');
+            });
+            const zieleBtn = document.querySelector('[data-target="view-ziele"]');
+            if (zieleBtn) {
+                zieleBtn.classList.add('active', 'text-adaptive');
+                zieleBtn.classList.remove('text-adaptive-muted');
+            }
+            sections.forEach(s => s.classList.add('hidden'));
+            const zieleView = document.getElementById('view-ziele');
+            if (zieleView) zieleView.classList.remove('hidden');
+            renderGoals();
+        });
+    }
 }
 
 /**
@@ -379,20 +398,112 @@ function initTouchGestures() {
 }
 
 /**
- * Initializes todo widget functionality
+ * Initializes todo overlay handlers (add-todo-overlay)
+ */
+function initTodoHandlers() {
+    const overlay = document.getElementById('add-todo-overlay');
+    const btnClose = document.getElementById('btn-add-todo-close');
+    const btnSave = document.getElementById('btn-add-todo-save');
+
+    if (btnClose) {
+        btnClose.addEventListener('click', () => {
+            if (overlay) overlay.classList.add('translate-y-full');
+        });
+    }
+
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            const titleInput = document.getElementById('add-todo-title-input');
+            const subjectSelect = document.getElementById('add-todo-subject');
+            const prioritySelect = document.getElementById('add-todo-priority');
+            const title = titleInput ? titleInput.value.trim() : '';
+            if (!title) {
+                showToast('Bitte gib einen Titel ein.', 'error');
+                return;
+            }
+            const todos = getTodos();
+            todos.push({
+                text: title,
+                completed: false,
+                subjectId: subjectSelect ? subjectSelect.value || null : null,
+                priority: prioritySelect ? prioritySelect.value : 'medium'
+            });
+            saveTodos(todos);
+            if (overlay) overlay.classList.add('translate-y-full');
+            renderTodos();
+            showToast('Lernziel hinzugefügt!', 'success');
+        });
+    }
+}
+
+/**
+ * Initializes notification request
+ */
+function initNotifications() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+/**
+ * Initializes keyboard shortcuts
+ */
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        if (e.ctrlKey || e.metaKey) return;
+        if (e.key === 'n' || e.key === 'N') {
+            e.preventDefault();
+            if (typeof window.openAddEntryOverlay === 'function') window.openAddEntryOverlay();
+        }
+    });
+}
+
+/**
+ * Initializes voice input for notes
+ */
+function initVoiceInput() {
+    const btn = document.getElementById('btn-voice-input');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            showToast('Spracheingabe wird nicht unterstützt.', 'error');
+            return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'de-DE';
+        recognition.interimResults = false;
+        const notesInput = document.getElementById('timer-notes-input');
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (notesInput) notesInput.value += (notesInput.value ? ' ' : '') + transcript;
+        };
+        recognition.onerror = () => showToast('Spracheingabe fehlgeschlagen.', 'error');
+        recognition.start();
+        btn.classList.add('text-primary');
+        recognition.onend = () => btn.classList.remove('text-primary');
+    });
+}
+
+/**
+ * Initializes the todo widget functionality
  */
 function initTodoWidget() {
-    // Initialize todo add button
     const todoAddBtn = document.getElementById('btn-add-todo');
     if (todoAddBtn) {
         todoAddBtn.addEventListener('click', () => {
-            const text = prompt('Neues Lernziel:');
-            if (text && text.trim()) {
-                const todos = getTodos();
-                todos.push({ text: text.trim(), completed: false });
-                saveTodos(todos);
-                renderTodos();
-                showToast('Lernziel hinzugefügt!', 'success');
+            const overlay = document.getElementById('add-todo-overlay');
+            if (overlay) {
+                const titleInput = document.getElementById('add-todo-title-input');
+                if (titleInput) titleInput.value = '';
+                const subjectSelect = document.getElementById('add-todo-subject');
+                if (subjectSelect) {
+                    const subjects = window.storageManager.getSubjects();
+                    subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' +
+                        subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+                }
+                overlay.classList.remove('translate-y-full');
             }
         });
     }
@@ -2473,12 +2584,12 @@ function renderPruefungen() {
                         </div>
                     </div>
                     <div class="flex items-center gap-2 ml-3">
-                        <span class="text-sm font-bold ${gradeClass} px-3 py-1 rounded-full border ${passed ? 'border-green-500/30' : 'border-red-500/30'}">
+                        ${exam.grade ? `<span class="text-sm font-bold ${gradeClass} px-3 py-1 rounded-full border ${passed ? 'border-green-500/30' : 'border-red-500/30'}">
                             ${passed ? '✓ ' : '✗ '}${gradeDisplay}
-                        </span>
+                        </span>` : ''}
                     </div>
                 </div>
-                <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2 ml-12">
+                <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2" style="margin-left: 52px">
                     ${subject ? '<span>' + escapeHtml(subject.name) + '</span>' : ''}
                     ${ectsDisplay ? '<span>' + ectsDisplay + '</span>' : ''}
                     ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
