@@ -78,7 +78,13 @@ function formatDuration(seconds) {
  */
 function formatDateShort(dateStr) {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
+    const parts = dateStr.split('-');
+    let d;
+    if (parts.length === 3) {
+        d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else {
+        d = new Date(dateStr);
+    }
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
@@ -1426,7 +1432,7 @@ function renderExamCountdown() {
         (semester.modules || []).forEach(mod => {
             if (mod.examPeriod && !mod.grade) {
                 const effectiveDate = mod.examDate || mod.examPeriod;
-                const examDate = new Date(effectiveDate);
+                const examDate = parseLocalDate(effectiveDate);
                 const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
                 const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
                 examModules.push({
@@ -1497,23 +1503,30 @@ function renderExamCountdown() {
  */
 function renderRecentExams(exams) {
     const container = document.getElementById('pruefungen-widget');
+    const countEl = document.getElementById('pruefungen-widget-count');
+    const emptyState = document.getElementById('pruefungen-widget-empty');
     if (!container) return;
 
     const subjects = window.storageManager.getSubjects();
-    const recentExams = exams
+    const recentExams = [...exams]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 5);
 
+    if (countEl) countEl.textContent = exams.length > 0 ? exams.length + ' Einträge' : '';
+
     if (recentExams.length === 0) {
-        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-4">Keine Prüfungen eingetragen</div>';
+        container.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
         return;
     }
+
+    if (emptyState) emptyState.classList.add('hidden');
 
     container.innerHTML = recentExams.map(exam => {
         const subject = exam.subjectId ? subjects.find(s => String(s.id) === String(exam.subjectId)) : null;
         const isPassed = isExamPassed(exam);
         const gradeDisplay = exam.grade || '—';
-        const dateStr = exam.date ? new Date(exam.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+        const dateStr = exam.date ? parseLocalDate(exam.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 
         return `
             <div class="surface-card p-3 border border-gray-800 flex items-center justify-between gap-3">

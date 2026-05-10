@@ -305,6 +305,20 @@
                             <h2 class="text-lg font-semibold">Bestandene Prüfungen</h2>
                             <span id="pruefungen-widget-count" class="text-xs text-adaptive-muted"></span>
                         </div>
+                        <div id="pruefungen-widget-stats" class="grid grid-cols-3 gap-2 mb-3">
+                            <div class="bg-surface rounded-lg p-2 text-center">
+                                <div class="text-lg font-bold text-primary" id="exam-count-total">0</div>
+                                <div class="text-[10px] text-adaptive-muted">Gesamt</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-2 text-center">
+                                <div class="text-lg font-bold text-success" id="exam-count-passed">0</div>
+                                <div class="text-[10px] text-adaptive-muted">Bestanden</div>
+                            </div>
+                            <div class="bg-surface rounded-lg p-2 text-center">
+                                <div class="text-lg font-bold text-adaptive" id="exam-avg-grade">—</div>
+                                <div class="text-[10px] text-adaptive-muted">Ø Note</div>
+                            </div>
+                        </div>
                         <div id="pruefungen-widget" class="space-y-2 max-h-48 overflow-y-auto">
                             <!-- Dynamic exam results -->
                         </div>
@@ -1016,39 +1030,39 @@
         <!-- Bottom Navigation -->
 <nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe z-40" role="navigation" aria-label="Hauptnavigation">
             <div class="max-w-md mx-auto flex justify-between items-center px-2 py-3">
-                <button class="nav-btn active btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard" tabindex="0">
+                <button class="nav-btn active btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard" tabindex="0">
                     <i data-lucide="gauge" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Dashboard</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-einheiten" role="tab" aria-selected="false" aria-controls="view-einheiten" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-einheiten" role="tab" aria-selected="false" aria-controls="view-einheiten" tabindex="-1">
                     <i data-lucide="history" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Einheiten</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-faecher" role="tab" aria-selected="false" aria-controls="view-faecher" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-faecher" role="tab" aria-selected="false" aria-controls="view-faecher" tabindex="-1">
                     <i data-lucide="landmark" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Fächer</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-kalender" role="tab" aria-selected="false" aria-controls="view-kalender" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-kalender" role="tab" aria-selected="false" aria-controls="view-kalender" tabindex="-1">
                     <i data-lucide="calendar" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Kalender</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-pruefungen" role="tab" aria-selected="false" aria-controls="view-pruefungen" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-pruefungen" role="tab" aria-selected="false" aria-controls="view-pruefungen" tabindex="-1">
                     <i data-lucide="clipboard-check" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Prüfungen</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-achievements" role="tab" aria-selected="false" aria-controls="view-achievements" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-achievements" role="tab" aria-selected="false" aria-controls="view-achievements" tabindex="-1">
                     <i data-lucide="award" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Erfolge</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-semester" role="tab" aria-selected="false" aria-controls="view-semester" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-semester" role="tab" aria-selected="false" aria-controls="view-semester" tabindex="-1">
                     <i data-lucide="graduation-cap" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Semester</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-statistiken" role="tab" aria-selected="false" aria-controls="view-statistiken" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-statistiken" role="tab" aria-selected="false" aria-controls="view-statistiken" tabindex="-1">
                     <i data-lucide="bar-chart-2" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Statistiken</span>
                 </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition w-1/7 touch-target" data-target="view-ziele" role="tab" aria-selected="false" aria-controls="view-ziele" tabindex="-1">
+                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-ziele" role="tab" aria-selected="false" aria-controls="view-ziele" tabindex="-1">
                     <i data-lucide="flag" class="w-5 h-5" aria-hidden="true"></i>
                     <span class="text-[9px]">Ziele</span>
                 </button>

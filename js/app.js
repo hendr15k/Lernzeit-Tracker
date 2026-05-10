@@ -470,16 +470,6 @@ window.renderAchievementsDisplay = renderAchievementsDisplay;
 window.renderAchievementsPage = renderAchievementsPage;
 window.renderGoals = renderGoals;
 window.loadGoals = loadGoals;
-saveGoals;
-openAddGoalModal;
-closeAddGoalModal;
-saveGoal;
-initGoalsHandlers;
-initExportHandlers;
-initStatisticsHandlers;
-filterEntriesForExport;
-exportFilteredCSV;
-exportFilteredJSON;
 window.updateStudyRecommendation = updateStudyRecommendation;
 window.exportExamToICS = exportExamToICS;
 window.showToast = showToast;
@@ -767,7 +757,6 @@ function initExportHandlers() {
         if (!overlay) return;
         document.getElementById('export-date-from').value = '';
         document.getElementById('export-date-to').value = '';
-        document.getElementById('export-favorites-only').checked = false;
         const subjects = window.storageManager.getSubjects();
         const select = document.getElementById('export-subject-filter');
         if (select) select.innerHTML = '<option value="">Alle Faetcher</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
@@ -835,6 +824,20 @@ function applyFontSize(size) {
     document.documentElement.style.fontSize = size + 'px';
 }
 
+/**
+ * Parses a date string as local date (avoids UTC offset)
+ * @param {string} dateStr - Date string in YYYY-MM-DD format
+ * @returns {Date} Local date
+ */
+function parseLocalDate(dateStr) {
+    if (!dateStr) return new Date();
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    return new Date(dateStr);
+}
+
 // ==================== PRÜFUNGEN MANAGEMENT ====================
 
 /**
@@ -885,7 +888,7 @@ function initPruefungenHandlers() {
             nameInput.value = '';
             codeInput.value = '';
             subjectSelect.value = '';
-            dateInput.value = '';
+            dateInput.value = new Date().toISOString().split('T')[0];
             gradeSelect.value = '';
             ectsInput.value = '';
             notesInput.value = '';
@@ -920,7 +923,7 @@ function initPruefungenHandlers() {
             const subjectId = subjectSelect.value || null;
             const date = dateInput.value;
             const grade = gradeSelect.value;
-            const ects = parseInt(ectsInput.value) || null;
+            const ects = ectsInput.value !== '' ? parseInt(ectsInput.value) : null;
             const notes = notesInput.value.trim();
 
             if (!name) { showToast('Bitte gib einen Modulnamen ein.', 'error'); return; }
@@ -959,10 +962,6 @@ function initPruefungenHandlers() {
             updateViews();
         }
     };
-
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
-    if (dateInput) dateInput.value = today;
 }
 
 /**
@@ -1795,7 +1794,7 @@ function getExamBadge(examPeriod, examDate) {
     if (!examPeriod) return null;
     const now = new Date();
     const effectiveDate = examDate || examPeriod;
-    const exam = new Date(effectiveDate);
+    const exam = parseLocalDate(effectiveDate);
     const diffDays = Math.ceil((exam - now) / (1000 * 60 * 60 * 24));
 
     const periodNames = {
@@ -1809,7 +1808,7 @@ function getExamBadge(examPeriod, examDate) {
     const displayDate = examDate ? formatDateShort(examDate) : (periodNames[examPeriod] || formatDateShort(examPeriod));
 
     if (diffDays < 0) {
-        return { text: `Bestanden (${displayDate})`, bgClass: 'bg-green-900/40 text-green-300' };
+        return { text: displayDate, bgClass: 'bg-gray-700/60 text-gray-300' };
     } else if (diffDays <= 14) {
         return { text: `${diffDays} Tage (${displayDate})`, bgClass: 'bg-yellow-900/40 text-yellow-300' };
     } else {
@@ -1841,7 +1840,13 @@ function getGradeBadgeClass(grade) {
  */
 function formatDateShort(dateStr) {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
+    const parts = dateStr.split('-');
+    let d;
+    if (parts.length === 3) {
+        d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else {
+        d = new Date(dateStr);
+    }
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
@@ -2430,7 +2435,7 @@ function renderPruefungen() {
     if (_examFilter === 'bestanden') {
         filtered = filtered.filter(e => isExamPassed(e));
     } else if (_examFilter === 'nicht-bestanden') {
-        filtered = filtered.filter(e => !isExamPassed(e));
+        filtered = filtered.filter(e => e.grade && !isExamPassed(e));
     }
 
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -2451,7 +2456,7 @@ function renderPruefungen() {
             const passed = isExamPassed(exam);
             const gradeClass = getExamGradeClass(exam);
             const gradeDisplay = exam.grade || '—';
-            const dateStr = exam.date ? new Date(exam.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+            const dateStr = exam.date ? parseLocalDate(exam.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
             const ectsDisplay = exam.ects ? exam.ects + ' ECTS' : '';
 
             const card = document.createElement('div');
@@ -2473,7 +2478,7 @@ function renderPruefungen() {
                         </span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2 ml-13">
+                <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2 ml-12">
                     ${subject ? '<span>' + escapeHtml(subject.name) + '</span>' : ''}
                     ${ectsDisplay ? '<span>' + ectsDisplay + '</span>' : ''}
                     ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
