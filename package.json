@@ -4,7 +4,7 @@
   "description": "Ein moderner Lernzeit-Tracker, der als Progressive Web App (PWA) konzipiert ist. Er ermöglicht es Studierenden und Lernenden, ihre Lernzeiten zu erfassen, zu visualisieren und zu analysieren.",
   "main": "sw.js",
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.62.0",
     "serve": "^14.2.6"
   },
   "scripts": {
