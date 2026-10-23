@@ -80,6 +80,8 @@ async function releaseWakeLock() {
  */
 function playBeep(freq = 800, duration = 200, count = 2) {
     try {
+        // Honour the settings checkbox; default stays on for old profiles.
+        if (window.storageManager && window.storageManager.getSettings().notifySound === false) return;
         const ctx = getAudioContext();
         if (!ctx) return;
         for (let i = 0; i < count; i++) {
@@ -156,8 +158,20 @@ function updatePomodoroDisplay() {
 /**
  * Handles transition between Pomodoro phases
  */
+function notifyPomodoroPhase(title) {
+    try {
+        const settings = window.storageManager ? window.storageManager.getSettings() : {};
+        if (settings.notifyPomodoro === false) return;
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        new Notification('Lernzeit Tracker', { body: title });
+    } catch (e) {
+        console.warn('Pomodoro notification failed:', e);
+    }
+}
+
 function transitionPomodoroPhase() {
     playBeep(pomodoroPhase === 'work' ? 600 : 1000, 300, 3);
+    notifyPomodoroPhase(pomodoroPhase === 'work' ? 'Arbeit geschafft - Pause!' : 'Pause vorbei - weiter gehts!');
     const pomo = getPomodoroSettings();
 
     if (pomodoroPhase === 'work') {
@@ -181,6 +195,15 @@ function transitionPomodoroPhase() {
             isTimerRunning = false;
             if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
             clearState();
+            // Buttons/Anzeige mitziehen - sonst blieb der Pause-Button sichtbar
+            // und der Countdown stand still.
+            const btnPauseAbort = document.getElementById('btn-timer-pause');
+            const btnStartAbort = document.getElementById('btn-timer-start');
+            if (btnPauseAbort) btnPauseAbort.classList.add('hidden');
+            if (btnStartAbort) btnStartAbort.classList.remove('hidden');
+            releaseWakeLock();
+            updatePomodoroDisplay();
+            updatePomodoroIndicator();
             window.showToast('Bitte wählen Sie zuerst ein Fach aus.', 'error');
             return;
         }
@@ -328,9 +351,12 @@ function startInterval() {
             // entry to the number of ticks that actually ran.
             const tickElapsed = Math.max(0, Math.round((now - lastTickTime) / 1000));
             lastTickTime = now;
+            // Clamp to the remaining countdown: a throttled background tick must
+            // not inflate the saved work session past the phase length.
+            const counted = Math.min(tickElapsed, pomodoroCountdown);
             pomodoroCountdown = Math.max(0, pomodoroCountdown - tickElapsed);
             if (pomodoroPhase === 'work') {
-                pomodoroWorkSeconds += tickElapsed;
+                pomodoroWorkSeconds += counted;
             }
             if (pomodoroCountdown <= 0) {
                 // Clear interval before transition to prevent the old
@@ -614,7 +640,13 @@ function initTimer() {
             // In Pomodoro mode every finished work phase already saved its own
             // entry; only the phase that is still running is unsaved.
             const sessionSeconds = pomodoroMode ? pomodoroWorkSeconds : timerSeconds;
-            if (sessionSeconds > 0) {
+            if (!(sessionSeconds > 0)) {
+                // Der Klick fiel bisher komplett durch: kein Eintrag, keine
+                // Meldung, der Timer lief weiter.
+                window.showToast('Noch keine Lernzeit erfasst - Timer läuft erst seit wenigen Sekunden.', 'info');
+                return;
+            }
+            {
                 let endTime = Date.now();
                 if (!isTimerRunning) {
                     try {

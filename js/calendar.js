@@ -180,9 +180,11 @@ function initCalendarViews() {
             buttons.forEach(b => {
                 b.classList.remove('bg-surface', 'text-adaptive');
                 b.classList.add('hover:bg-surface', 'text-adaptive-muted');
+                b.setAttribute('aria-selected', 'false');
             });
             btn.classList.remove('hover:bg-surface', 'text-adaptive-muted');
             btn.classList.add('bg-surface', 'text-adaptive');
+            btn.setAttribute('aria-selected', 'true');
 
             if (typeof window.updateViews === 'function') {
                 window.updateViews();
@@ -232,13 +234,17 @@ function renderHeatmap(entries) {
 
     const dayData = new Map();
     entries.forEach(e => {
-        const date = new Date(e.startTime);
+        // Forged/NaN durations and invalid startTimes must not turn the whole
+        // grid into NaN levels.
+        if (!Number.isFinite(Number(e.startTime)) || !Number.isFinite(Number(e.duration))) return;
+        const date = new Date(Number(e.startTime));
         date.setHours(0, 0, 0, 0);
         const key = date.toDateString();
-        dayData.set(key, (dayData.get(key) || 0) + e.duration);
+        dayData.set(key, (dayData.get(key) || 0) + Number(e.duration));
     });
 
-    const maxSeconds = Math.max(...Array.from(dayData.values()), 3600);
+    const finiteMax = Math.max(0, ...Array.from(dayData.values()).filter(Number.isFinite));
+    const maxSeconds = finiteMax > 0 ? finiteMax : 3600;
 
     const tooltip = document.getElementById('heatmap-tooltip') || (() => {
         const t = document.createElement('div');
