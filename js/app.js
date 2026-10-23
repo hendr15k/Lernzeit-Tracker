@@ -763,8 +763,18 @@ function filterEntriesForExport(startDate, endDate, subjectId) {
     // Copy: getEntries() hands out its cached array, sorting it in place would
     // silently reorder the store's cache.
     let entries = [...window.storageManager.getEntries()];
-    if (startDate) entries = entries.filter(e => new Date(e.startTime) >= new Date(startDate));
-    if (endDate) entries = entries.filter(e => new Date(e.startTime) <= new Date(endDate + 'T23:59:59'));
+    // Parse as LOCAL dates: new Date('2026-10-01') is UTC midnight, so early
+    // entries of the first day fell out of the filter in CEST.
+    if (startDate) {
+        const from = parseLocalDate(startDate);
+        from.setHours(0, 0, 0, 0);
+        entries = entries.filter(e => e.startTime >= from.getTime());
+    }
+    if (endDate) {
+        const to = parseLocalDate(endDate);
+        to.setHours(23, 59, 59, 999);
+        entries = entries.filter(e => e.startTime <= to.getTime());
+    }
     if (subjectId) entries = entries.filter(e => String(e.subjectId) === String(subjectId));
     entries.sort((a, b) => b.startTime - a.startTime);
     return entries;
