@@ -37,8 +37,13 @@ function isValidDateFormat(dateStr) {
     if (!dateStr || typeof dateStr !== 'string') return false;
     const regex = /^\d{4}-\d{2}-\d{2}$/;
     if (!regex.test(dateStr)) return false;
-    const date = new Date(dateStr);
-    return date instanceof Date && !isNaN(date.getTime());
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // new Date('2026-02-31') silently rolls over to March 3rd, so compare the
+    // parsed components back instead of trusting the Date object.
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day;
 }
 
 /**

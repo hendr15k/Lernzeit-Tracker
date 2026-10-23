@@ -413,6 +413,9 @@ function renderRecommendedStudyTime() {
             }
         } else {
             recValue.textContent = 'Alles erledigt!';
+            if (recSubject) {
+                recSubject.textContent = '';
+            }
             if (recReason) {
                 recReason.textContent = 'Alle Fächer gut vorbereitet';
             }
@@ -519,6 +522,7 @@ function renderGradeDistribution(exams) {
         { label: '3,7', grade: '3.7', count: 0, color: '#ef4444' },
         { label: '4,0', grade: '4.0', count: 0, color: '#dc2626' },
         { label: '5,0', grade: '5.0', count: 0, color: '#991b1b' },
+        { label: 'B', grade: 'B', count: 0, color: '#16a34a' },
         { label: 'NB', grade: 'NB', count: 0, color: '#6b7280' },
         { label: 'N/A', grade: '__ungraded__', count: 0, color: '#374151' },
     ];
@@ -527,8 +531,11 @@ function renderGradeDistribution(exams) {
         const g = exam.grade;
         if (!g || g === '') {
             bins.find(b => b.grade === '__ungraded__').count++;
-        } else if (g === 'NB' || g === 'nb') {
+        } else if (String(g).toUpperCase() === 'NB') {
             bins.find(b => b.grade === 'NB').count++;
+        } else if (String(g).toUpperCase() === 'B') {
+            // unbenotet bestanden: counted on its own bar, not as "ungraded"
+            bins.find(b => b.grade === 'B').count++;
         } else {
             const num = parseFloat(String(g).replace(',', '.'));
             const bin = bins.find(b => parseFloat(b.grade) === num);
@@ -1663,11 +1670,11 @@ function renderRecentExams(exams) {
             <div class="surface-card p-3 border border-gray-800 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
                     <div class="w-8 h-8 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        ${subject ? subject.name.substring(0, 2) : '?'}
+                        ${subject ? escapeHtml(String(subject.name).slice(0, 2)) : '?'}
                     </div>
                     <div class="min-w-0">
                         <div class="text-sm font-medium text-adaptive truncate">${escapeHtml(exam.name)}</div>
-                        <div class="text-xs text-adaptive-muted">${dateStr}${exam.code ? ' · ' + exam.code : ''}</div>
+                        <div class="text-xs text-adaptive-muted">${dateStr}${exam.code ? ' · ' + escapeHtml(exam.code) : ''}</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">

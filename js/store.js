@@ -12,7 +12,7 @@ class StorageManager {
      * Creates a new StorageManager instance and initializes default data
      * @constructor
      */
-    constructor() {
+    constructor(skipSeed) {
         /**
          * LocalStorage key names
          * @type {Object}
@@ -25,7 +25,23 @@ class StorageManager {
             EXAMS: 'lernzeit_exams'
         };
         this._entriesCache = null;
-        this.init();
+        if (!skipSeed) this.init();
+    }
+
+    /**
+     * Reloads the entries cache from localStorage when another tab/instance
+     * (or a raw localStorage import) changed the data behind our back.
+     * @private
+     */
+    _refreshEntriesCache() {
+        try {
+            const raw = localStorage.getItem(this.STORAGE_KEYS.ENTRIES);
+            const parsed = JSON.parse(raw || '[]');
+            this._entriesCache = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.error('Error parsing entries:', e);
+            this._entriesCache = [];
+        }
     }
 
     /**
@@ -36,7 +52,9 @@ class StorageManager {
      */
     _save(key, data) {
         if (key === this.STORAGE_KEYS.ENTRIES) {
-            this._entriesCache = data;
+            // Store a copy so later caller mutations (e.g. in-place sort)
+            // cannot rewrite the cache, and re-read foreign writes first.
+            this._entriesCache = Array.isArray(data) ? [...data] : data;
         }
         try {
             localStorage.setItem(key, JSON.stringify(data));
@@ -65,7 +83,7 @@ class StorageManager {
             console.error('Error parsing subjects:', e);
         }
 
-        if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+        if (!subjects || !Array.isArray(subjects)) {
             const defaultSubjects = [
                 { id: '1', name: 'Höhere Mathematik 2', color: 'bg-blue-500', weeklyGoal: 6 },
                 { id: '2', name: 'GET2', color: 'bg-green-500', weeklyGoal: 8 },
@@ -144,8 +162,13 @@ class StorageManager {
                     const matched = subjects.find(s => {
                         const sName = s.name.toLowerCase();
                         const mName = mod.name.toLowerCase();
+                        const getMatch = /get\s*([12])/.exec(sName);
+                        if (getMatch) {
+                            // "GET" subjects only match their own number, otherwise
+                            // "Grundlagen der Elektrotechnik 1" became GET2.
+                            return mName.includes('elektrotechnik') && mName.includes(getMatch[1]);
+                        }
                         return sName.includes(mName) || mName.includes(sName) ||
-                            (sName === 'get2' && mName.includes('elektrotechnik')) ||
                             (sName.includes('hm') && mName.includes('mathematik'));
                     });
                     if (matched) {
@@ -201,10 +224,13 @@ class StorageManager {
      */
     migrateWiSe2025() {
         const semesters = this.getSemesters();
+        // Match the stable id first: a user-renamed WiSe semester lost all name
+        // markers and was re-added on every load, producing duplicates.
         const hasWiSe = semesters.some(s =>
-            s.name.toLowerCase().includes('wse') ||
-            s.name.toLowerCase().includes('wintersemester') ||
-            s.name.toLowerCase().includes('2025/26')
+            s.id === 'wse202526' ||
+            (s.name && (s.name.toLowerCase().includes('wse') ||
+                s.name.toLowerCase().includes('wintersemester') ||
+                s.name.toLowerCase().includes('2025/26')))
         );
         if (hasWiSe) return;
 
@@ -405,8 +431,13 @@ class StorageManager {
      * @param {string|number} id - Semester ID
      */
     deleteSemester(id) {
+        const before = this.getSemesters().length;
         const semesters = this.getSemesters().filter(s => String(s.id) !== String(id));
+        if (semesters.length === before) return;
         this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+        // Exams linked to the deleted semester would dangle in the detail view.
+        const exams = this.getExams().filter(e => String(e.semesterId) !== String(id));
+        this.saveExams(exams);
     }
 
     /**
@@ -450,8 +481,11 @@ class StorageManager {
         const semesters = this.getSemesters();
         const semester = semesters.find(s => String(s.id) === String(semesterId));
         if (semester && semester.modules) {
+            const before = semester.modules.length;
             semester.modules = semester.modules.filter(m => String(m.id) !== String(moduleId));
-            this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+            if (semester.modules.length !== before) {
+                this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+            }
         }
     }
 
@@ -462,16 +496,23 @@ class StorageManager {
      * @returns {Array} Array of entry objects
      */
     getEntries() {
-        if (this._entriesCache !== null) {
-            return this._entriesCache;
+        if (this._entriesCache === null) {
+            this._refreshEntriesCache();
+        } else {
+            // Our own writes already updated the cache; only re-read when an
+            // external write (other instance/tab, backup import) happened.
+            let raw = null;
+            try {
+                raw = localStorage.getItem(this.STORAGE_KEYS.ENTRIES);
+            } catch (e) {
+                raw = null;
+            }
+            if (raw !== JSON.stringify(this._entriesCache)) {
+                this._refreshEntriesCache();
+            }
         }
-        try {
-            this._entriesCache = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]');
-            return this._entriesCache;
-        } catch (e) {
-            console.error('Error parsing entries:', e);
-            return [];
-        }
+        // Hand out a copy: filterEntriesForExport sorts the result in place.
+        return [...this._entriesCache];
     }
 
     /**
@@ -479,8 +520,12 @@ class StorageManager {
      * @param {Object} entry - Entry object
      */
     addEntry(entry) {
-        const entries = this.getEntries();
-        entries.push({ ...entry, id: Date.now().toString() });
+        let entries = this.getEntries();
+        if (!Array.isArray(entries)) {
+            entries = [];
+        }
+        // Date.now() alone collides for two fast taps; keep the entry unique.
+        entries.push({ ...entry, id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 8) });
         this._save(this.STORAGE_KEYS.ENTRIES, entries);
     }
 
@@ -560,6 +605,32 @@ class StorageManager {
     deleteSubject(id) {
         const subjects = this.getSubjects().filter(s => String(s.id) !== String(id));
         this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
+
+        // Entries without a subject render as "Gelöschtes Fach"; point them at
+        // the placeholder instead of leaving dangling references.
+        const entries = this.getEntries();
+        let entriesTouched = false;
+        entries.forEach(e => {
+            if (String(e.subjectId) === String(id)) {
+                e.subjectId = null;
+                entriesTouched = true;
+            }
+        });
+        if (entriesTouched) {
+            this._save(this.STORAGE_KEYS.ENTRIES, entries);
+        }
+
+        const exams = this.getExams();
+        let examsTouched = false;
+        exams.forEach(exam => {
+            if (String(exam.subjectId) === String(id)) {
+                exam.subjectId = null;
+                examsTouched = true;
+            }
+        });
+        if (examsTouched) {
+            this.saveExams(exams);
+        }
 
         const semesters = this.getSemesters();
         let needsUpdate = false;

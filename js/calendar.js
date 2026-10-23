@@ -222,13 +222,15 @@ function renderHeatmap(entries) {
     today.setHours(0, 0, 0, 0);
 
     const weeksToShow = 12;
-    const daysToShow = weeksToShow * 7;
 
+    // Anchor the grid on the Monday of the CURRENT week and go back 11 weeks,
+    // so the last column is the running week (future days faded) instead of
+    // ending on the Sunday before it.
+    const todayDay = today.getDay();
+    const mondayOffset = todayDay === 0 ? 6 : todayDay - 1;
     const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - daysToShow + 1);
-
-    const mondayOffset = startDate.getDay() === 0 ? 6 : startDate.getDay() - 1;
-    startDate.setDate(startDate.getDate() - mondayOffset);
+    startDate.setDate(startDate.getDate() - mondayOffset - (weeksToShow - 1) * 7);
+    startDate.setHours(0, 0, 0, 0);
 
     const dayData = new Map();
     entries.forEach(e => {
@@ -535,6 +537,12 @@ function renderFaecher(entries, subjects) {
 function exportExamToICS(examDate, moduleName) {
     if (!examDate) {
         window.showToast('Kein Prüfungsdatum verfügbar', 'error');
+        return;
+    }
+
+    if (typeof window.exportExamToICS === 'function') {
+        // Single ICS writer lives in app.js (RFC-5545 escaping + local time).
+        window.exportExamToICS(examDate, moduleName);
         return;
     }
 

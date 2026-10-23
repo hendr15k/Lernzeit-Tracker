@@ -197,9 +197,10 @@ function initUpdateChecker() {
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         banner.classList.remove('hidden', 'translate-y-full');
+                        // Only ask the new worker to activate; the single reload
+                        // then happens in the controllerchange handler below.
                         setTimeout(() => {
                             newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            window.location.reload();
                         }, 2000);
                     }
                 });
@@ -630,8 +631,9 @@ function saveGoals(goals) {
 
 function calculateGoalProgress(goal) {
     const entries = window.storageManager.getEntries();
-    const startDate = new Date(goal.startDate);
-    const endDate = new Date(goal.endDate);
+    const startDate = parseLocalDate(goal.startDate);
+    const endDate = parseLocalDate(goal.endDate);
+    endDate.setHours(23, 59, 59, 999); // the end date is inclusive
     let relevantEntries = entries.filter(e => {
         const entryDate = new Date(e.startTime);
         return entryDate >= startDate && entryDate <= endDate;
@@ -750,7 +752,9 @@ function initGoalsHandlers() {
 // ==================== EXPORT WITH FILTERS ====================
 
 function filterEntriesForExport(startDate, endDate, subjectId) {
-    let entries = window.storageManager.getEntries();
+    // Copy: getEntries() hands out its cached array, sorting it in place would
+    // silently reorder the store's cache.
+    let entries = [...window.storageManager.getEntries()];
     if (startDate) entries = entries.filter(e => new Date(e.startTime) >= new Date(startDate));
     if (endDate) entries = entries.filter(e => new Date(e.startTime) <= new Date(endDate + 'T23:59:59'));
     if (subjectId) entries = entries.filter(e => String(e.subjectId) === String(subjectId));
@@ -777,10 +781,12 @@ function exportFilteredCSV(entries, sep) {
         const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
         const subjectName = subject ? subject.name : 'Unbekannt';
         const durationMinutes = Math.round(entry.duration / 60);
-        const hours2 = Math.floor(entry.duration / 3600);
-        const mins2 = Math.round((entry.duration % 3600) / 60);
+        const totalMinutes2 = Math.round(entry.duration / 60);
+        const hours2 = Math.floor(totalMinutes2 / 60);
+        const mins2 = totalMinutes2 % 60;
         const durationHm = padZero2(hours2) + ':' + padZero2(mins2);
-        const notes2 = entry.notes ? '"' + entry.notes.replace(/"/g, '""') + '"' : '';
+        // Raw value: the row mapper below adds the quotes exactly once.
+        const notes2 = entry.notes || '';
         const fields = [dateStr, startTimeStr, endTimeStr2, subjectName, entry.topics || '', durationMinutes.toString(), durationHm, notes2];
         const row = fields.map(f => needsQuoting2(f, sepChar) ? '"' + String(f).replace(/"/g, '""') + '"' : f).join(sepChar);
         csvContent += row + '\n';
@@ -803,7 +809,8 @@ function exportFilteredJSON(entries) {
         const date = new Date(entry.startTime);
         const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
         const endTime2 = new Date(entry.endTime);
-        return { id: entry.id, datum: date.toISOString().split('T')[0], von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : 'Unbekannt', fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
+        const localIso = date.getFullYear() + '-' + padZero2(date.getMonth() + 1) + '-' + padZero2(date.getDate());
+        return { id: entry.id, datum: localIso, von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : 'Unbekannt', fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
     })};
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -826,8 +833,9 @@ function updateExportPreview() {
     const rangeEl = document.getElementById('export-preview-range');
     if (countEl) countEl.textContent = filtered.length;
     const totalSec = filtered.reduce((a, b) => a + b.duration, 0);
-    const h2 = Math.floor(totalSec / 3600);
-    const m2 = String(Math.round((totalSec % 3600) / 60)).padStart(2, '0');
+    const totalMinutes2 = Math.round(totalSec / 60);
+    const h2 = Math.floor(totalMinutes2 / 60);
+    const m2 = String(totalMinutes2 % 60).padStart(2, '0');
     if (rangeEl) {
         const from = fromVal ? new Date(fromVal + 'T00:00:00').toLocaleDateString('de-DE') : '...';
         const to = toVal ? new Date(toVal + 'T23:59:59').toLocaleDateString('de-DE') : '...';
@@ -1411,6 +1419,14 @@ function initSettings() {
                             if (data.exams) {
                                 localStorage.setItem(window.storageManager.STORAGE_KEYS.EXAMS, JSON.stringify(data.exams));
                             }
+                            // Goals and todos used to be left out of the backup,
+                            // so a restore silently dropped them.
+                            if (Array.isArray(data.goals)) {
+                                localStorage.setItem('lernzeit_goals', JSON.stringify(data.goals));
+                            }
+                            if (Array.isArray(data.todos)) {
+                                localStorage.setItem('lt_todos', JSON.stringify(data.todos));
+                            }
                             location.reload();
                         }
                     } else {
@@ -1448,6 +1464,8 @@ function exportDataAsJSON() {
         settings: window.storageManager.getSettings(),
         semesters: window.storageManager.getSemesters(),
         exams: window.storageManager.getExams(),
+        goals: loadGoals(),
+        todos: getTodos(),
         exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
@@ -2132,6 +2150,8 @@ function openAddModuleModal() {
     if (hoursEl) hoursEl.value = '';
     const examEl = document.getElementById('add-module-exam-period');
     if (examEl) examEl.value = '';
+    const examDateEl = document.getElementById('add-module-exam-date');
+    if (examDateEl) examDateEl.value = '';
     const gradeEl = document.getElementById('add-module-grade');
     if (gradeEl) gradeEl.value = '';
     const notesEl = document.getElementById('add-module-notes');
@@ -2360,11 +2380,24 @@ function updateStudyRecommendation() {
     recEl.innerHTML = `
         <div class="flex items-center justify-center gap-2">
             <span class="text-xs text-adaptive-muted">Tipp:</span>
-            <span class="w-6 h-6 rounded-full ${top.color} flex items-center justify-center text-white text-xs font-bold">${top.name.substring(0, 2)}</span>
+            <span class="w-6 h-6 rounded-full ${top.color} flex items-center justify-center text-white text-xs font-bold">${escapeHtml(String(top.name).slice(0, 2))}</span>
             <span class="text-sm text-adaptive">${escapeHtml(top.name)}</span>
             ${top.reason ? `<span class="text-xs text-yellow-400">${top.reason}</span>` : ''}
         </div>
     `;
+}
+
+/**
+ * Escapes a value for an iCalendar text field (RFC 5545).
+ * @param {string} value - Raw text
+ * @returns {string} Escaped text
+ */
+function icsEscape(value) {
+    return String(value == null ? '' : value)
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,')
+        .replace(/\r?\n/g, '\\n');
 }
 
 /**
@@ -2378,21 +2411,30 @@ function exportExamToICS(examDate, moduleName) {
         return;
     }
 
-    const date = new Date(examDate);
-    const dateStr = date.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+    // Parse in local time: new Date('2026-07-14') is UTC midnight and shifted
+    // the exam to 02:00 on devices in CEST.
+    const date = parseLocalDate(examDate);
+    const toIcsLocal = (d) => d.getFullYear().toString().padStart(4, '0')
+        + String(d.getMonth() + 1).padStart(2, '0')
+        + String(d.getDate()).padStart(2, '0') + 'T'
+        + String(d.getHours()).padStart(2, '0')
+        + String(d.getMinutes()).padStart(2, '0') + '00';
+    const dateStr = toIcsLocal(date);
     const dateEnd = new Date(date.getTime() + 3 * 60 * 60 * 1000);
-    const endStr = dateEnd.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+    const endStr = toIcsLocal(dateEnd);
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const safeName = icsEscape(moduleName);
 
     const ics = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Lernzeit Tracker//DE
 BEGIN:VEVENT
 UID:${Date.now()}@lernzeit-tracker
-DTSTAMP:${new Date().toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z'}
+DTSTAMP:${stamp}
 DTSTART:${dateStr}
 DTEND:${endStr}
-SUMMARY:Prüfung: ${moduleName}
-DESCRIPTION:Prüfung für ${moduleName} - Lernzeit Tracker
+SUMMARY:Prüfung: ${safeName}
+DESCRIPTION:Prüfung für ${safeName} - Lernzeit Tracker
 END:VEVENT
 END:VCALENDAR`;
 
@@ -2437,6 +2479,19 @@ function showToast(message, type = 'success') {
 }
 
 // ==================== REPORT GENERATION ====================
+
+/**
+ * Gets the ISO-8601 week number for a date
+ * @param {Date} date - Reference date
+ * @returns {number} ISO week number (1-53)
+ */
+function getIsoWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
 
 /**
  * Gets week start date
@@ -2548,7 +2603,7 @@ Lernzeit Tracker
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `lernzeit_kw${weekStart.toISOString().split('W')[1]}_bericht.txt`;
+    link.download = `lernzeit_kw${getIsoWeekNumber(weekStart)}_bericht.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2642,11 +2697,11 @@ function renderPruefungen() {
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex items-center gap-3 min-w-0 flex-1">
                         <div class="w-10 h-10 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white font-bold flex-shrink-0">
-                            ${subject ? subject.name.substring(0, 2) : '?'}
+                            ${subject ? escapeHtml(String(subject.name).slice(0, 2)) : '?'}
                         </div>
                         <div class="min-w-0">
                             <div class="font-bold text-adaptive">${escapeHtml(exam.name)}</div>
-                            <div class="text-sm text-adaptive-muted">${dateStr}${exam.code ? ' · ' + exam.code : ''}</div>
+                            <div class="text-sm text-adaptive-muted">${dateStr}${exam.code ? ' · ' + escapeHtml(exam.code) : ''}</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 ml-3">

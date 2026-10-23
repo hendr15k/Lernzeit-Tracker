@@ -13,6 +13,7 @@ let pomodoroPhase = 'work';
 let pomodoroCount = 0;
 let pomodoroCountdown = 0;
 let pomodoroWorkSeconds = 0;
+let lastTickTime = 0;
 
 const audioContext = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
 
@@ -140,6 +141,7 @@ function transitionPomodoroPhase() {
     if (pomodoroPhase === 'work') {
         pomodoroCount++;
         const endTime = Date.now();
+        const sessionSeconds = pomodoroWorkSeconds;
         const notesInput = document.getElementById('timer-notes-input');
         const topicsInput = document.getElementById('timer-topics-input');
         const subjectSelect = document.getElementById('timer-subject-select');
@@ -147,12 +149,23 @@ function transitionPomodoroPhase() {
         const timerNotes = notesInput ? notesInput.value.trim() : '';
         const topicsVal = topicsInput ? topicsInput.value.trim() : '';
 
+        if (!subjectSelect || !subjectSelect.value) {
+            pomodoroPhase = 'work';
+            pomodoroCountdown = pomo.work;
+            pomodoroWorkSeconds = sessionSeconds;
+            isTimerRunning = false;
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            clearState();
+            window.showToast('Bitte wählen Sie zuerst ein Fach aus.', 'error');
+            return;
+        }
+
         const entry = {
             subjectId: subjectSelect.value,
-            duration: pomodoroWorkSeconds,
-            startTime: endTime - (pomodoroWorkSeconds * 1000),
+            duration: sessionSeconds,
+            startTime: endTime - (sessionSeconds * 1000),
             endTime: endTime,
-            notes: timerNotes + ' 🍅',
+            notes: (timerNotes ? timerNotes + ' ' : '') + '🍅',
             topics: topicsVal
         };
 
@@ -170,6 +183,26 @@ function transitionPomodoroPhase() {
             pomodoroCountdown = pomo.shortBreak;
         }
         pomodoroWorkSeconds = 0;
+
+        // The tick that called us already cleared timerInterval, so the break
+        // needs its own interval - otherwise the countdown freezes.
+        if (pomo.autoStartBreak) {
+            isTimerRunning = true;
+            startInterval();
+            requestWakeLock();
+            const btnPause = document.getElementById('btn-timer-pause');
+            const btnStart = document.getElementById('btn-timer-start');
+            if (btnPause) btnPause.classList.remove('hidden');
+            if (btnStart) btnStart.classList.add('hidden');
+        } else {
+            isTimerRunning = false;
+            const btnPause = document.getElementById('btn-timer-pause');
+            const btnStart = document.getElementById('btn-timer-start');
+            if (btnPause) btnPause.classList.add('hidden');
+            if (btnStart) btnStart.classList.remove('hidden');
+            releaseWakeLock();
+            window.showToast('Pomodoro gespeichert — Pause wartet auf Start!', 'success');
+        }
     } else {
         pomodoroPhase = 'work';
         pomodoroCountdown = pomo.work;
@@ -256,6 +289,7 @@ function startInterval() {
     // exactly where it left off without drift from accumulated rounding.
     const elapsedSeconds = timerSeconds;
     timerStartTime = Date.now() - (elapsedSeconds * 1000);
+    lastTickTime = Date.now();
 
     timerInterval = setInterval(() => {
         const now = Date.now();
@@ -263,9 +297,15 @@ function startInterval() {
         timerSeconds = Math.floor(rawSeconds);
 
         if (pomodoroMode) {
-            pomodoroCountdown = Math.max(0, pomodoroCountdown - 1);
+            // Measure elapsed wall-clock time instead of trusting one tick per
+            // second: background tabs throttle intervals to ~1/min, which used
+            // to stretch a 25 minute phase into hours and shorten the saved
+            // entry to the number of ticks that actually ran.
+            const tickElapsed = Math.max(0, Math.round((now - lastTickTime) / 1000));
+            lastTickTime = now;
+            pomodoroCountdown = Math.max(0, pomodoroCountdown - tickElapsed);
             if (pomodoroPhase === 'work') {
-                pomodoroWorkSeconds++;
+                pomodoroWorkSeconds += tickElapsed;
             }
             if (pomodoroCountdown <= 0) {
                 // Clear interval before transition to prevent the old
@@ -336,8 +376,17 @@ function restoreState() {
 
     if (state.isRunning) {
         const now = Date.now();
-        const elapsedSinceSave = Math.floor((now - state.timestamp) / 1000);
-        timerSeconds = state.seconds + elapsedSinceSave;
+        const elapsedSinceSave = Math.max(0, Math.floor((now - state.timestamp) / 1000));
+        timerSeconds = Math.max(0, state.seconds + elapsedSinceSave);
+        if (pomodoroMode) {
+            // The saved countdown is only as fresh as the last tick, so charge
+            // the time the app was closed against the running phase as well.
+            pomodoroCountdown = Math.max(0, pomodoroCountdown - elapsedSinceSave);
+            if (pomodoroPhase === 'work') {
+                pomodoroWorkSeconds += elapsedSinceSave;
+            }
+            updatePomodoroDisplay();
+        }
         isTimerRunning = true;
         if (subjectSelect) subjectSelect.value = state.subjectId || '';
         if (subjectSelect) updateTimerTopicsDatalist(state.subjectId);
@@ -457,6 +506,15 @@ function initTimer() {
                 if (!subjectSelect || !subjectSelect.value) {
                     window.showToast('Bitte wählen Sie zuerst ein Fach aus.', 'error');
                     return;
+                }
+                if (pomodoroMode && pomodoroCountdown <= 0) {
+                    // A finished/abgebrochener Pomodoro left a zero countdown;
+                    // starting without a fresh phase would save a 0-second entry.
+                    pomodoroPhase = 'work';
+                    pomodoroWorkSeconds = 0;
+                    pomodoroCountdown = getPomodoroSettings().work;
+                    updatePomodoroDisplay();
+                    updatePomodoroIndicator();
                 }
                 isTimerRunning = true;
                 btnStart.classList.add('hidden');
@@ -583,8 +641,11 @@ function initFAB() {
     if (!fab) return;
 
     let fabUpdateInterval = null;
+    let lastFabRunning = null;
 
-    function updateFABState() {
+    function updateFABState(force = false) {
+        if (!force && lastFabRunning === isTimerRunning) return;
+        lastFabRunning = isTimerRunning;
         if (isTimerRunning) {
             fab.classList.add('pulse');
             fab.innerHTML = '<i data-lucide="pause" class="w-6 h-6 text-white"></i>';
@@ -605,10 +666,17 @@ function initFAB() {
             }
             isTimerRunning = false;
             releaseWakeLock();
+            // Persist the pause, otherwise a reload resumes the timer and
+            // counts the paused time as study time.
+            saveState();
             if (btnToggle) {
                 btnToggle.innerHTML = '<i data-lucide="play" class="w-5 h-5 fill-current"></i>';
             }
-            updateFABState();
+            const btnPause = document.getElementById('btn-timer-pause');
+            const btnStart = document.getElementById('btn-timer-start');
+            if (btnPause) btnPause.classList.add('hidden');
+            if (btnStart) btnStart.classList.remove('hidden');
+            updateFABState(true);
             window.showToast('Timer pausiert', 'info');
         } else {
             timerOverlay.classList.remove('translate-y-full');
@@ -619,7 +687,7 @@ function initFAB() {
         updateFABState();
     }, 1000);
 
-    updateFABState();
+    updateFABState(true);
 }
 
 // Setup visibility change handler
