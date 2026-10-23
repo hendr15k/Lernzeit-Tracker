@@ -172,9 +172,12 @@ function transitionPomodoroPhase() {
         const topicsVal = topicsInput ? topicsInput.value.trim() : '';
 
         if (!subjectSelect || !subjectSelect.value) {
+            // This phase never became a session: undo the counter bump and drop
+            // the accumulated time instead of saving it with the next cycle.
+            pomodoroCount = Math.max(0, pomodoroCount - 1);
             pomodoroPhase = 'work';
             pomodoroCountdown = pomo.work;
-            pomodoroWorkSeconds = sessionSeconds;
+            pomodoroWorkSeconds = 0;
             isTimerRunning = false;
             if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
             clearState();
@@ -408,9 +411,12 @@ function restoreState() {
         if (pomodoroMode) {
             // The saved countdown is only as fresh as the last tick, so charge
             // the time the app was closed against the running phase as well.
+            // Only the remainder of the CURRENT phase counts as study time, so
+            // a long absence cannot inflate the work entry beyond its phase.
+            const remainingPhase = pomodoroCountdown;
             pomodoroCountdown = Math.max(0, pomodoroCountdown - elapsedSinceSave);
             if (pomodoroPhase === 'work') {
-                pomodoroWorkSeconds += elapsedSinceSave;
+                pomodoroWorkSeconds += Math.min(elapsedSinceSave, remainingPhase);
             }
             updatePomodoroDisplay();
         }
