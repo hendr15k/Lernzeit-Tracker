@@ -694,7 +694,7 @@ function renderGoals() {
         const daysColor = remainingDays < 0 ? 'text-red-400' : remainingDays <= 7 ? 'text-yellow-400 font-medium' : 'text-adaptive-muted';
         const card = document.createElement('div');
         card.className = 'surface-card p-4 border border-gray-800';
-        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + subjectColor + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + escapeHtml(String(subjectName).slice(0, 2)) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + escapeHtml(String(goal.id)) + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
+        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + safeColorClass(subjectColor) + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + escapeHtml(String(subjectName).slice(0, 2)) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + escapeHtml(String(goal.id)) + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
         container.appendChild(card);
     });
     container.querySelectorAll('.btn-delete-goal').forEach(btn => {
@@ -779,7 +779,7 @@ function exportFilteredCSV(entries, sep) {
     const sepChar = sep === 'comma' ? ',' : ';';
     const BOM = '\uFEFF';
     const headers = ['Datum', 'Von', 'Bis', 'Fach', 'Thema', 'Dauer (Min)', 'Dauer (h:mm)', 'Notizen'];
-    let csvContent = BOM + headers.join(sepChar) + '\n';
+    let csvContent = BOM + headers.join(sepChar) + '\r\n';
     entries.forEach(entry => {
         const date = new Date(entry.startTime);
         const endDate2 = new Date(entry.endTime);
@@ -793,9 +793,9 @@ function exportFilteredCSV(entries, sep) {
         const hours2 = Math.floor(totalMinutes2 / 60);
         const mins2 = totalMinutes2 % 60;
         const durationHm = padZero2(hours2) + ':' + padZero2(mins2);
-        // Raw value: the row mapper below adds the quotes exactly once.
-        const notes2 = entry.notes || '';
-        const fields = [dateStr, startTimeStr, endTimeStr2, subjectName, entry.topics || '', durationMinutes.toString(), durationHm, notes2];
+        // Raw value: the row mapper below quotes and formula-escapes it.
+        const notes2 = csvSafeCell(entry.notes || '');
+        const fields = [dateStr, startTimeStr, endTimeStr2, csvSafeCell(subjectName), csvSafeCell(entry.topics || ''), durationMinutes.toString(), durationHm, notes2];
         const row = fields.map(f => needsQuoting2(f, sepChar) ? '"' + String(f).replace(/"/g, '""') + '"' : f).join(sepChar);
         csvContent += row + '\n';
     });
@@ -1503,10 +1503,8 @@ function exportDataAsCSV() {
         const subject = subjects.find(s => s.id === entry.subjectId);
         const subjectName = subject ? subject.name : 'Unbekannt';
         const durationMin = Math.round(entry.duration / 60);
-        const notes = entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : "";
-
-        const safeSubject = String(subjectName).replace(/"/g, '""');
-        csvContent += `${dateStr},${timeStr},"${safeSubject}",${durationMin},${notes}\n`;
+        const csvField = (v) => '"' + csvSafeCell(v).replace(/"/g, '""') + '"';
+        csvContent += `${dateStr},${timeStr},${csvField(subjectName)},${durationMin},${entry.notes ? csvField(entry.notes) : ''}\r\n`;
     });
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1918,8 +1916,8 @@ function renderModuleList(semesterId) {
                 </div>
                 ` : ''}
                 <div class="flex flex-wrap gap-2">
-                    ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${mod.ects} ECTS</span>` : ''}
-                    ${examBadge ? `<span class="text-xs ${examBadge.bgClass} px-2 py-0.5 rounded-full">📝 ${examBadge.text}</span>` : ''}
+                    ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${Number.isFinite(Number(mod.ects)) ? Number(mod.ects) : 0} ECTS</span>` : ''}
+                    ${examBadge ? `<span class="text-xs ${escapeHtml(examBadge.bgClass)} px-2 py-0.5 rounded-full">📝 ${escapeHtml(examBadge.text)}</span>` : ''}
                     ${mod.grade ? `<span class="text-xs ${getGradeBadgeClass(mod.grade)} px-2 py-0.5 rounded-full">${mod.grade}</span>` : ''}
                 </div>
             `;
@@ -2389,7 +2387,7 @@ function updateStudyRecommendation() {
     recEl.innerHTML = `
         <div class="flex items-center justify-center gap-2">
             <span class="text-xs text-adaptive-muted">Tipp:</span>
-            <span class="w-6 h-6 rounded-full ${top.color} flex items-center justify-center text-white text-xs font-bold">${escapeHtml(String(top.name).slice(0, 2))}</span>
+            <span class="w-6 h-6 rounded-full ${safeColorClass(top.color)} flex items-center justify-center text-white text-xs font-bold">${escapeHtml(String(top.name).slice(0, 2))}</span>
             <span class="text-sm text-adaptive">${escapeHtml(top.name)}</span>
             ${top.reason ? `<span class="text-xs text-yellow-400">${top.reason}</span>` : ''}
         </div>
@@ -2417,6 +2415,11 @@ function icsEscape(value) {
 function exportExamToICS(examDate, moduleName) {
     if (!examDate) {
         showToast('Kein Prüfungsdatum verfügbar', 'error');
+        return;
+    }
+    // Comes from a data attribute; validate before using it.
+    if (!isValidDateFormat(String(examDate))) {
+        showToast('Ungültiges Prüfungsdatum.', 'error');
         return;
     }
 
@@ -2705,7 +2708,7 @@ function renderPruefungen() {
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex items-center gap-3 min-w-0 flex-1">
-                        <div class="w-10 h-10 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white font-bold flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full ${safeColorClass(subject ? subject.color : 'bg-gray-500')} flex items-center justify-center text-white font-bold flex-shrink-0">
                             ${subject ? escapeHtml(String(subject.name).slice(0, 2)) : '?'}
                         </div>
                         <div class="min-w-0">
@@ -2715,14 +2718,14 @@ function renderPruefungen() {
                     </div>
                     <div class="flex items-center gap-2 ml-3">
                         ${exam.grade ? `<span class="text-sm font-bold ${gradeClass} px-3 py-1 rounded-full border ${passed ? 'border-green-500/30' : 'border-red-500/30'}">
-                            ${passed ? '✓ ' : '✗ '}${gradeDisplay}
+                            ${passed ? '✓ ' : '✗ '}${escapeHtml(String(gradeDisplay))}
                         </span>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2" style="margin-left: 52px">
                     ${subject ? '<span>' + escapeHtml(subject.name) + '</span>' : ''}
                     ${semester ? '<span>' + escapeHtml(semester.name) + '</span>' : ''}
-                    ${ectsDisplay ? '<span>' + ectsDisplay + '</span>' : ''}
+                    ${ectsDisplay ? '<span>' + escapeHtml(ectsDisplay) + '</span>' : ''}
                     ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
                 </div>
                 <div class="flex justify-end gap-2 mt-2">

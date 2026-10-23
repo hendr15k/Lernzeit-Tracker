@@ -3,6 +3,21 @@
  */
 
 /**
+ * Escapes HTML special characters
+ * Lives here (loaded first) so every module can call it as a plain global.
+ * @param {string} value - Value to escape
+ * @returns {string} Escaped value
+ */
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Creates a debounced version of a function that delays execution
  * @param {Function} func - Function to debounce
  * @param {number} wait - Delay in milliseconds
@@ -71,6 +86,27 @@ function isValidTimeFormat(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return false;
     const regex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return regex.test(timeStr);
+}
+
+/**
+ * Whitelists a Tailwind background colour class.
+ * Colours normally come from a fixed <select>, but an imported backup can carry
+ * arbitrary text that would end up inside a class attribute.
+ * @param {string} color - Candidate class
+ * @returns {string} Safe class or a neutral fallback
+ */
+function safeColorClass(color) {
+    return /^bg-[a-z]+-\d{3}$/.test(String(color || '')) ? color : 'bg-gray-500';
+}
+
+/**
+ * Neutralises CSV/Excel formula injection for user-supplied cells.
+ * @param {string} value - Cell value
+ * @returns {string} Value safe to place in a CSV field
+ */
+function csvSafeCell(value) {
+    const str = String(value == null ? '' : value);
+    return /^[=+\-@\t\r]/.test(str) ? "'" + str : str;
 }
 
 /**
@@ -159,7 +195,10 @@ function safeJsonParse(jsonString, fallback = null) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         debounce,
+        escapeHtml,
         refreshIcons,
+        safeColorClass,
+        csvSafeCell,
         isValidPositiveNumber,
         isValidDateFormat,
         isValidTimeFormat,

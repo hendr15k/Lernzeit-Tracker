@@ -357,7 +357,7 @@ function updateTimerTopicsDatalist(subjectId) {
     }
     if (typeof window.getTopicsForSubject === 'function') {
         const pastTopics = window.getTopicsForSubject(subjectId);
-        topicsDatalist.innerHTML = pastTopics.map(topic => `<option value="${window.escapeHtml(topic)}">`).join('');
+        topicsDatalist.innerHTML = pastTopics.map(topic => `<option value="${escapeHtml(topic)}">`).join('');
     }
 }
 

@@ -554,11 +554,11 @@ function renderGradeDistribution(exams) {
         const pct = Math.round((b.count / maxCount) * 100);
         return `
             <div class="flex items-center gap-2 text-sm">
-                <span class="w-8 text-right text-adaptive-muted text-xs font-mono">${b.label}</span>
+                <span class="w-8 text-right text-adaptive-muted text-xs font-mono">${escapeHtml(b.label)}</span>
                 <div class="flex-1 h-4 rounded overflow-hidden bg-gray-700">
-                    <div class="h-full rounded transition-all duration-300" style="width: ${pct}%; background: ${b.color};"></div>
+                    <div class="h-full rounded transition-all duration-300" style="width: ${pct}%; background: ${escapeHtml(b.color)};"></div>
                 </div>
-                <span class="w-6 text-right text-adaptive-muted text-xs">${b.count}</span>
+                <span class="w-6 text-right text-adaptive-muted text-xs">${Number.isFinite(b.count) ? b.count : 0}</span>
             </div>`;
     }).join('');
 
@@ -932,8 +932,8 @@ function renderDonutChart(entries, subjects) {
     container.innerHTML = `
         <g>
             ${segments.map(s => `
-                <path d="${s.path}" fill="${s.color}" class="donut-segment" aria-label="${window.escapeHtml ? window.escapeHtml(s.name) : s.name}: ${Math.round(s.percentage * 100)}%">
-                    <title>${window.escapeHtml ? window.escapeHtml(s.name) : s.name}: ${Math.round(s.percentage * 100)}%</title>
+                <path d="${s.path}" fill="${s.color}" class="donut-segment" aria-label="${escapeHtml(s.name)}: ${Math.round(s.percentage * 100)}%">
+                    <title>${escapeHtml(s.name)}: ${Math.round(s.percentage * 100)}%</title>
                 </path>
             `).join('')}
             <circle cx="${cx}" cy="${cy}" r="${r * 0.6}" fill="var(--color-surface)" />
@@ -951,8 +951,8 @@ function renderDonutChart(entries, subjects) {
             const hours = (s.total / 3600).toFixed(1);
             return `
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${s.color}"></div>
-                    <span class="flex-1 truncate text-adaptive text-xs">${window.escapeHtml ? window.escapeHtml(s.name) : s.name}</span>
+                    <div class="w-3 h-3 rounded-full flex-shrink-0 ${safeColorClass(s.color)}"></div>
+                    <span class="flex-1 truncate text-adaptive text-xs">${escapeHtml(s.name)}</span>
                     <span class="text-adaptive-muted text-xs">${hours}h</span>
                 </div>
             `;
@@ -1323,7 +1323,7 @@ function renderWeeklyComparison(entries) {
 
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2';
-        const escapedName = window.escapeHtml ? window.escapeHtml(subject.name) : subject.name;
+        const escapedName = escapeHtml(subject.name);
         row.innerHTML = `
             <div class="w-14 text-xs font-bold text-adaptive truncate flex-shrink-0" title="${escapedName}">${escapedName.substring(0, 8)}</div>
             <div class="flex-1 min-w-0 space-y-1">
@@ -1424,13 +1424,13 @@ function renderDashboardSubjects(entries) {
         const hrs = (duration / 3600).toFixed(1);
         const barWidth = Math.round((duration / maxDuration) * 100);
 
-        const escapedName = window.escapeHtml ? window.escapeHtml(subject.name) : subject.name;
+        const escapedName = escapeHtml(subject.name);
         summaryParts.push(`${escapedName}: ${hrs}h`);
 
         const tile = document.createElement('div');
         tile.className = 'flex items-center gap-3';
         tile.innerHTML = `
-            <div class="w-8 h-8 rounded-full ${subject.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            <div class="w-8 h-8 rounded-full ${safeColorClass(subject.color)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                 ${escapedName.substring(0, 2)}
             </div>
             <div class="flex-1 min-w-0">
@@ -1439,7 +1439,7 @@ function renderDashboardSubjects(entries) {
                     <span class="text-sm font-bold text-adaptive ml-2">${hrs}h</span>
                 </div>
                 <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div class="h-full ${subject.color} transition-all rounded-full" style="width: ${barWidth}%"></div>
+                    <div class="h-full ${safeColorClass(subject.color)} transition-all rounded-full" style="width: ${barWidth}%"></div>
                 </div>
             </div>
         `;
@@ -1609,21 +1609,21 @@ function renderExamCountdown() {
         const urgencyClass = mod.diffDays <= 14 ? 'border-l-yellow-500' : mod.diffDays <= 60 ? 'border-l-blue-500' : 'border-l-gray-600';
         const badgeClass = mod.diffDays <= 14 ? 'bg-yellow-900/40 text-yellow-300' : mod.diffDays <= 60 ? 'bg-blue-900/40 text-blue-300' : 'bg-gray-700/60 text-gray-300';
         const timeText = mod.diffDays <= 0 ? 'Bald' : mod.diffDays === 1 ? 'Morgen!' : `${mod.diffDays} Tage`;
-        const escape = window.escapeHtml ? window.escapeHtml : (v) => v;
+        const escape = escapeHtml;
         const escapedSubjectName = escape(mod.subjectName);
         const escapedName = escape(mod.name);
         const escapedDate = mod.examDate ? formatDateShort(mod.examDate) : (periodNames[mod.examPeriod] || mod.examPeriod);
 
         return `
             <div class="flex items-center gap-3 p-2 border-l-4 ${urgencyClass}">
-                <div class="w-8 h-8 rounded-full ${mod.subjectColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                <div class="w-8 h-8 rounded-full ${safeColorClass(mod.subjectColor)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                     ${escapedSubjectName.substring(0, 2)}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium truncate">${escapedName}</div>
-                    <div class="text-xs text-adaptive-muted">${escapedDate} · ${mod.ects} ECTS</div>
+                    <div class="text-xs text-adaptive-muted">${escapedDate} · ${Number.isFinite(Number(mod.ects)) ? Number(mod.ects) : 0} ECTS</div>
                 </div>
-                <button class="btn-export-ics p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" data-exam-date="${mod.examDate || mod.examPeriod}" data-exam-name="${escape(mod.name)}" title="Zum Kalender hinzufügen">
+                <button class="btn-export-ics p-1.5 hover:bg-surface rounded-lg transition flex-shrink-0" data-exam-date="${isValidDateFormat(mod.examDate) ? mod.examDate : (isValidDateFormat(mod.examPeriod) ? mod.examPeriod : '')}" data-exam-name="${escapeHtml(mod.name)}" title="Zum Kalender hinzufügen">
                     <i data-lucide="calendar-plus" class="w-4 h-4 text-adaptive-muted"></i>
                 </button>
                 <span class="text-xs ${badgeClass} px-2 py-0.5 rounded-full flex-shrink-0">${timeText}</span>
@@ -1674,17 +1674,17 @@ function renderRecentExams(exams) {
         return `
             <div class="surface-card p-3 border border-gray-800 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                    <div class="w-8 h-8 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full ${safeColorClass(subject ? subject.color : 'bg-gray-500')} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                         ${subject ? escapeHtml(String(subject.name).slice(0, 2)) : '?'}
                     </div>
                     <div class="min-w-0">
                         <div class="text-sm font-medium text-adaptive truncate">${escapeHtml(exam.name)}</div>
-                        <div class="text-xs text-adaptive-muted">${dateStr}${exam.code ? ' · ' + escapeHtml(exam.code) : ''}</div>
+                        <div class="text-xs text-adaptive-muted">${dateStr}${exam.code ? ' · ' + escapeHtml(String(exam.code)) : ''}</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     ${exam.grade ? `<span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${isPassed ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}">
-                        ${isPassed ? '✓ ' : '✗ '}${gradeDisplay}
+                        ${isPassed ? '✓ ' : '✗ '}${escapeHtml(gradeDisplay)}
                     </span>` : ''}
                 </div>
             </div>

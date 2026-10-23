@@ -330,7 +330,7 @@ function renderTopicBadges(topics) {
         .split(',')
         .map(topic => topic.trim())
         .filter(Boolean)
-        .map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">${window.escapeHtml ? window.escapeHtml(topic) : topic}</span>`)
+        .map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">${escapeHtml(topic)}</span>`)
         .join('');
 }
 
@@ -401,8 +401,8 @@ function renderHistory(entries, subjects) {
         item.innerHTML = `
             <div class="min-w-0 flex-1">
                 <div class="flex items-center space-x-3 min-w-0">
-                    <div class="w-3 h-3 rounded-full ${subject.color} flex-shrink-0"></div>
-                    <div class="font-medium text-adaptive truncate">${window.escapeHtml ? window.escapeHtml(subject.name) : subject.name}</div>
+                    <div class="w-3 h-3 rounded-full ${safeColorClass(subject.color)} flex-shrink-0"></div>
+                    <div class="font-medium text-adaptive truncate">${escapeHtml(subject.name)}</div>
                 </div>
                 ${entry.topics ? `<div class="mt-2 ml-6 flex flex-wrap gap-1">${renderTopicBadges(entry.topics)}</div>` : ''}
             </div>
@@ -475,13 +475,13 @@ function renderFaecher(entries, subjects) {
         item.className = 'surface-card p-4 flex items-center justify-between gap-4 border border-gray-800';
         item.innerHTML = `
             <div class="flex items-center space-x-3 min-w-0 flex-1">
-                <div class="w-10 h-10 rounded-full ${subject.color} flex items-center justify-center text-white font-bold bg-opacity-20 text-opacity-100 flex-shrink-0">
-                    ${(window.escapeHtml ? window.escapeHtml(subject.name) : subject.name).substring(0, 2)}
+                <div class="w-10 h-10 rounded-full ${safeColorClass(subject.color)} flex items-center justify-center text-white font-bold bg-opacity-20 text-opacity-100 flex-shrink-0">
+                    ${escapeHtml(String(subject.name).slice(0, 2))}
                 </div>
                 <div class="min-w-0">
-                    <div class="font-bold text-adaptive">${window.escapeHtml ? window.escapeHtml(subject.name) : subject.name}</div>
+                    <div class="font-bold text-adaptive">${escapeHtml(subject.name)}</div>
                     <div class="text-xs text-adaptive-muted">${hrs}h ${mins}m gelernt</div>
-                    ${topTopics.length ? `<div class="mt-2 flex flex-wrap gap-1">${topTopics.map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface border border-gray-700 text-adaptive-muted">${window.escapeHtml ? window.escapeHtml(topic) : topic}</span>`).join('')}</div>` : ''}
+                    ${topTopics.length ? `<div class="mt-2 flex flex-wrap gap-1">${topTopics.map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface border border-gray-700 text-adaptive-muted">${escapeHtml(topic)}</span>`).join('')}</div>` : ''}
                 </div>
             </div>
             <div class="flex items-center flex-shrink-0">
