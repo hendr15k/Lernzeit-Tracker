@@ -165,9 +165,7 @@ function renderCalendar(entries) {
         container.appendChild(domItem);
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**
@@ -222,13 +220,15 @@ function renderHeatmap(entries) {
     today.setHours(0, 0, 0, 0);
 
     const weeksToShow = 12;
-    const daysToShow = weeksToShow * 7;
 
+    // Anchor the grid on the Monday of the CURRENT week and go back 11 weeks,
+    // so the last column is the running week (future days faded) instead of
+    // ending on the Sunday before it.
+    const todayDay = today.getDay();
+    const mondayOffset = todayDay === 0 ? 6 : todayDay - 1;
     const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - daysToShow + 1);
-
-    const mondayOffset = startDate.getDay() === 0 ? 6 : startDate.getDay() - 1;
-    startDate.setDate(startDate.getDate() - mondayOffset);
+    startDate.setDate(startDate.getDate() - mondayOffset - (weeksToShow - 1) * 7);
+    startDate.setHours(0, 0, 0, 0);
 
     const dayData = new Map();
     entries.forEach(e => {
@@ -285,8 +285,10 @@ function renderHeatmap(entries) {
                     : 'Keine Aktivität';
                 tooltip.classList.remove('hidden');
                 const rect = e.target.getBoundingClientRect();
-                tooltip.style.left = `${rect.left + window.scrollX}px`;
-                tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                // .heatmap-tooltip is position:fixed, so page scroll must NOT be
+                // added - doing so pushed the tooltip away from the cell.
+                tooltip.style.left = `${rect.left}px`;
+                tooltip.style.top = `${rect.bottom + 5}px`;
             });
 
             cell.addEventListener('mouseleave', () => {
@@ -328,7 +330,7 @@ function renderTopicBadges(topics) {
         .split(',')
         .map(topic => topic.trim())
         .filter(Boolean)
-        .map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">${window.escapeHtml ? window.escapeHtml(topic) : topic}</span>`)
+        .map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">${escapeHtml(topic)}</span>`)
         .join('');
 }
 
@@ -399,18 +401,18 @@ function renderHistory(entries, subjects) {
         item.innerHTML = `
             <div class="min-w-0 flex-1">
                 <div class="flex items-center space-x-3 min-w-0">
-                    <div class="w-3 h-3 rounded-full ${subject.color} flex-shrink-0"></div>
-                    <div class="font-medium text-adaptive truncate">${window.escapeHtml ? window.escapeHtml(subject.name) : subject.name}</div>
+                    <div class="w-3 h-3 rounded-full ${safeColorClass(subject.color)} flex-shrink-0"></div>
+                    <div class="font-medium text-adaptive truncate">${escapeHtml(subject.name)}</div>
                 </div>
                 ${entry.topics ? `<div class="mt-2 ml-6 flex flex-wrap gap-1">${renderTopicBadges(entry.topics)}</div>` : ''}
             </div>
             <div class="flex items-center space-x-2 text-adaptive-muted flex-shrink-0">
                 <span class="mr-2 text-xs opacity-75">${timeStr}</span>
                 <span>${durationMin} min</span>
-                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}" aria-label="Eintrag bearbeiten">
+                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${escapeHtml(String(entry.id))}" aria-label="Eintrag bearbeiten">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${entry.id}" aria-label="Eintrag löschen">
+                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${escapeHtml(String(entry.id))}" aria-label="Eintrag löschen">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -443,9 +445,7 @@ function renderHistory(entries, subjects) {
         });
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**
@@ -475,20 +475,20 @@ function renderFaecher(entries, subjects) {
         item.className = 'surface-card p-4 flex items-center justify-between gap-4 border border-gray-800';
         item.innerHTML = `
             <div class="flex items-center space-x-3 min-w-0 flex-1">
-                <div class="w-10 h-10 rounded-full ${subject.color} flex items-center justify-center text-white font-bold bg-opacity-20 text-opacity-100 flex-shrink-0">
-                    ${(window.escapeHtml ? window.escapeHtml(subject.name) : subject.name).substring(0, 2)}
+                <div class="w-10 h-10 rounded-full ${safeColorClass(subject.color)} flex items-center justify-center text-white font-bold bg-opacity-20 text-opacity-100 flex-shrink-0">
+                    ${escapeHtml(String(subject.name).slice(0, 2))}
                 </div>
                 <div class="min-w-0">
-                    <div class="font-bold text-adaptive">${window.escapeHtml ? window.escapeHtml(subject.name) : subject.name}</div>
+                    <div class="font-bold text-adaptive">${escapeHtml(subject.name)}</div>
                     <div class="text-xs text-adaptive-muted">${hrs}h ${mins}m gelernt</div>
-                    ${topTopics.length ? `<div class="mt-2 flex flex-wrap gap-1">${topTopics.map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface border border-gray-700 text-adaptive-muted">${window.escapeHtml ? window.escapeHtml(topic) : topic}</span>`).join('')}</div>` : ''}
+                    ${topTopics.length ? `<div class="mt-2 flex flex-wrap gap-1">${topTopics.map(topic => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface border border-gray-700 text-adaptive-muted">${escapeHtml(topic)}</span>`).join('')}</div>` : ''}
                 </div>
             </div>
             <div class="flex items-center flex-shrink-0">
-                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach bearbeiten">
+                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${escapeHtml(String(subject.id))}" aria-label="Fach bearbeiten">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                 </button>
-                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach löschen">
+                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${escapeHtml(String(subject.id))}" aria-label="Fach löschen">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -522,9 +522,7 @@ function renderFaecher(entries, subjects) {
         });
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**
@@ -535,6 +533,12 @@ function renderFaecher(entries, subjects) {
 function exportExamToICS(examDate, moduleName) {
     if (!examDate) {
         window.showToast('Kein Prüfungsdatum verfügbar', 'error');
+        return;
+    }
+
+    if (typeof window.exportExamToICS === 'function') {
+        // Single ICS writer lives in app.js (RFC-5545 escaping + local time).
+        window.exportExamToICS(examDate, moduleName);
         return;
     }
 

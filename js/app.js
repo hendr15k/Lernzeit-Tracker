@@ -51,9 +51,9 @@ initFAB();
     initExportHandlers();
     initBackupHandler();
 
-    updateViews();
-    lucide.createIcons();
     initToastContainer();
+    updateViews();
+    refreshIcons();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
@@ -197,9 +197,10 @@ function initUpdateChecker() {
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         banner.classList.remove('hidden', 'translate-y-full');
+                        // Only ask the new worker to activate; the single reload
+                        // then happens in the controllerchange handler below.
                         setTimeout(() => {
                             newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            window.location.reload();
                         }, 2000);
                     }
                 });
@@ -210,8 +211,12 @@ function initUpdateChecker() {
             }, 60 * 60 * 1000);
         });
 
+        // clients.claim() also fires controllerchange on the very first install
+        // (no previous controller), which used to reload the freshly opened app.
+        const hadController = !!navigator.serviceWorker.controller;
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!hadController) return;
             if (!refreshing) {
                 refreshing = true;
                 window.location.reload();
@@ -305,7 +310,8 @@ function getTopTopicsForSubject(subjectId, limit = 3) {
  */
 function getTodos() {
     try {
-        return JSON.parse(localStorage.getItem('lt_todos') || '[]');
+        const parsed = JSON.parse(localStorage.getItem('lt_todos') || '[]');
+        return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
         return [];
     }
@@ -454,6 +460,10 @@ function initKeyboardShortcuts() {
         if (e.ctrlKey || e.metaKey) return;
         if (e.key === 'n' || e.key === 'N') {
             e.preventDefault();
+            // Any open overlay wins; stacking the entry form on top of settings
+            // or the exam modal left both half-usable.
+            const openOverlayEl = document.querySelector('.fixed.inset-0:not(.translate-y-full)');
+            if (openOverlayEl && openOverlayEl.id !== 'add-entry-overlay') return;
             if (typeof window.openAddEntryOverlay === 'function') window.openAddEntryOverlay();
         }
     });
@@ -563,9 +573,7 @@ function renderTodos() {
         });
     });
     
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 // Make functions globally accessible
@@ -617,7 +625,8 @@ function initBackupHandler() {
 
 function loadGoals() {
     try {
-        return JSON.parse(localStorage.getItem('lernzeit_goals') || '[]');
+        const parsed = JSON.parse(localStorage.getItem('lernzeit_goals') || '[]');
+        return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
         console.error('Error parsing goals:', e);
         return [];
@@ -630,8 +639,9 @@ function saveGoals(goals) {
 
 function calculateGoalProgress(goal) {
     const entries = window.storageManager.getEntries();
-    const startDate = new Date(goal.startDate);
-    const endDate = new Date(goal.endDate);
+    const startDate = parseLocalDate(goal.startDate);
+    const endDate = parseLocalDate(goal.endDate);
+    endDate.setHours(23, 59, 59, 999); // the end date is inclusive
     let relevantEntries = entries.filter(e => {
         const entryDate = new Date(e.startTime);
         return entryDate >= startDate && entryDate <= endDate;
@@ -684,7 +694,7 @@ function renderGoals() {
         const daysColor = remainingDays < 0 ? 'text-red-400' : remainingDays <= 7 ? 'text-yellow-400 font-medium' : 'text-adaptive-muted';
         const card = document.createElement('div');
         card.className = 'surface-card p-4 border border-gray-800';
-        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + subjectColor + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + subjectName.substring(0, 2) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + goal.id + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
+        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + safeColorClass(subjectColor) + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + escapeHtml(String(subjectName).slice(0, 2)) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + escapeHtml(String(goal.id)) + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
         container.appendChild(card);
     });
     container.querySelectorAll('.btn-delete-goal').forEach(btn => {
@@ -698,7 +708,7 @@ function renderGoals() {
             }
         });
     });
-    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    refreshIcons();
 }
 
 function openAddGoalModal() {
@@ -750,9 +760,21 @@ function initGoalsHandlers() {
 // ==================== EXPORT WITH FILTERS ====================
 
 function filterEntriesForExport(startDate, endDate, subjectId) {
-    let entries = window.storageManager.getEntries();
-    if (startDate) entries = entries.filter(e => new Date(e.startTime) >= new Date(startDate));
-    if (endDate) entries = entries.filter(e => new Date(e.startTime) <= new Date(endDate + 'T23:59:59'));
+    // Copy: getEntries() hands out its cached array, sorting it in place would
+    // silently reorder the store's cache.
+    let entries = [...window.storageManager.getEntries()];
+    // Parse as LOCAL dates: new Date('2026-10-01') is UTC midnight, so early
+    // entries of the first day fell out of the filter in CEST.
+    if (startDate) {
+        const from = parseLocalDate(startDate);
+        from.setHours(0, 0, 0, 0);
+        entries = entries.filter(e => e.startTime >= from.getTime());
+    }
+    if (endDate) {
+        const to = parseLocalDate(endDate);
+        to.setHours(23, 59, 59, 999);
+        entries = entries.filter(e => e.startTime <= to.getTime());
+    }
     if (subjectId) entries = entries.filter(e => String(e.subjectId) === String(subjectId));
     entries.sort((a, b) => b.startTime - a.startTime);
     return entries;
@@ -767,7 +789,7 @@ function exportFilteredCSV(entries, sep) {
     const sepChar = sep === 'comma' ? ',' : ';';
     const BOM = '\uFEFF';
     const headers = ['Datum', 'Von', 'Bis', 'Fach', 'Thema', 'Dauer (Min)', 'Dauer (h:mm)', 'Notizen'];
-    let csvContent = BOM + headers.join(sepChar) + '\n';
+    let csvContent = BOM + headers.join(sepChar) + '\r\n';
     entries.forEach(entry => {
         const date = new Date(entry.startTime);
         const endDate2 = new Date(entry.endTime);
@@ -777,11 +799,13 @@ function exportFilteredCSV(entries, sep) {
         const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
         const subjectName = subject ? subject.name : 'Unbekannt';
         const durationMinutes = Math.round(entry.duration / 60);
-        const hours2 = Math.floor(entry.duration / 3600);
-        const mins2 = Math.round((entry.duration % 3600) / 60);
+        const totalMinutes2 = Math.round(entry.duration / 60);
+        const hours2 = Math.floor(totalMinutes2 / 60);
+        const mins2 = totalMinutes2 % 60;
         const durationHm = padZero2(hours2) + ':' + padZero2(mins2);
-        const notes2 = entry.notes ? '"' + entry.notes.replace(/"/g, '""') + '"' : '';
-        const fields = [dateStr, startTimeStr, endTimeStr2, subjectName, entry.topics || '', durationMinutes.toString(), durationHm, notes2];
+        // Raw value: the row mapper below quotes and formula-escapes it.
+        const notes2 = csvSafeCell(entry.notes || '');
+        const fields = [dateStr, startTimeStr, endTimeStr2, csvSafeCell(subjectName), csvSafeCell(entry.topics || ''), durationMinutes.toString(), durationHm, notes2];
         const row = fields.map(f => needsQuoting2(f, sepChar) ? '"' + String(f).replace(/"/g, '""') + '"' : f).join(sepChar);
         csvContent += row + '\n';
     });
@@ -803,7 +827,8 @@ function exportFilteredJSON(entries) {
         const date = new Date(entry.startTime);
         const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
         const endTime2 = new Date(entry.endTime);
-        return { id: entry.id, datum: date.toISOString().split('T')[0], von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : 'Unbekannt', fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
+        const localIso = date.getFullYear() + '-' + padZero2(date.getMonth() + 1) + '-' + padZero2(date.getDate());
+        return { id: entry.id, datum: localIso, von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : 'Unbekannt', fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
     })};
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -826,8 +851,9 @@ function updateExportPreview() {
     const rangeEl = document.getElementById('export-preview-range');
     if (countEl) countEl.textContent = filtered.length;
     const totalSec = filtered.reduce((a, b) => a + b.duration, 0);
-    const h2 = Math.floor(totalSec / 3600);
-    const m2 = String(Math.round((totalSec % 3600) / 60)).padStart(2, '0');
+    const totalMinutes2 = Math.round(totalSec / 60);
+    const h2 = Math.floor(totalMinutes2 / 60);
+    const m2 = String(totalMinutes2 % 60).padStart(2, '0');
     if (rangeEl) {
         const from = fromVal ? new Date(fromVal + 'T00:00:00').toLocaleDateString('de-DE') : '...';
         const to = toVal ? new Date(toVal + 'T23:59:59').toLocaleDateString('de-DE') : '...';
@@ -1411,6 +1437,14 @@ function initSettings() {
                             if (data.exams) {
                                 localStorage.setItem(window.storageManager.STORAGE_KEYS.EXAMS, JSON.stringify(data.exams));
                             }
+                            // Goals and todos used to be left out of the backup,
+                            // so a restore silently dropped them.
+                            if (Array.isArray(data.goals)) {
+                                localStorage.setItem('lernzeit_goals', JSON.stringify(data.goals));
+                            }
+                            if (Array.isArray(data.todos)) {
+                                localStorage.setItem('lt_todos', JSON.stringify(data.todos));
+                            }
                             location.reload();
                         }
                     } else {
@@ -1448,6 +1482,8 @@ function exportDataAsJSON() {
         settings: window.storageManager.getSettings(),
         semesters: window.storageManager.getSemesters(),
         exams: window.storageManager.getExams(),
+        goals: loadGoals(),
+        todos: getTodos(),
         exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
@@ -1477,9 +1513,8 @@ function exportDataAsCSV() {
         const subject = subjects.find(s => s.id === entry.subjectId);
         const subjectName = subject ? subject.name : 'Unbekannt';
         const durationMin = Math.round(entry.duration / 60);
-        const notes = entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : "";
-
-        csvContent += `${dateStr},${timeStr},"${subjectName}",${durationMin},${notes}\n`;
+        const csvField = (v) => '"' + csvSafeCell(v).replace(/"/g, '""') + '"';
+        csvContent += `${dateStr},${timeStr},${csvField(subjectName)},${durationMin},${entry.notes ? csvField(entry.notes) : ''}\r\n`;
     });
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1631,7 +1666,7 @@ function initAddEntry() {
             return;
         }
 
-        if (dateVal && !isValidDateFormat(dateVal)) {
+        if (!dateVal || !isValidDateFormat(dateVal)) {
             showToast('Bitte geben Sie ein gültiges Datum ein.', 'error');
             return;
         }
@@ -1729,10 +1764,10 @@ function renderSemesterList() {
                         <div class="text-sm text-adaptive-muted">${semester.start ? formatDateShort(semester.start) : ''}${semester.start && semester.end ? ' → ' : ''}${semester.end ? formatDateShort(semester.end) : ''}${durationText ? ' · ' + durationText : ''}</div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button class="btn-edit-semester p-1.5 hover:bg-surface rounded-lg transition" data-id="${semester.id}">
+                        <button class="btn-edit-semester p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(semester.id))}">
                             <i data-lucide="pencil" class="w-4 h-4 text-adaptive-muted"></i>
                         </button>
-                        <button class="btn-delete-semester-item p-1.5 hover:bg-surface rounded-lg transition" data-id="${semester.id}">
+                        <button class="btn-delete-semester-item p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(semester.id))}">
                             <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
                         </button>
                     </div>
@@ -1770,7 +1805,7 @@ function renderSemesterList() {
         });
     }
 
-    lucide.createIcons();
+    refreshIcons();
 }
 
 /**
@@ -1871,10 +1906,10 @@ function renderModuleList(semesterId) {
                         ${mod.notes ? `<div class="text-sm text-adaptive-muted mt-1 line-clamp-2">${escapeHtml(mod.notes)}</div>` : ''}
                     </div>
                     <div class="flex items-center gap-1 ml-2">
-                        <button class="btn-edit-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${mod.id}">
+                        <button class="btn-edit-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(mod.id))}">
                             <i data-lucide="pencil" class="w-4 h-4 text-adaptive-muted"></i>
                         </button>
-                        <button class="btn-delete-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${mod.id}">
+                        <button class="btn-delete-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(mod.id))}">
                             <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
                         </button>
                     </div>
@@ -1891,8 +1926,8 @@ function renderModuleList(semesterId) {
                 </div>
                 ` : ''}
                 <div class="flex flex-wrap gap-2">
-                    ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${mod.ects} ECTS</span>` : ''}
-                    ${examBadge ? `<span class="text-xs ${examBadge.bgClass} px-2 py-0.5 rounded-full">📝 ${examBadge.text}</span>` : ''}
+                    ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${Number.isFinite(Number(mod.ects)) ? Number(mod.ects) : 0} ECTS</span>` : ''}
+                    ${examBadge ? `<span class="text-xs ${escapeHtml(examBadge.bgClass)} px-2 py-0.5 rounded-full">📝 ${escapeHtml(examBadge.text)}</span>` : ''}
                     ${mod.grade ? `<span class="text-xs ${getGradeBadgeClass(mod.grade)} px-2 py-0.5 rounded-full">${mod.grade}</span>` : ''}
                 </div>
             `;
@@ -1918,7 +1953,7 @@ function renderModuleList(semesterId) {
     }
 
     renderSemesterExams(semesterId);
-    lucide.createIcons();
+    refreshIcons();
 }
 
 /**
@@ -2132,6 +2167,8 @@ function openAddModuleModal() {
     if (hoursEl) hoursEl.value = '';
     const examEl = document.getElementById('add-module-exam-period');
     if (examEl) examEl.value = '';
+    const examDateEl = document.getElementById('add-module-exam-date');
+    if (examDateEl) examDateEl.value = '';
     const gradeEl = document.getElementById('add-module-grade');
     if (gradeEl) gradeEl.value = '';
     const notesEl = document.getElementById('add-module-notes');
@@ -2360,11 +2397,24 @@ function updateStudyRecommendation() {
     recEl.innerHTML = `
         <div class="flex items-center justify-center gap-2">
             <span class="text-xs text-adaptive-muted">Tipp:</span>
-            <span class="w-6 h-6 rounded-full ${top.color} flex items-center justify-center text-white text-xs font-bold">${top.name.substring(0, 2)}</span>
+            <span class="w-6 h-6 rounded-full ${safeColorClass(top.color)} flex items-center justify-center text-white text-xs font-bold">${escapeHtml(String(top.name).slice(0, 2))}</span>
             <span class="text-sm text-adaptive">${escapeHtml(top.name)}</span>
             ${top.reason ? `<span class="text-xs text-yellow-400">${top.reason}</span>` : ''}
         </div>
     `;
+}
+
+/**
+ * Escapes a value for an iCalendar text field (RFC 5545).
+ * @param {string} value - Raw text
+ * @returns {string} Escaped text
+ */
+function icsEscape(value) {
+    return String(value == null ? '' : value)
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,')
+        .replace(/\r?\n/g, '\\n');
 }
 
 /**
@@ -2377,22 +2427,36 @@ function exportExamToICS(examDate, moduleName) {
         showToast('Kein Prüfungsdatum verfügbar', 'error');
         return;
     }
+    // Comes from a data attribute; validate before using it.
+    if (!isValidDateFormat(String(examDate))) {
+        showToast('Ungültiges Prüfungsdatum.', 'error');
+        return;
+    }
 
-    const date = new Date(examDate);
-    const dateStr = date.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+    // Parse in local time: new Date('2026-07-14') is UTC midnight and shifted
+    // the exam to 02:00 on devices in CEST.
+    const date = parseLocalDate(examDate);
+    const toIcsLocal = (d) => d.getFullYear().toString().padStart(4, '0')
+        + String(d.getMonth() + 1).padStart(2, '0')
+        + String(d.getDate()).padStart(2, '0') + 'T'
+        + String(d.getHours()).padStart(2, '0')
+        + String(d.getMinutes()).padStart(2, '0') + '00';
+    const dateStr = toIcsLocal(date);
     const dateEnd = new Date(date.getTime() + 3 * 60 * 60 * 1000);
-    const endStr = dateEnd.toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z';
+    const endStr = toIcsLocal(dateEnd);
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const safeName = icsEscape(moduleName);
 
     const ics = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Lernzeit Tracker//DE
 BEGIN:VEVENT
 UID:${Date.now()}@lernzeit-tracker
-DTSTAMP:${new Date().toISOString().replace(/-/g, '').replace(/:/g, '').split('.')[0] + 'Z'}
+DTSTAMP:${stamp}
 DTSTART:${dateStr}
 DTEND:${endStr}
-SUMMARY:Prüfung: ${moduleName}
-DESCRIPTION:Prüfung für ${moduleName} - Lernzeit Tracker
+SUMMARY:Prüfung: ${safeName}
+DESCRIPTION:Prüfung für ${safeName} - Lernzeit Tracker
 END:VEVENT
 END:VCALENDAR`;
 
@@ -2437,6 +2501,19 @@ function showToast(message, type = 'success') {
 }
 
 // ==================== REPORT GENERATION ====================
+
+/**
+ * Gets the ISO-8601 week number for a date
+ * @param {Date} date - Reference date
+ * @returns {number} ISO week number (1-53)
+ */
+function getIsoWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
 
 /**
  * Gets week start date
@@ -2548,7 +2625,7 @@ Lernzeit Tracker
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `lernzeit_kw${weekStart.toISOString().split('W')[1]}_bericht.txt`;
+    link.download = `lernzeit_kw${getIsoWeekNumber(weekStart)}_bericht.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2641,31 +2718,31 @@ function renderPruefungen() {
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex items-center gap-3 min-w-0 flex-1">
-                        <div class="w-10 h-10 rounded-full ${subject ? subject.color : 'bg-gray-500'} flex items-center justify-center text-white font-bold flex-shrink-0">
-                            ${subject ? subject.name.substring(0, 2) : '?'}
+                        <div class="w-10 h-10 rounded-full ${safeColorClass(subject ? subject.color : 'bg-gray-500')} flex items-center justify-center text-white font-bold flex-shrink-0">
+                            ${subject ? escapeHtml(String(subject.name).slice(0, 2)) : '?'}
                         </div>
                         <div class="min-w-0">
                             <div class="font-bold text-adaptive">${escapeHtml(exam.name)}</div>
-                            <div class="text-sm text-adaptive-muted">${dateStr}${exam.code ? ' · ' + exam.code : ''}</div>
+                            <div class="text-sm text-adaptive-muted">${dateStr}${exam.code ? ' · ' + escapeHtml(exam.code) : ''}</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 ml-3">
                         ${exam.grade ? `<span class="text-sm font-bold ${gradeClass} px-3 py-1 rounded-full border ${passed ? 'border-green-500/30' : 'border-red-500/30'}">
-                            ${passed ? '✓ ' : '✗ '}${gradeDisplay}
+                            ${passed ? '✓ ' : '✗ '}${escapeHtml(String(gradeDisplay))}
                         </span>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center gap-3 text-xs text-adaptive-muted mb-2" style="margin-left: 52px">
                     ${subject ? '<span>' + escapeHtml(subject.name) + '</span>' : ''}
                     ${semester ? '<span>' + escapeHtml(semester.name) + '</span>' : ''}
-                    ${ectsDisplay ? '<span>' + ectsDisplay + '</span>' : ''}
+                    ${ectsDisplay ? '<span>' + escapeHtml(ectsDisplay) + '</span>' : ''}
                     ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
                 </div>
                 <div class="flex justify-end gap-2 mt-2">
-                    <button class="btn-edit-exam btn-interactive p-2 hover:bg-surface rounded-lg transition text-adaptive-muted" data-id="${exam.id}" aria-label="Prüfung bearbeiten">
+                    <button class="btn-edit-exam btn-interactive p-2 hover:bg-surface rounded-lg transition text-adaptive-muted" data-id="${escapeHtml(String(exam.id))}" aria-label="Prüfung bearbeiten">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                     </button>
-                    <button class="btn-delete-exam-item btn-interactive p-2 hover:bg-red-900/30 rounded-lg transition text-red-400" data-id="${exam.id}" aria-label="Prüfung löschen">
+                    <button class="btn-delete-exam-item btn-interactive p-2 hover:bg-red-900/30 rounded-lg transition text-red-400" data-id="${escapeHtml(String(exam.id))}" aria-label="Prüfung löschen">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -2694,7 +2771,7 @@ function renderPruefungen() {
             });
         });
 
-        lucide.createIcons();
+        refreshIcons();
     }
 }
 

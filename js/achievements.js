@@ -135,12 +135,13 @@ function getAchievementProgress(entries) {
         .reduce((acc, curr) => acc + curr.duration, 0);
 
     const subjects = window.storageManager.getSubjects();
+    const knownSubjectIds = new Set(subjects.map(s => String(s.id)));
     const uniqueSubjectsToday = new Set();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     entries.forEach(e => {
-        if (e.startTime >= todayStart.getTime()) {
-            uniqueSubjectsToday.add(e.subjectId);
+        if (e.startTime >= todayStart.getTime() && knownSubjectIds.has(String(e.subjectId))) {
+            uniqueSubjectsToday.add(String(e.subjectId));
         }
     });
 
@@ -169,10 +170,29 @@ function getAchievementProgress(entries) {
         night_owl: nightOwl,
         marathon: marathon,
         all_subjects: subjects.length > 0 && uniqueSubjectsToday.size >= subjects.length,
-        perfect_week: streak >= 7,
+        // Was identical to streak_7 and could never unlock on its own.
+        perfect_week: activeDaysInCurrentWeek(entries) >= 7,
         consistency_30: streak >= 30,
         first_hour: totalSeconds >= 3600
     };
+}
+
+/**
+ * Counts distinct days with learning time inside the current Monday-Sunday week
+ * @param {Array} entries - Learning entries
+ * @returns {number} Number of active days (0-7)
+ */
+function activeDaysInCurrentWeek(entries) {
+    const range = getCurrentWeekRange();
+    const days = new Set();
+    (entries || []).forEach(e => {
+        if (e.startTime >= range.start.getTime() && e.startTime <= range.end.getTime()) {
+            const d = new Date(e.startTime);
+            d.setHours(0, 0, 0, 0);
+            days.add(d.getTime());
+        }
+    });
+    return days.size;
 }
 
 /**
@@ -343,12 +363,13 @@ function getAchievementProgressDetail(achievementId, entries) {
         .filter(e => e.startTime >= monthRange.start.getTime() && e.startTime <= monthRange.end.getTime())
         .reduce((acc, curr) => acc + curr.duration, 0);
 
+    const knownSubjectIds = new Set(subjects.map(s => String(s.id)));
     const uniqueSubjectsToday = new Set();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     entries.forEach(e => {
-        if (e.startTime >= todayStart.getTime()) {
-            uniqueSubjectsToday.add(e.subjectId);
+        if (e.startTime >= todayStart.getTime() && knownSubjectIds.has(String(e.subjectId))) {
+            uniqueSubjectsToday.add(String(e.subjectId));
         }
     });
 
@@ -373,13 +394,19 @@ function getAchievementProgressDetail(achievementId, entries) {
         consistency_30: { current: streak, target: 30, text: `${streak} / 30 Tage` },
         pomodoro_1: { current: pomodoroEntries.length >= 1 ? 1 : 0, target: 1, text: pomodoroEntries.length >= 1 ? '1 Pomodoro' : '0/1 Pomodoro' },
         pomodoro_10: { current: pomodoroEntries.length, target: 10, text: `${pomodoroEntries.length} / 10 Pomodoro` },
-        weekly_goal: { current: weekSeconds, target: dailyGoalSeconds * 5, text: `${Math.floor(weekSeconds / 3600)}h / ${Math.floor(dailyGoalSeconds * 5 / 3600)}h diese Woche` },
+        weekly_goal: (() => {
+            const weeklyTarget = dailyGoalSeconds * (settings.learningDays || 5);
+            return { current: weekSeconds, target: weeklyTarget, text: `${Math.floor(weekSeconds / 3600)}h / ${Math.floor(weeklyTarget / 3600)}h diese Woche` };
+        })(),
         monthly_goal: { current: monthSeconds, target: dailyGoalSeconds * 20, text: `${Math.floor(monthSeconds / 3600)}h / ${Math.floor(dailyGoalSeconds * 20 / 3600)}h diesen Monat` },
         early_bird: { current: earlyBird ? 1 : 0, target: 1, text: earlyBird ? 'Vor 8 Uhr' : 'Noch nicht' },
         night_owl: { current: nightOwl ? 1 : 0, target: 1, text: nightOwl ? 'Nach 22 Uhr' : 'Noch nicht' },
         marathon: { current: marathon ? 1 : 0, target: 1, text: marathon ? '3h am Stück' : 'Noch nicht' },
         all_subjects: { current: subjects.length > 0 && uniqueSubjectsToday.size >= subjects.length ? 1 : 0, target: 1, text: subjects.length > 0 && uniqueSubjectsToday.size >= subjects.length ? 'Alle Fächer' : `${uniqueSubjectsToday.size}/${subjects.length} Fächer` },
-        perfect_week: { current: streak >= 7 ? 1 : 0, target: 1, text: streak >= 7 ? '7-Tage-Streak' : `${streak}/7 Tage` }
+        perfect_week: (() => {
+            const activeDays = activeDaysInCurrentWeek(entries);
+            return { current: activeDays, target: 7, text: `${activeDays}/7 Tage diese Woche` };
+        })()
     };
 
     return progressMap[achievementId] || { current: 0, target: 1, text: '—' };
@@ -478,9 +505,11 @@ function renderAchievementsPage() {
     const unlocked = getStoredAchievements();
     const unlockedMap = new Map(unlocked.map(item => [item.id, item]));
 
-    // Total progress
+    // Total progress - count only ids that still exist in the definitions,
+    // otherwise stale storage entries inflated the count past the total.
+    const knownIds = new Set(ACHIEVEMENT_DEFINITIONS.map(def => def.id));
     const totalAchs = ACHIEVEMENT_DEFINITIONS.length;
-    const totalUnlocked = unlocked.length;
+    const totalUnlocked = unlocked.filter(item => knownIds.has(item.id)).length;
     const totalPercentage = totalAchs > 0 ? Math.round((totalUnlocked / totalAchs) * 100) : 0;
 
     const totalTextEl = document.getElementById('achievements-total-text');
@@ -520,10 +549,7 @@ function renderAchievementsPage() {
     });
 
     // Re-initialize Lucide icons in the achievements view
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        const viewIcons = container.querySelectorAll('[data-lucide]');
-        if (viewIcons.length > 0) {
-            lucide.createIcons();
-        }
+    if (container.querySelectorAll('[data-lucide]').length > 0) {
+        refreshIcons();
     }
 }
