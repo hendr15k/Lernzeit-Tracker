@@ -51,9 +51,9 @@ initFAB();
     initExportHandlers();
     initBackupHandler();
 
-    updateViews();
-    lucide.createIcons();
     initToastContainer();
+    updateViews();
+    refreshIcons();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
@@ -211,8 +211,12 @@ function initUpdateChecker() {
             }, 60 * 60 * 1000);
         });
 
+        // clients.claim() also fires controllerchange on the very first install
+        // (no previous controller), which used to reload the freshly opened app.
+        const hadController = !!navigator.serviceWorker.controller;
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!hadController) return;
             if (!refreshing) {
                 refreshing = true;
                 window.location.reload();
@@ -456,6 +460,10 @@ function initKeyboardShortcuts() {
         if (e.ctrlKey || e.metaKey) return;
         if (e.key === 'n' || e.key === 'N') {
             e.preventDefault();
+            // Any open overlay wins; stacking the entry form on top of settings
+            // or the exam modal left both half-usable.
+            const openOverlayEl = document.querySelector('.fixed.inset-0:not(.translate-y-full)');
+            if (openOverlayEl && openOverlayEl.id !== 'add-entry-overlay') return;
             if (typeof window.openAddEntryOverlay === 'function') window.openAddEntryOverlay();
         }
     });
@@ -565,9 +573,7 @@ function renderTodos() {
         });
     });
     
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 // Make functions globally accessible
@@ -702,7 +708,7 @@ function renderGoals() {
             }
         });
     });
-    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    refreshIcons();
 }
 
 function openAddGoalModal() {
@@ -1499,7 +1505,8 @@ function exportDataAsCSV() {
         const durationMin = Math.round(entry.duration / 60);
         const notes = entry.notes ? `"${entry.notes.replace(/"/g, '""')}"` : "";
 
-        csvContent += `${dateStr},${timeStr},"${subjectName}",${durationMin},${notes}\n`;
+        const safeSubject = String(subjectName).replace(/"/g, '""');
+        csvContent += `${dateStr},${timeStr},"${safeSubject}",${durationMin},${notes}\n`;
     });
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1651,7 +1658,7 @@ function initAddEntry() {
             return;
         }
 
-        if (dateVal && !isValidDateFormat(dateVal)) {
+        if (!dateVal || !isValidDateFormat(dateVal)) {
             showToast('Bitte geben Sie ein gültiges Datum ein.', 'error');
             return;
         }
@@ -1790,7 +1797,7 @@ function renderSemesterList() {
         });
     }
 
-    lucide.createIcons();
+    refreshIcons();
 }
 
 /**
@@ -1938,7 +1945,7 @@ function renderModuleList(semesterId) {
     }
 
     renderSemesterExams(semesterId);
-    lucide.createIcons();
+    refreshIcons();
 }
 
 /**
@@ -2751,7 +2758,7 @@ function renderPruefungen() {
             });
         });
 
-        lucide.createIcons();
+        refreshIcons();
     }
 }
 

@@ -8,6 +8,22 @@
  * @param {number} wait - Delay in milliseconds
  * @returns {Function} Debounced function
  */
+/**
+ * Re-renders Lucide icons if the CDN bundle is available.
+ * The CDN can be missing (offline install, blocked network); an unguarded
+ * lucide.createIcons() then threw and aborted the whole render pass.
+ * @returns {void}
+ */
+function refreshIcons() {
+    if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
+        try {
+            lucide.createIcons();
+        } catch (e) {
+            console.warn('Icon rendering failed:', e);
+        }
+    }
+}
+
 function debounce(func, wait) {
     let timeoutId = null;
     return function debounced(...args) {
@@ -143,6 +159,7 @@ function safeJsonParse(jsonString, fallback = null) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         debounce,
+        refreshIcons,
         isValidPositiveNumber,
         isValidDateFormat,
         isValidTimeFormat,

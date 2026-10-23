@@ -15,7 +15,29 @@ let pomodoroCountdown = 0;
 let pomodoroWorkSeconds = 0;
 let lastTickTime = 0;
 
-const audioContext = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+const AudioContextCtor = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+// One context for the whole session: creating one per beep leaked contexts
+// until the browser's per-page limit silently disabled all further sounds.
+let sharedAudioContext = null;
+
+/**
+ * Returns the shared AudioContext, creating and resuming it on demand.
+ * @returns {AudioContext|null}
+ */
+function getAudioContext() {
+    if (!AudioContextCtor) return null;
+    try {
+        if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+            sharedAudioContext = new AudioContextCtor();
+        }
+        if (sharedAudioContext.state === 'suspended') {
+            sharedAudioContext.resume().catch(() => {});
+        }
+        return sharedAudioContext;
+    } catch (e) {
+        return null;
+    }
+}
 
 /**
  * Requests a wake lock to prevent screen from sleeping
@@ -58,8 +80,8 @@ async function releaseWakeLock() {
  */
 function playBeep(freq = 800, duration = 200, count = 2) {
     try {
-        if (!audioContext) return;
-        const ctx = new audioContext();
+        const ctx = getAudioContext();
+        if (!ctx) return;
         for (let i = 0; i < count; i++) {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -356,6 +378,11 @@ function restoreState() {
     }
 
     if (!state) return;
+    // Older/corrupt states must not poison the timer with NaN/negative values.
+    state.seconds = Number.isFinite(state.seconds) && state.seconds > 0 ? Math.floor(state.seconds) : 0;
+    state.timestamp = Number.isFinite(state.timestamp) ? state.timestamp : Date.now();
+    state.pomodoroCountdown = Number.isFinite(state.pomodoroCountdown) ? Math.max(0, Math.floor(state.pomodoroCountdown)) : 0;
+    state.pomodoroWorkSeconds = Number.isFinite(state.pomodoroWorkSeconds) ? Math.max(0, Math.floor(state.pomodoroWorkSeconds)) : 0;
 
     const subjectSelect = document.getElementById('timer-subject-select');
     const notesInput = document.getElementById('timer-notes-input');
@@ -408,7 +435,11 @@ function restoreState() {
         timerSeconds = state.seconds;
         if (subjectSelect) subjectSelect.value = state.subjectId || '';
         if (subjectSelect) updateTimerTopicsDatalist(state.subjectId);
-        updateDisplay();
+        if (pomodoroMode) {
+            updatePomodoroDisplay();
+        } else {
+            updateDisplay();
+        }
 
         const savedNotes = localStorage.getItem('timer_notes');
         if (savedNotes && notesInput) {
@@ -558,18 +589,26 @@ function initTimer() {
             pomodoroWorkSeconds = 0;
             pomodoroPhase = 'work';
             pomodoroCountdown = 0;
-            updateDisplay();
-            updatePomodoroDisplay();
+            if (pomodoroMode) {
+                updatePomodoroDisplay();
+            } else {
+                updateDisplay();
+            }
             updatePomodoroIndicator();
             if (btnPause) btnPause.classList.add('hidden');
             if (btnStart) btnStart.classList.remove('hidden');
+            if (notesInput) notesInput.value = '';
+            localStorage.removeItem('timer_notes');
             clearState();
         });
     }
 
     if (btnSave) {
         btnSave.addEventListener('click', () => {
-            if (timerSeconds > 0) {
+            // In Pomodoro mode every finished work phase already saved its own
+            // entry; only the phase that is still running is unsaved.
+            const sessionSeconds = pomodoroMode ? pomodoroWorkSeconds : timerSeconds;
+            if (sessionSeconds > 0) {
                 let endTime = Date.now();
                 if (!isTimerRunning) {
                     try {
@@ -592,8 +631,8 @@ function initTimer() {
 
                 const entry = {
                     subjectId: subjectSelect.value,
-                    duration: timerSeconds,
-                    startTime: endTime - (timerSeconds * 1000),
+                    duration: sessionSeconds,
+                    startTime: endTime - (sessionSeconds * 1000),
                     endTime: endTime,
                     notes: timerNotes,
                     topics: topicsVal
@@ -608,7 +647,16 @@ function initTimer() {
                 isTimerRunning = false;
                 clearInterval(timerInterval);
                 timerSeconds = 0;
-                updateDisplay();
+                pomodoroCount = 0;
+                pomodoroWorkSeconds = 0;
+                pomodoroPhase = 'work';
+                pomodoroCountdown = 0;
+                if (pomodoroMode) {
+                    updatePomodoroDisplay();
+                    updatePomodoroIndicator();
+                } else {
+                    updateDisplay();
+                }
                 if (btnPause) btnPause.classList.add('hidden');
                 if (btnStart) btnStart.classList.remove('hidden');
                 timerOverlay.classList.add('translate-y-full');
@@ -653,9 +701,7 @@ function initFAB() {
             fab.classList.remove('pulse');
             fab.innerHTML = '<i data-lucide="plus" class="w-6 h-6 text-white"></i>';
         }
-        if (typeof lucide !== 'undefined' && lucide.createIcons) {
-            lucide.createIcons();
-        }
+        refreshIcons();
     }
 
     fab.addEventListener('click', () => {
@@ -693,8 +739,17 @@ function initFAB() {
 // Setup visibility change handler
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && isTimerRunning) {
-            requestWakeLock();
+        if (document.visibilityState !== 'visible' || !isTimerRunning) return;
+        requestWakeLock();
+        // A suspended/discarded tab loses its interval; without this the display
+        // stays frozen while isTimerRunning is still true.
+        if (!timerInterval) {
+            startInterval();
+        }
+        if (pomodoroMode) {
+            updatePomodoroDisplay();
+        } else {
+            updateDisplay();
         }
     });
 }

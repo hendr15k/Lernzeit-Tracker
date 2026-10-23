@@ -1545,7 +1545,8 @@
     <script src="js/dashboard.js"></script>
     <script src="js/app.js"></script>
     <script>
-        lucide.createIcons();
+        // Guarded: the icon bundle comes from a CDN and may be unavailable.
+        refreshIcons();
     </script>
 </body>
 </html>

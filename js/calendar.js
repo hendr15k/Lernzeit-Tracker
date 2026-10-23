@@ -165,9 +165,7 @@ function renderCalendar(entries) {
         container.appendChild(domItem);
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**
@@ -287,8 +285,10 @@ function renderHeatmap(entries) {
                     : 'Keine Aktivität';
                 tooltip.classList.remove('hidden');
                 const rect = e.target.getBoundingClientRect();
-                tooltip.style.left = `${rect.left + window.scrollX}px`;
-                tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                // .heatmap-tooltip is position:fixed, so page scroll must NOT be
+                // added - doing so pushed the tooltip away from the cell.
+                tooltip.style.left = `${rect.left}px`;
+                tooltip.style.top = `${rect.bottom + 5}px`;
             });
 
             cell.addEventListener('mouseleave', () => {
@@ -445,9 +445,7 @@ function renderHistory(entries, subjects) {
         });
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**
@@ -524,9 +522,7 @@ function renderFaecher(entries, subjects) {
         });
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**

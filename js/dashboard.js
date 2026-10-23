@@ -352,7 +352,7 @@ function renderRecommendedStudyTime() {
             let recommendedMinutes = 0;
             
             if (mod.examPeriod) {
-                const examDate = new Date(mod.examPeriod);
+                const examDate = parseLocalDate(mod.examPeriod);
                 const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
                 if (diffDays > 0) {
                     priority += Math.max(0, 100 - diffDays);
@@ -408,7 +408,8 @@ function renderRecommendedStudyTime() {
             }
             if (recBtn) {
                 recBtn.onclick = () => {
-                    document.getElementById('timer-overlay').classList.remove('translate-y-full');
+                    const overlay = document.getElementById('timer-overlay');
+                    if (overlay) overlay.classList.remove('translate-y-full');
                 };
             }
         } else {
@@ -600,22 +601,25 @@ function exportGradesCSV(exams) {
     const header = 'Name,Modulcode,Fach,Semester,Datum,Note,ECTS,Status,Notizen\n';
     const semesters = window.storageManager.getSemesters();
     const subjects = window.storageManager.getSubjects();
+    // RFC-4180 quoting: quotes doubled, line breaks kept inside the quoted
+    // field instead of splitting the row.
+    const csvField = (value) => '"' + String(value == null ? '' : value).replace(/"/g, '""') + '"';
     const rows = exams.map(e => {
         const subject = subjects.find(s => String(s.id) === String(e.subjectId));
         const semester = semesters.find(s => String(s.id) === String(e.semesterId));
         const status = isExamPassed(e) ? 'Bestanden' : (e.grade ? 'Nicht bestanden' : 'Offen');
         return [
-            '"' + (e.name || '').replace(/"/g, '""') + '"',
-            '"' + (e.code || '').replace(/"/g, '""') + '"',
-            '"' + (subject ? subject.name : '').replace(/"/g, '""') + '"',
-            '"' + (semester ? semester.name : '').replace(/"/g, '""') + '"',
-            '"' + (e.date || '') + '"',
-            '"' + (e.grade || '') + '"',
-            '"' + (e.ects || '') + '"',
-            '"' + status + '"',
-            '"' + (e.notes || '').replace(/"/g, '""') + '"'
+            csvField(e.name),
+            csvField(e.code),
+            csvField(subject ? subject.name : ''),
+            csvField(semester ? semester.name : ''),
+            csvField(e.date),
+            csvField(e.grade),
+            csvField(e.ects),
+            csvField(status),
+            csvField(e.notes)
         ].join(',');
-    }).join('\n');
+    }).join('\r\n');
 
     const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1566,6 +1570,9 @@ function renderExamCountdown() {
                 const effectiveDate = mod.examDate || mod.examPeriod;
                 const examDate = parseLocalDate(effectiveDate);
                 const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
+                // Past exams used to occupy the 5 visible slots and hid the
+                // upcoming ones.
+                if (diffDays < 0) return;
                 const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
                 examModules.push({
                     name: mod.name,
@@ -1630,9 +1637,7 @@ function renderExamCountdown() {
         });
     });
 
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons();
-    }
+    refreshIcons();
 }
 
 /**
@@ -1707,16 +1712,17 @@ function renderExamStats(exams) {
         return;
     }
 
+    const gradeValue = (value) => parseFloat(String(value).replace(',', '.'));
     const passed = exams.filter(e => isExamPassed(e));
-    const numGrades = passed.filter(e => !isNaN(parseFloat(e.grade)) && e.grade !== 'B').map(e => parseFloat(e.grade));
+    const numGrades = passed.filter(e => !isNaN(gradeValue(e.grade)) && e.grade !== 'B').map(e => gradeValue(e.grade));
     const avgGrade = numGrades.length > 0 ? (numGrades.reduce((a, b) => a + b, 0) / numGrades.length).toFixed(1) : '—';
 
     // ECTS-gewichteter Durchschnitt
-    const ectsGrades = passed.filter(e => !isNaN(parseFloat(e.grade)) && e.grade !== 'B' && e.ects && e.ects > 0);
+    const ectsGrades = passed.filter(e => !isNaN(gradeValue(e.grade)) && e.grade !== 'B' && e.ects && e.ects > 0);
     let avgGradeEcts = '—';
     if (ectsGrades.length > 0) {
         const totalEcts = ectsGrades.reduce((s, e) => s + e.ects, 0);
-        const weightedSum = ectsGrades.reduce((s, e) => s + parseFloat(e.grade) * e.ects, 0);
+        const weightedSum = ectsGrades.reduce((s, e) => s + gradeValue(e.grade) * e.ects, 0);
         avgGradeEcts = (weightedSum / totalEcts).toFixed(2).replace('.', ',');
     }
 

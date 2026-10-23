@@ -12,6 +12,15 @@ class StorageManager {
      * Creates a new StorageManager instance and initializes default data
      * @constructor
      */
+    /**
+     * Complete settings defaults; every reader merges over these so no field
+     * can silently stay undefined.
+     * @returns {Object} Default settings
+     */
+    static defaultSettings() {
+        return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16, themeMode: 'dark' };
+    }
+
     constructor(skipSeed) {
         /**
          * LocalStorage key names
@@ -113,20 +122,16 @@ class StorageManager {
                 const parsedRaw = JSON.parse(storedSettings);
                 // '"kaputt"' parses fine but is not a settings object.
                 const parsed = (parsedRaw && typeof parsedRaw === 'object' && !Array.isArray(parsedRaw)) ? parsedRaw : {};
-                let needsUpdate = false;
-                if (parsed.fontSize === undefined) {
-                    parsed.fontSize = 16;
-                    needsUpdate = true;
-                }
+                const merged = { ...StorageManager.defaultSettings(), ...parsed };
                 if (parsed.themeMode === undefined) {
-                    parsed.themeMode = parsed.darkMode === false ? 'light' : 'dark';
-                    needsUpdate = true;
+                    merged.themeMode = parsed.darkMode === false ? 'light' : 'dark';
                 }
-                if (needsUpdate) {
-                    this._save(this.STORAGE_KEYS.SETTINGS, parsed);
+                if (JSON.stringify(merged) !== JSON.stringify(parsed)) {
+                    this._save(this.STORAGE_KEYS.SETTINGS, merged);
                 }
             } catch (e) {
                 console.error('Error parsing settings during migration:', e);
+                this._save(this.STORAGE_KEYS.SETTINGS, StorageManager.defaultSettings());
             }
         }
 
@@ -419,7 +424,8 @@ class StorageManager {
      */
     addSemester(semester) {
         const semesters = this.getSemesters();
-        semesters.push({ ...semester, id: Date.now().toString(), modules: [] });
+        const { modules, ...rest } = semester || {};
+        semesters.push({ ...rest, id: Date.now().toString(), modules: Array.isArray(modules) ? modules : [] });
         this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
     }
 
@@ -459,10 +465,13 @@ class StorageManager {
         const semesters = this.getSemesters();
         const semester = semesters.find(s => String(s.id) === String(semesterId));
         if (semester) {
-            if (!semester.modules) semester.modules = [];
-            semester.modules.push({ ...module, id: Date.now().toString() });
+            if (!Array.isArray(semester.modules)) semester.modules = [];
+            const created = { ...module, id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 8) };
+            semester.modules.push(created);
             this._save(this.STORAGE_KEYS.SEMESTERS, semesters);
+            return created;
         }
+        return null;
     }
 
     /**
@@ -593,8 +602,10 @@ class StorageManager {
      */
     addSubject(subject) {
         const subjects = this.getSubjects();
-        subjects.push({ ...subject, id: Date.now().toString() });
+        const created = { ...subject, id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 8) };
+        subjects.push(created);
         this._save(this.STORAGE_KEYS.SUBJECTS, subjects);
+        return created;
     }
 
     /**
@@ -668,13 +679,15 @@ class StorageManager {
     getSettings() {
         try {
             const raw = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
-            if (!raw) return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
+            if (!raw) return StorageManager.defaultSettings();
             const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
-            return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                return { ...StorageManager.defaultSettings(), ...parsed };
+            }
+            return StorageManager.defaultSettings();
         } catch (e) {
             console.error('Error parsing settings:', e);
-            return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
+            return StorageManager.defaultSettings();
         }
     }
 
