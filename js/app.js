@@ -306,7 +306,8 @@ function getTopTopicsForSubject(subjectId, limit = 3) {
  */
 function getTodos() {
     try {
-        return JSON.parse(localStorage.getItem('lt_todos') || '[]');
+        const parsed = JSON.parse(localStorage.getItem('lt_todos') || '[]');
+        return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
         return [];
     }
@@ -618,7 +619,8 @@ function initBackupHandler() {
 
 function loadGoals() {
     try {
-        return JSON.parse(localStorage.getItem('lernzeit_goals') || '[]');
+        const parsed = JSON.parse(localStorage.getItem('lernzeit_goals') || '[]');
+        return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
         console.error('Error parsing goals:', e);
         return [];

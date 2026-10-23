@@ -25,6 +25,7 @@ class StorageManager {
             EXAMS: 'lernzeit_exams'
         };
         this._entriesCache = null;
+        this._entriesCacheRaw = null;
         if (!skipSeed) this.init();
     }
 
@@ -35,12 +36,13 @@ class StorageManager {
      */
     _refreshEntriesCache() {
         try {
-            const raw = localStorage.getItem(this.STORAGE_KEYS.ENTRIES);
-            const parsed = JSON.parse(raw || '[]');
+            this._entriesCacheRaw = localStorage.getItem(this.STORAGE_KEYS.ENTRIES) || '[]';
+            const parsed = JSON.parse(this._entriesCacheRaw);
             this._entriesCache = Array.isArray(parsed) ? parsed : [];
         } catch (e) {
             console.error('Error parsing entries:', e);
             this._entriesCache = [];
+            this._entriesCacheRaw = '[]';
         }
     }
 
@@ -52,9 +54,14 @@ class StorageManager {
      */
     _save(key, data) {
         if (key === this.STORAGE_KEYS.ENTRIES) {
-            // Store a copy so later caller mutations (e.g. in-place sort)
-            // cannot rewrite the cache, and re-read foreign writes first.
+            // Keep a copy plus the serialized form: the copy stops callers from
+            // mutating the cache, the raw string detects foreign writes cheaply.
             this._entriesCache = Array.isArray(data) ? [...data] : data;
+            try {
+                this._entriesCacheRaw = JSON.stringify(this._entriesCache);
+            } catch (e) {
+                this._entriesCacheRaw = null;
+            }
         }
         try {
             localStorage.setItem(key, JSON.stringify(data));
@@ -103,7 +110,9 @@ class StorageManager {
             this._save(this.STORAGE_KEYS.SETTINGS, defaults);
         } else {
             try {
-                const parsed = JSON.parse(storedSettings);
+                const parsedRaw = JSON.parse(storedSettings);
+                // '"kaputt"' parses fine but is not a settings object.
+                const parsed = (parsedRaw && typeof parsedRaw === 'object' && !Array.isArray(parsedRaw)) ? parsedRaw : {};
                 let needsUpdate = false;
                 if (parsed.fontSize === undefined) {
                     parsed.fontSize = 16;
@@ -388,7 +397,8 @@ class StorageManager {
      */
     getSemesters() {
         try {
-            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SEMESTERS) || '[]');
+            const parsed = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SEMESTERS) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
             console.error('Error parsing semesters:', e);
             return [];
@@ -507,7 +517,7 @@ class StorageManager {
             } catch (e) {
                 raw = null;
             }
-            if (raw !== JSON.stringify(this._entriesCache)) {
+            if (raw !== this._entriesCacheRaw) {
                 this._refreshEntriesCache();
             }
         }
@@ -558,21 +568,23 @@ class StorageManager {
      * @returns {Array} Array of subject objects
      */
     getSubjects() {
+        let parsed = null;
         try {
-            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+            parsed = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
         } catch (e) {
             console.error('Error parsing subjects:', e);
-            return [
-                { id: '1', name: 'HM2', color: 'bg-blue-500' },
-                { id: '2', name: 'GET2', color: 'bg-green-500' },
-                { id: '3', name: 'Bauelemente', color: 'bg-orange-500' },
-                { id: '4', name: 'Physik', color: 'bg-purple-500' },
-                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500' },
-                { id: '6', name: 'Höhere Mathematik 1', color: 'bg-cyan-500' },
-                { id: '7', name: 'GET1', color: 'bg-emerald-500' },
-                { id: '8', name: 'Programmierung & TI', color: 'bg-violet-500' }
-            ];
         }
+        if (Array.isArray(parsed)) return parsed;
+        return [
+            { id: '1', name: 'HM2', color: 'bg-blue-500' },
+            { id: '2', name: 'GET2', color: 'bg-green-500' },
+            { id: '3', name: 'Bauelemente', color: 'bg-orange-500' },
+            { id: '4', name: 'Physik', color: 'bg-purple-500' },
+            { id: '5', name: 'Digitaltechnik', color: 'bg-red-500' },
+            { id: '6', name: 'Höhere Mathematik 1', color: 'bg-cyan-500' },
+            { id: '7', name: 'GET1', color: 'bg-emerald-500' },
+            { id: '8', name: 'Programmierung & TI', color: 'bg-violet-500' }
+        ];
     }
 
     /**
@@ -657,7 +669,9 @@ class StorageManager {
         try {
             const raw = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
             if (!raw) return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
-            return JSON.parse(raw);
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+            return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
         } catch (e) {
             console.error('Error parsing settings:', e);
             return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16 };
@@ -682,7 +696,8 @@ class StorageManager {
      */
     getExams() {
         try {
-            return JSON.parse(localStorage.getItem(this.STORAGE_KEYS.EXAMS) || '[]');
+            const parsed = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.EXAMS) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
             console.error('Error parsing exams:', e);
             return [];
