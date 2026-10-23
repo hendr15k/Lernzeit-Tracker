@@ -49,7 +49,7 @@
         <!-- Top Header -->
         <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300" role="banner">
             <div class="flex items-center space-x-2">
-                <button class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Home" role="button" tabindex="0">
+                <button id="btn-home" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Home" role="button" tabindex="0">
                     <i data-lucide="home" class="w-6 h-6" aria-hidden="true"></i>
                 </button>
                 <div id="header-title" class="hidden">
@@ -371,9 +371,9 @@
                     <div class="surface-card p-4 border border-gray-800">
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-lg font-semibold">Prüfungsvorbereitung</h2>
-                            <button id="btn-show-all-todos" class="mt-3 w-full text-center text-xs text-primary hover:underline">Alle anzeigen →</button>
+                            <button id="btn-show-all-todos" class="text-xs text-primary hover:underline">Alle anzeigen →</button>
                         </div>
-                        <div id="todo-list-mini" class="space-y-2">
+                        <div id="todo-list-mini" class="space-y-2 max-h-64 overflow-y-auto">
                             <!-- Dynamic todos -->
                         </div>
                         <div id="todo-progress-mini" class="mt-3 pt-3 border-t border-gray-700">
@@ -403,8 +403,8 @@
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-lg font-semibold">Fächerverteilung</h2>
                         </div>
-                        <div id="subject-pie-chart">
-                            <!-- Dynamic chart -->
+                        <div id="subject-pie-chart" class="text-sm text-adaptive-muted">
+                            Details unter Statistiken → Lernzeit nach Fach.
                         </div>
                     </div>
 
@@ -413,8 +413,8 @@
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-lg font-semibold">Lerntrend</h2>
                         </div>
-                        <div id="learning-trend-line">
-                            <!-- Dynamic line chart -->
+                        <div id="learning-trend-line" class="text-sm text-adaptive-muted">
+                            Details unter Statistiken → Wöchentlicher Lernfortschritt.
                         </div>
                     </div>
 
@@ -843,7 +843,7 @@
                     <div id="add-semester-title" class="text-sm font-medium text-adaptive-muted">Semester hinzufügen</div>
                     <div class="w-10"></div>
                 </div>
-                <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+                <div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
                     <div class="w-full">
                         <label class="block text-sm text-adaptive-muted mb-2">Name</label>
                         <input type="text" id="add-semester-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 3. Semester">
@@ -1032,7 +1032,7 @@
                     <div id="add-todo-title" class="text-sm font-medium text-adaptive-muted">Todo hinzufügen</div>
                     <div class="w-10"></div>
                 </div>
-                <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+                <div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
                     <div class="w-full">
                         <label class="block text-sm text-adaptive-muted mb-2">Titel</label>
                         <input type="text" id="add-todo-title-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Kapitel 5 lernen">
@@ -1116,13 +1116,12 @@
                     <i data-lucide="chevron-down" class="w-6 h-6"></i>
                 </button>
                 <div id="timer-title" class="text-sm font-medium text-adaptive-muted">Timer</div>
-                <button class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Timer maximieren">
-                    <i data-lucide="maximize-2" class="w-5 h-5"></i>
-                </button>
+                <div class="w-10"></div>
             </div>
 
             <!-- Timer Content -->
-            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-12">
+            <div class="flex-1 min-h-0 overflow-y-auto">
+            <div class="min-h-full flex flex-col items-center justify-start p-8 space-y-8">
 
                 <!-- Subject Selector -->
                 <div class="w-full max-w-xs">
@@ -1183,6 +1182,7 @@
                     </button>
                 </div>
             </div>
+            </div>
 
             <!-- Save Button (visible when stopped/paused) -->
             <div class="p-8 pb-12">
@@ -1204,7 +1204,8 @@
             </div>
 
             <!-- Content -->
-            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+            <div class="flex-1 min-h-0 overflow-y-auto">
+            <div class="min-h-full flex flex-col items-center justify-center p-8 space-y-8">
 
                 <!-- Subject -->
                 <div class="w-full">
@@ -1252,6 +1253,7 @@
                 </div>
 
             </div>
+            </div>
 
             <!-- Save Button -->
             <div class="p-8 pb-12">
@@ -1273,7 +1275,7 @@
             </div>
 
             <!-- Content -->
-            <div class="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+            <div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-8 overflow-y-auto">
 
                 <!-- Name -->
                 <div class="w-full">
@@ -1433,15 +1435,15 @@
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between">
                             <span class="text-adaptive-muted">Neuer Eintrag</span>
-                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + N</kbd>
+                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">N</kbd>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-adaptive-muted">Speichern</span>
+                            <span class="text-adaptive-muted">Overlay speichern</span>
                             <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + Enter</kbd>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-adaptive-muted">Timer start/stop</span>
-                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Space</kbd>
+                            <span class="text-adaptive-muted">Overlay schließen</span>
+                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Esc</kbd>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-adaptive-muted">Sprach­eingabe</span>

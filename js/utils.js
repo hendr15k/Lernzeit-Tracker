@@ -42,9 +42,12 @@ function refreshIcons() {
 function debounce(func, wait) {
     let timeoutId = null;
     return function debounced(...args) {
+        // `this` must be captured now: the arrow callback runs later, when the
+        // calling context is already gone.
+        const context = this;
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-            func.apply(this, args);
+            func.apply(context, args);
         }, wait);
     };
 }

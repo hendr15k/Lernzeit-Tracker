@@ -18,7 +18,7 @@ class StorageManager {
      * @returns {Object} Default settings
      */
     static defaultSettings() {
-        return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16, themeMode: 'dark' };
+        return { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16, themeMode: 'dark', notifyPomodoro: true, notifyDaily: false, notifySound: true, voiceInput: false };
     }
 
     constructor(skipSeed) {
@@ -115,8 +115,7 @@ class StorageManager {
 
         const storedSettings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
         if (!storedSettings) {
-            const defaults = { darkMode: true, dailyGoal: 60, learningDays: 5, fontSize: 16, themeMode: 'dark' };
-            this._save(this.STORAGE_KEYS.SETTINGS, defaults);
+            this._save(this.STORAGE_KEYS.SETTINGS, StorageManager.defaultSettings());
         } else {
             try {
                 const parsedRaw = JSON.parse(storedSettings);

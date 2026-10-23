@@ -117,9 +117,10 @@ function getCurrentMonthRange() {
  */
 function getAchievementProgress(entries) {
     const settings = window.storageManager.getSettings();
-    const dailyGoalMinutes = settings.dailyGoal || 60;
-    const dailyGoalSeconds = dailyGoalMinutes * 60;
-
+    // Nullish on purpose: a stored 0 must HIT the fallback below, so the
+    // weekly/monthly targets never become a free "goal reached".
+    const dailyGoalMinutes = settings.dailyGoal ?? 60;
+    const dailyGoalSeconds = dailyGoalMinutes > 0 ? dailyGoalMinutes * 60 : 60;
     const streak = calculateStreak(entries);
     const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
     const pomodoroEntries = entries.filter(entry => (entry.notes || '').includes('🍅'));
@@ -305,7 +306,7 @@ function renderAchievementsDisplay(entries) {
             <div class="flex items-start gap-3">
                 <div class="text-2xl leading-none ${isUnlocked ? '' : 'grayscale opacity-60'}">${isUnlocked ? def.icon : '🔒'}</div>
                 <div class="min-w-0">
-                    <div class="text-sm font-semibold ${isUnlocked ? 'text-adaptive' : 'text-adaptive-muted'}">${isUnlocked ? def.name : '? ??? ???'}</div>
+                    <div class="text-sm font-semibold ${isUnlocked ? 'text-adaptive' : 'text-adaptive-muted'}">${isUnlocked ? def.name : '???'}</div>
                     <div class="text-[10px] mt-0.5 ${isUnlocked ? 'text-adaptive-muted' : 'text-adaptive-muted'}">${def.desc || ''}</div>
                     <div class="text-[11px] mt-1 ${isUnlocked ? 'text-adaptive-muted' : 'text-adaptive-muted'}">${isUnlocked ? formatAchievementDate(unlockedEntry.unlockedAt) : 'Noch gesperrt'}</div>
                 </div>
@@ -347,7 +348,9 @@ function getCategoryAchievements(category) {
 function getAchievementProgressDetail(achievementId, entries) {
     const settings = window.storageManager.getSettings();
     const dailyGoalMinutes = settings.dailyGoal || 60;
-    const dailyGoalSeconds = dailyGoalMinutes * 60;
+    // Same 0-goal guard as the overview: a 0-minute goal must not become a
+    // free "goal reached" for weekly/monthly achievements.
+    const dailyGoalSeconds = dailyGoalMinutes > 0 ? dailyGoalMinutes * 60 : 60;
     const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
     const streak = calculateStreak(entries);
     const pomodoroEntries = entries.filter(entry => (entry.notes || '').includes('🍅'));

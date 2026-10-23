@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernzeit-tracker-v7';
+const CACHE_NAME = 'lernzeit-tracker-v8';
 
 // Everything the app needs to boot offline. Keep this list in sync with the
 // <script> tags in index.html - a missing module used to break the app offline.

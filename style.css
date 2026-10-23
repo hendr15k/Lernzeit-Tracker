@@ -32,10 +32,30 @@ body {
     transition: background-color 0.3s;
 }
 
-/* Custom Scrollbar for hidden look */
+/* Custom Scrollbar for hidden look (page-level only).
+   Overlay content and mini-lists scroll internally, so their own thumb
+   must stay visible - an earlier global rule hid those too. */
 ::-webkit-scrollbar {
     width: 0px;
     background: transparent;
+}
+
+#todo-list-mini::-webkit-scrollbar,
+.min-h-full::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+#todo-list-mini::-webkit-scrollbar-thumb,
+.min-h-full::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+}
+#todo-list-mini,
+.min-h-full,
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 transparent;
 }
 
 .nav-active {
@@ -90,7 +110,9 @@ body {
 .heatmap-level-3 { background: #059669; }
 .heatmap-level-4 { background: #34d399; }
 
-/* Light mode heatmap levels */
+/* Light mode heatmap levels.
+   applyTheme() always sets exactly one of .dark/.light on <html>; the
+   rules below only win while light is active. */
 .light .heatmap-level-0 { background: #e5e7eb; }
 .light .heatmap-level-1 { background: #a7f3d0; }
 .light .heatmap-level-2 { background: #6ee7b7; }

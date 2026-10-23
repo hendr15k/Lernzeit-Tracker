@@ -488,9 +488,15 @@ function renderStatisticsPage(entries, subjects) {
     const longestEl = document.getElementById('stat-longest-session');
     if (longestEl) {
         const longestMinutes = Math.round(longestSeconds / 60);
-        longestEl.textContent = longestSubject
-            ? `${longestMinutes}min (${escapeHtml(longestSubject).substring(0, 18)})`
+        // textContent escapes by itself; escaping here printed "&amp;" and the
+        // 18-char cut could end inside an entity ("&am").
+        const shortName = longestSubject.length > 18
+            ? longestSubject.slice(0, 17).trimEnd() + '…'
+            : longestSubject;
+        longestEl.textContent = shortName
+            ? `${longestMinutes}min (${shortName})`
             : `${longestMinutes}min`;
+        if (shortName) longestEl.title = longestSubject;
     }
 
     // --- 2-4. Charts ---
@@ -551,10 +557,11 @@ function renderGradeDistribution(exams) {
     const maxCount = Math.max(...bins.map(b => b.count), 1);
 
     distEl.innerHTML = bins.map(b => {
-        const pct = Math.round((b.count / maxCount) * 100);
+        // Zero entries everywhere: maxCount is 1, all widths 0 - nothing to hide.
+        const pct = maxCount > 0 ? Math.round((b.count / maxCount) * 100) : 0;
         return `
             <div class="flex items-center gap-2 text-sm">
-                <span class="w-8 text-right text-adaptive-muted text-xs font-mono">${escapeHtml(b.label)}</span>
+                <span class="w-8 text-right text-adaptive-muted text-xs font-mono" aria-label="${escapeHtml(b.label)}: ${b.count} Prüfungen">${escapeHtml(b.label)}</span>
                 <div class="flex-1 h-4 rounded overflow-hidden bg-gray-700">
                     <div class="h-full rounded transition-all duration-300" style="width: ${pct}%; background: ${escapeHtml(b.color)};"></div>
                 </div>
@@ -564,13 +571,23 @@ function renderGradeDistribution(exams) {
 
     // Ø Note bestandene
     const passed = exams.filter(e => {
-        if (!e.grade || e.grade === '' || e.grade === 'NB' || e.grade === 'nb') return false;
+        if (!e.grade || e.grade === '') return false;
+        // '5,0' is a fail, not "ungraded": it used to vanish silently. Letters
+        // compare case-insensitively so imports ('b') behave like the UI ('B').
+        const upper = String(e.grade).toUpperCase();
+        if (upper === 'NB') return false;
+        if (upper === 'B') return true;
         const n = parseFloat(String(e.grade).replace(',', '.'));
         return !isNaN(n) && n >= 1.0 && n <= 4.0;
     });
+    // Numeric grades only: 'B' (unbenotet bestanden) counts as passed for the
+    // bin, but parseFloat('B') is NaN and used to poison both averages.
+    const numericGrades = passed
+        .map(e => parseFloat(String(e.grade).replace(',', '.')))
+        .filter(n => Number.isFinite(n));
     if (avgEl) {
-        if (passed.length > 0) {
-            const avg = passed.reduce((s, e) => s + parseFloat(String(e.grade).replace(',', '.')), 0) / passed.length;
+        if (numericGrades.length > 0) {
+            const avg = numericGrades.reduce((s, n) => s + n, 0) / numericGrades.length;
             avgEl.textContent = avg.toFixed(2).replace('.', ',');
         } else {
             avgEl.textContent = '—';
@@ -579,11 +596,12 @@ function renderGradeDistribution(exams) {
 
     // ECTS-gewichteter Ø
     const ectsEl = document.getElementById('stat-avg-grade-ects');
-    const ectsGrades = passed.filter(e => e.ects && e.ects > 0);
+    // String-ECTS from imports ("7") and NaN guards: Number() normalises both.
+    const ectsGrades = passed.filter(e => Number.isFinite(parseFloat(String(e.grade).replace(',', '.'))) && Number(e.ects) > 0);
     if (ectsEl) {
         if (ectsGrades.length > 0) {
-            const totalEcts = ectsGrades.reduce((s, e) => s + e.ects, 0);
-            const weightedSum = ectsGrades.reduce((s, e) => s + parseFloat(String(e.grade).replace(',', '.')) * e.ects, 0);
+            const totalEcts = ectsGrades.reduce((s, e) => s + Number(e.ects), 0);
+            const weightedSum = ectsGrades.reduce((s, e) => s + parseFloat(String(e.grade).replace(',', '.')) * Number(e.ects), 0);
             ectsEl.textContent = (weightedSum / totalEcts).toFixed(2).replace('.', ',');
         } else {
             ectsEl.textContent = '—';
@@ -593,7 +611,20 @@ function renderGradeDistribution(exams) {
     // CSV Export
     const exportBtn = document.getElementById('btn-export-grades');
     if (exportBtn) {
-        exportBtn.onclick = () => exportGradesCSV(exams);
+        // Guard the empty state: exporting an empty table only produced a
+        // header row download.
+        exportBtn.onclick = () => {
+            const rows = Array.isArray(exams) ? exams : [];
+            if (rows.length === 0) {
+                showToast('Keine Noten zum Exportieren.', 'info');
+                return;
+            }
+            exportGradesCSV(rows);
+        };
+        const hasRows = Array.isArray(exams) && exams.length > 0;
+        exportBtn.disabled = !hasRows;
+        exportBtn.classList.toggle('opacity-40', !hasRows);
+        exportBtn.classList.toggle('cursor-not-allowed', !hasRows);
     }
 }
 
@@ -656,7 +687,7 @@ function getSubjectComparisonData(entries, subjects) {
     const result = subjects.map(subject => {
         const totalSeconds = entries
             .filter(e => String(e.subjectId) === String(subject.id))
-            .reduce((acc, e) => acc + e.duration, 0);
+            .reduce((acc, e) => acc + (Number.isFinite(Number(e.duration)) ? Number(e.duration) : 0), 0);
         return { name: subject.name, color: subject.color, totalSeconds };
     });
     result.sort((a, b) => b.totalSeconds - a.totalSeconds);
@@ -689,7 +720,13 @@ function renderSubjectComparison(entries, subjects) {
     const container = document.getElementById('stat-subject-bars');
     if (!container) return;
     container.innerHTML = '';
+    const orphanTotal = entries
+        .filter(e => !subjects.some(s => String(s.id) === String(e.subjectId)))
+        .reduce((acc, e) => acc + (Number.isFinite(e.duration) ? e.duration : 0), 0);
     const data = getSubjectComparisonData(entries, subjects);
+    if (orphanTotal > 0) {
+        data.push({ name: 'Sonstige (gelöscht)', color: 'bg-gray-500', totalSeconds: orphanTotal });
+    }
     if (data.length === 0) {
         container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-4">Keine Daten vorhanden.</div>';
         return;
@@ -705,7 +742,7 @@ function renderSubjectComparison(entries, subjects) {
         row.innerHTML = `
             <div class="w-20 text-xs font-medium text-adaptive truncate flex-shrink-0" title="${escapedName}">${escapedName.substring(0, 10)}</div>
             <div class="flex-1 h-5 bg-gray-700/30 rounded-full overflow-hidden relative">
-                <div class="h-full ${item.color} transition-all rounded-full" style="width: ${Math.max(pct, 3)}%"></div>
+                <div class="h-full ${safeColorClass(item.color)} transition-all rounded-full" style="width: ${Math.max(pct, 3)}%"></div>
             </div>
             <div class="w-14 text-right text-xs text-adaptive-muted font-medium">${hrs}h</div>
         `;
@@ -878,18 +915,33 @@ function renderDonutChart(entries, subjects) {
     if (!container) return;
     
     const subjectTotals = {};
+    // Number() guards: a forged/string duration concatenated "3600" + "60".
+    const numDur = (e) => Number.isFinite(Number(e.duration)) ? Number(e.duration) : 0;
     subjects.forEach(s => {
         const total = entries
             .filter(e => String(e.subjectId) === String(s.id))
-            .reduce((acc, e) => acc + e.duration, 0);
+            .reduce((acc, e) => acc + numDur(e), 0);
         if (total > 0) {
             subjectTotals[s.id] = { ...s, total };
         }
     });
     
     const data = Object.values(subjectTotals);
-    const totalSeconds = data.reduce((acc, s) => acc + s.total, 0);
-    
+    // Orphaned subjectIds (deleted subjects, num/string legacy) would silently
+    // vanish from every chart. Keep them visible as "Sonstige".
+    const orphanSeconds = entries
+        .filter(e => !subjects.some(s => String(s.id) === String(e.subjectId)))
+        .reduce((acc, e) => acc + (Number.isFinite(Number(e.duration)) ? Number(e.duration) : 0), 0);
+    if (orphanSeconds > 0) {
+        data.push({ id: '__orphan__', name: 'Sonstige', color: '#6b7280', total: orphanSeconds });
+    }
+    // Orphan rows carry a '#hex' swatch colour that Tailwind's whitelist
+    // cannot match, so they render their swatch via inline style.
+    const swatchFor = (color) => /^#[0-9a-fA-F]{3,8}$/.test(String(color || ''))
+        ? `style="background-color: ${escapeHtml(String(color))}"`
+        : '';
+    const totalSeconds = data.reduce((acc, s) => acc + (Number.isFinite(Number(s.total)) ? Number(s.total) : 0), 0);
+
     if (data.length === 0) {
         container.innerHTML = `
             <circle cx="60" cy="60" r="45" fill="none" stroke="#374151" stroke-width="10" />
@@ -951,7 +1003,7 @@ function renderDonutChart(entries, subjects) {
             const hours = (s.total / 3600).toFixed(1);
             return `
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full flex-shrink-0 ${safeColorClass(s.color)}"></div>
+                    <div class="w-3 h-3 rounded-full flex-shrink-0 ${safeColorClass(s.color)}" ${swatchFor(s.color)}></div>
                     <span class="flex-1 truncate text-adaptive text-xs">${escapeHtml(s.name)}</span>
                     <span class="text-adaptive-muted text-xs">${hours}h</span>
                 </div>
@@ -973,11 +1025,13 @@ function updateDailyGoalRing(entries) {
     const settings = window.storageManager.getSettings();
     const dailyGoalMinutes = settings.dailyGoal || 60;
     const dailyGoalSeconds = dailyGoalMinutes * 60;
+    // A forged/legacy 0 goal must not divide by zero and pin the ring at 100%.
+    if (!(dailyGoalSeconds > 0)) return;
 
     const todayStr = new Date().toDateString();
     const todaySeconds = entries
         .filter(e => new Date(e.startTime).toDateString() === todayStr)
-        .reduce((acc, curr) => acc + curr.duration, 0);
+        .reduce((acc, curr) => acc + (Number.isFinite(Number(curr.duration)) ? Number(curr.duration) : 0), 0);
 
     const pct = Math.min(todaySeconds / dailyGoalSeconds, 1);
     const circumference = 2 * Math.PI * 52;
@@ -1024,6 +1078,9 @@ function updateWeeklyComparison(entries) {
     const thisWeekStart = new Date(now);
     thisWeekStart.setDate(now.getDate() - mondayOffset);
     thisWeekStart.setHours(0, 0, 0, 0);
+    const thisWeekEnd = new Date(thisWeekStart);
+    thisWeekEnd.setDate(thisWeekStart.getDate() + 6);
+    thisWeekEnd.setHours(23, 59, 59, 999);
 
     const lastWeekStart = new Date(thisWeekStart);
     lastWeekStart.setDate(thisWeekStart.getDate() - 7);
@@ -1031,8 +1088,9 @@ function updateWeeklyComparison(entries) {
     lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
     lastWeekEnd.setHours(23, 59, 59, 999);
 
+    // The open-ended filter also counted next week's entries.
     const thisWeekSeconds = entries
-        .filter(e => e.startTime >= thisWeekStart.getTime())
+        .filter(e => e.startTime >= thisWeekStart.getTime() && e.startTime <= thisWeekEnd.getTime())
         .reduce((acc, e) => acc + e.duration, 0);
 
     const lastWeekSeconds = entries
@@ -1149,6 +1207,7 @@ function renderWeeklyStats(entries) {
     }
 
     const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    // 8th-element overflow from forged entries silently shifted every weekday.
     const daySeconds = [0, 0, 0, 0, 0, 0, 0];
 
     const weekEntries = entries.filter(e => {
@@ -1160,7 +1219,7 @@ function renderWeeklyStats(entries) {
         const d = new Date(e.startTime);
         let idx = d.getDay() - 1;
         if (idx < 0) idx = 6;
-        daySeconds[idx] += e.duration;
+        if (idx >= 0 && idx < 7) daySeconds[idx] += e.duration;
     });
 
     const totalWeekSeconds = daySeconds.reduce((a, b) => a + b, 0);
@@ -1257,7 +1316,8 @@ function renderWeeklyComparison(entries) {
 
     const subjectTotals = new Map();
     for (const sub of subjects) {
-        subjectTotals.set(sub.id, { thisWeekSeconds: 0, lastWeekSeconds: 0 });
+        // String keys: legacy backups stored numeric ids, the UI passes strings.
+        subjectTotals.set(String(sub.id), { thisWeekSeconds: 0, lastWeekSeconds: 0 });
     }
 
     let orphanThis = 0;
@@ -1269,7 +1329,7 @@ function renderWeeklyComparison(entries) {
 
         if (!isThisWeek && !isLastWeek) continue;
 
-        const totals = subjectTotals.get(e.subjectId);
+        const totals = subjectTotals.get(String(e.subjectId));
         if (totals) {
             if (isThisWeek) totals.thisWeekSeconds += e.duration;
             if (isLastWeek) totals.lastWeekSeconds += e.duration;
@@ -1280,7 +1340,7 @@ function renderWeeklyComparison(entries) {
     }
 
     const subjectData = subjects.map(subject => {
-        const totals = subjectTotals.get(subject.id);
+        const totals = subjectTotals.get(String(subject.id));
         return { ...subject, thisWeekSeconds: totals.thisWeekSeconds, lastWeekSeconds: totals.lastWeekSeconds };
     });
 
@@ -1411,16 +1471,17 @@ function renderDashboardSubjects(entries) {
     }
 
     const totalSeconds = entries.reduce((acc, curr) => acc + curr.duration, 0);
-    const maxDuration = Math.max(
-        ...subjects.map(s => entries.filter(e => e.subjectId === s.id).reduce((acc, curr) => acc + curr.duration, 0)),
-        1
-    );
+    // String-cast both sides: imported numeric IDs otherwise matched nothing
+    // and every tile showed 0.0h.
+    const secondsFor = (id) => entries
+        .filter(e => String(e.subjectId) === String(id))
+        .reduce((acc, curr) => acc + (Number.isFinite(Number(curr.duration)) ? Number(curr.duration) : 0), 0);
+    const maxDuration = Math.max(...subjects.map(s => secondsFor(s.id)), 1);
 
     let summaryParts = [];
 
     subjects.forEach(subject => {
-        const subjectEntries = entries.filter(e => e.subjectId === subject.id);
-        const duration = subjectEntries.reduce((acc, curr) => acc + curr.duration, 0);
+        const duration = secondsFor(subject.id);
         const hrs = (duration / 3600).toFixed(1);
         const barWidth = Math.round((duration / maxDuration) * 100);
 
@@ -1571,8 +1632,8 @@ function renderExamCountdown() {
                 const examDate = parseLocalDate(effectiveDate);
                 const diffDays = Math.ceil((examDate - now) / (1000 * 60 * 60 * 24));
                 // Past exams used to occupy the 5 visible slots and hid the
-                // upcoming ones.
-                if (diffDays < 0) return;
+                // upcoming ones. Invalid dates (NaN) would print "NaN Tage".
+                if (!Number.isFinite(diffDays) || diffDays < 0) return;
                 const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
                 examModules.push({
                     name: mod.name,
@@ -1612,7 +1673,11 @@ function renderExamCountdown() {
         const escape = escapeHtml;
         const escapedSubjectName = escape(mod.subjectName);
         const escapedName = escape(mod.name);
-        const escapedDate = mod.examDate ? formatDateShort(mod.examDate) : (periodNames[mod.examPeriod] || mod.examPeriod);
+        // periodNames deckt nur bekannte Phasen ab; ein freier examPeriod-Wert
+        // (Import/Manipulation) darf nie roh ins innerHTML.
+        const escapedDate = mod.examDate
+            ? formatDateShort(mod.examDate)
+            : (periodNames[mod.examPeriod] || (isValidDateFormat(String(mod.examPeriod)) ? formatDateShort(mod.examPeriod) : escapeHtml(String(mod.examPeriod || '—'))));
 
         return `
             <div class="flex items-center gap-3 p-2 border-l-4 ${urgencyClass}">
@@ -1715,14 +1780,16 @@ function renderExamStats(exams) {
     const gradeValue = (value) => parseFloat(String(value).replace(',', '.'));
     const passed = exams.filter(e => isExamPassed(e));
     const numGrades = passed.filter(e => !isNaN(gradeValue(e.grade)) && e.grade !== 'B').map(e => gradeValue(e.grade));
-    const avgGrade = numGrades.length > 0 ? (numGrades.reduce((a, b) => a + b, 0) / numGrades.length).toFixed(1) : '—';
+    const avgGrade = numGrades.length > 0
+        ? (numGrades.reduce((a, b) => a + b, 0) / numGrades.length).toFixed(2).replace('.', ',')
+        : '—';
 
     // ECTS-gewichteter Durchschnitt
-    const ectsGrades = passed.filter(e => !isNaN(gradeValue(e.grade)) && e.grade !== 'B' && e.ects && e.ects > 0);
+    const ectsGrades = passed.filter(e => !isNaN(gradeValue(e.grade)) && String(e.grade).toUpperCase() !== 'B' && Number(e.ects) > 0);
     let avgGradeEcts = '—';
     if (ectsGrades.length > 0) {
-        const totalEcts = ectsGrades.reduce((s, e) => s + e.ects, 0);
-        const weightedSum = ectsGrades.reduce((s, e) => s + gradeValue(e.grade) * e.ects, 0);
+        const totalEcts = ectsGrades.reduce((s, e) => s + Number(e.ects), 0);
+        const weightedSum = ectsGrades.reduce((s, e) => s + gradeValue(e.grade) * Number(e.ects), 0);
         avgGradeEcts = (weightedSum / totalEcts).toFixed(2).replace('.', ',');
     }
 

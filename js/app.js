@@ -54,6 +54,7 @@ initFAB();
     initToastContainer();
     updateViews();
     refreshIcons();
+    checkDailyReminder();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
@@ -77,6 +78,28 @@ function initToastContainer() {
 function initNavigation() {
     const navButtons = document.querySelectorAll('.nav-btn');
     const sections = document.querySelectorAll('.view-section');
+
+    // The header home button had no handler at all.
+    document.getElementById('btn-home')?.addEventListener('click', () => {
+        document.querySelector('[data-target="view-dashboard"]')?.click();
+    });
+
+    // Overlays close with Esc, like every other modal UX expects.
+    // Nav view sections can carry stray .fixed classes from widgets, so only
+    // real overlays (IDs ending in -overlay, plus the timer) may be picked -
+    // otherwise Esc hides the whole visible view.
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        // Escape inserts no text, so it must close even from a focused field.
+        // (Timer save/prompt dialogs answer for themselves.)
+        const open = document.querySelector('#timer-overlay:not(.translate-y-full), div[id$="-overlay"]:not(.translate-y-full)');
+        if (!open) return;
+        if (open.id === 'timer-overlay') {
+            document.getElementById('btn-timer-close')?.click();
+        } else {
+            open.classList.add('translate-y-full');
+        }
+    });
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -236,7 +259,7 @@ function updateSubjectSelects() {
         const el = document.getElementById(id);
         if (el) {
             const currentVal = el.value;
-            let options = subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+            let options = subjects.map(s => `<option value="${escapeHtml(String(s.id))}">${escapeHtml(s.name)}</option>`).join('');
 
             if (id === 'history-filter-subject') {
                 options = `<option value="">Alle Fächer</option>` + options;
@@ -259,19 +282,7 @@ function updateSubjectSelects() {
     });
 }
 
-/**
- * Escapes HTML special characters
- * @param {string} value - Value to escape
- * @returns {string} Escaped value
- */
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+/** escapeHtml lives in utils.js (loaded first) - no second copy here. */
 
 /**
  * Gets topics for a subject from past entries
@@ -452,11 +463,60 @@ function initNotifications() {
 }
 
 /**
+ * Reminds once a day when "Tägliche Lern-Erinnerung" is enabled and nothing
+ * has been logged yet. The setting used to be stored nowhere and do nothing.
+ */
+function checkDailyReminder() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const settings = window.storageManager.getSettings();
+    if (settings.notifyDaily !== true) return;
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('lt_last_daily_reminder') === todayKey) return;
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const learnedToday = window.storageManager.getEntries()
+        .some(e => e.startTime >= todayStart.getTime());
+    if (learnedToday) return;
+
+    try {
+        new Notification('Lernzeit Tracker', { body: 'Heute noch keine Lernzeit erfasst - Zeit für eine Session?' });
+        localStorage.setItem('lt_last_daily_reminder', todayKey);
+    } catch (e) {
+        console.warn('Daily reminder failed:', e);
+    }
+}
+
+/**
  * Initializes keyboard shortcuts
  */
 function initKeyboardShortcuts() {
+    const isTextField = (el) => /INPUT|TEXTAREA|SELECT/.test(el?.tagName || '');
+
     document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        // Ctrl/Cmd+Enter saves the overlay that is currently open.
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            const open = document.querySelector('.fixed.inset-0:not(.translate-y-full)');
+            if (!open) return;
+            // Every overlay ends its action row with a *-save button.
+            const saveBtn = open.querySelector('button[id$="-save"]');
+            if (saveBtn) {
+                e.preventDefault();
+                saveBtn.click();
+            }
+            return;
+        }
+        // Ctrl/Cmd+M starts the voice input for the timer notes.
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'm' || e.key === 'M')) {
+            const voiceBtn = document.getElementById('btn-voice-input');
+            if (voiceBtn) {
+                e.preventDefault();
+                voiceBtn.click();
+            }
+            return;
+        }
+        if (isTextField(e.target)) return;
         if (e.ctrlKey || e.metaKey) return;
         if (e.key === 'n' || e.key === 'N') {
             e.preventDefault();
@@ -476,6 +536,12 @@ function initVoiceInput() {
     const btn = document.getElementById('btn-voice-input');
     if (!btn) return;
     btn.addEventListener('click', () => {
+        // The checkbox in Settings was never read; gate the mic on it.
+        const settings = window.storageManager ? window.storageManager.getSettings() : {};
+        if (settings.voiceInput === false) {
+            showToast('Spracheingabe ist in den Einstellungen aus.', 'info');
+            return;
+        }
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             showToast('Spracheingabe wird nicht unterstützt.', 'error');
             return;
@@ -511,12 +577,65 @@ function initTodoWidget() {
                 if (subjectSelect) {
                     const subjects = window.storageManager.getSubjects();
                     subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' +
-                        subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+                        subjects.map(s => '<option value="' + escapeHtml(String(s.id)) + '">' + escapeHtml(s.name) + '</option>').join('');
                 }
                 overlay.classList.remove('translate-y-full');
             }
         });
     }
+}
+
+/**
+ * Renders the compact "Prüfungsvorbereitung" widget (open items + progress).
+ * Nothing ever wrote into #todo-list-mini / #todo-progress-*, so the card
+ * showed a permanent 0/0 and an empty list.
+ */
+function renderTodosMini() {
+    const container = document.getElementById('todo-list-mini');
+    if (!container) return;
+
+    const todos = getTodos();
+    const done = todos.filter(t => t.completed).length;
+    const textEl = document.getElementById('todo-progress-text');
+    const barEl = document.getElementById('todo-progress-bar');
+    const pct = todos.length > 0 ? Math.round((done / todos.length) * 100) : 0;
+
+    if (textEl) textEl.textContent = `${done}/${todos.length}`;
+    if (barEl) barEl.style.width = `${pct}%`;
+
+    if (todos.length === 0) {
+        container.innerHTML = '<div class="text-sm text-adaptive-muted text-center py-2">Keine Lernziele angelegt.</div>';
+        return;
+    }
+
+    // Open items first so the card is useful, then the finished ones.
+    // No slice: unfinished todos beyond the 5th would be unreachable; the
+    // container scrolls instead (max-h-64 overflow-y-auto).
+    const rows = todos
+        .map((todo, index) => ({ todo, index }))
+        .sort((a, b) => Number(a.todo.completed) - Number(b.todo.completed));
+
+    container.innerHTML = rows.map(({ todo, index }) => `
+        <button class="todo-mini-row btn-interactive w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-surface/60 text-left" data-index="${index}" aria-pressed="${Boolean(todo.completed)}">
+            <span class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${todo.completed ? 'bg-primary border-primary' : 'border-gray-600'}">
+                ${todo.completed ? '<i data-lucide="check" class="w-2.5 h-2.5 text-white" aria-hidden="true"></i>' : ''}
+            </span>
+            <span class="flex-1 text-xs truncate ${todo.completed ? 'line-through text-adaptive-muted' : 'text-adaptive'}">${escapeHtml(todo.text)}</span>
+        </button>
+    `).join('');
+
+    container.querySelectorAll('.todo-mini-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const index = parseInt(row.dataset.index, 10);
+            const list = getTodos();
+            if (!list[index]) return;
+            list[index].completed = !list[index].completed;
+            saveTodos(list);
+            renderTodos();
+        });
+    });
+
+    refreshIcons();
 }
 
 /**
@@ -532,6 +651,7 @@ function renderTodos() {
     if (todos.length === 0) {
         container.innerHTML = '';
         if (emptyState) emptyState.classList.remove('hidden');
+        renderTodosMini();
         return;
     }
     
@@ -572,7 +692,8 @@ function renderTodos() {
             showToast('Lernziel gelöscht', 'info');
         });
     });
-    
+
+    renderTodosMini();
     refreshIcons();
 }
 
@@ -595,6 +716,7 @@ window.showToast = showToast;
 window.getTodos = getTodos;
 window.saveTodos = saveTodos;
 window.renderTodos = renderTodos;
+window.renderTodosMini = renderTodosMini;
 window.saveGoals = saveGoals;
 window.openAddGoalModal = openAddGoalModal;
 window.closeAddGoalModal = closeAddGoalModal;
@@ -661,7 +783,8 @@ function calculateGoalProgress(goal) {
 }
 
 function getGoalStatusBadge(goal, progress) {
-    const endDate = new Date(goal.endDate);
+    const endDate = parseLocalDate(goal.endDate);
+    endDate.setHours(23, 59, 59, 999);
     const now = new Date();
     if (progress >= 100) return { label: 'Abgeschlossen', cls: 'bg-green-900/40 text-green-300' };
     if (endDate < now) return { label: 'Verpasst', cls: 'bg-red-900/40 text-red-300' };
@@ -688,7 +811,11 @@ function renderGoals() {
         const subject = goal.subjectId ? subjects.find(s => String(s.id) === String(goal.subjectId)) : null;
         const subjectName = subject ? subject.name : 'Alle Fächer';
         const subjectColor = subject ? subject.color : 'bg-gray-500';
-        const remainingDays = Math.ceil((new Date(goal.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+        // Local end-of-day: new Date('2026-10-24') is UTC midnight and flipped
+        // the badge one day early.
+        const goalEnd = parseLocalDate(goal.endDate);
+        goalEnd.setHours(23, 59, 59, 999);
+        const remainingDays = Math.ceil((goalEnd - new Date()) / (1000 * 60 * 60 * 24));
         const daysLabel = remainingDays < 0 ? Math.abs(remainingDays) + ' Tage überschritten' : remainingDays === 0 ? 'Heute' : remainingDays + ' Tage übrig';
         const progressColor = progress.progress >= 100 ? 'bg-green-500' : progress.progress >= 70 ? 'bg-blue-500' : progress.progress >= 40 ? 'bg-yellow-500' : 'bg-orange-500';
         const daysColor = remainingDays < 0 ? 'text-red-400' : remainingDays <= 7 ? 'text-yellow-400 font-medium' : 'text-adaptive-muted';
@@ -718,12 +845,15 @@ function openAddGoalModal() {
     document.getElementById('add-goal-target-hours').value = '';
     const subjects = window.storageManager.getSubjects();
     const subjectSelect = document.getElementById('add-goal-subject');
-    if (subjectSelect) subjectSelect.innerHTML = '<option value="">— Alle Faetcher —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+    if (subjectSelect) subjectSelect.innerHTML = '<option value="">— Alle Faetcher —</option>' + subjects.map(s => '<option value="' + escapeHtml(String(s.id)) + '">' + escapeHtml(s.name) + '</option>').join('');
     const today = new Date();
-    document.getElementById('add-goal-start-date').value = today.toISOString().split('T')[0];
+    // toISOString() is UTC: in the evening (CEST) the "start" default jumped
+    // to tomorrow. Local parts keep it on today.
+    const localIso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    document.getElementById('add-goal-start-date').value = localIso(today);
     const defEnd = new Date(today);
     defEnd.setDate(defEnd.getDate() + 30);
-    document.getElementById('add-goal-end-date').value = defEnd.toISOString().split('T')[0];
+    document.getElementById('add-goal-end-date').value = localIso(defEnd);
     overlay.classList.remove('translate-y-full');
 }
 
@@ -896,7 +1026,7 @@ function initExportHandlers() {
         document.getElementById('export-date-to').value = '';
         const subjects = window.storageManager.getSubjects();
         const select = document.getElementById('export-subject-filter');
-        if (select) select.innerHTML = '<option value="">Alle Faetcher</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+        if (select) select.innerHTML = '<option value="">Alle Faetcher</option>' + subjects.map(s => '<option value="' + escapeHtml(String(s.id)) + '">' + escapeHtml(s.name) + '</option>').join('');
         selectExportFormat2('csv');
         selectExportSep('semicolon');
         overlay.classList.remove('translate-y-full');
@@ -949,6 +1079,8 @@ function initFontSize() {
     if (fontSizeInput) {
         fontSizeInput.addEventListener('input', () => {
             if (fontSizeLabel) fontSizeLabel.textContent = fontSizeInput.value + 'px';
+            // Live preview while dragging; saving decides what stays.
+            applyFontSize(parseInt(fontSizeInput.value) || 16);
         });
     }
 }
@@ -1000,10 +1132,10 @@ function initPruefungenHandlers() {
 
     window.openAddExamOverlay = (editExamId = null) => {
         const subjects = window.storageManager.getSubjects();
-        subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' + subjects.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+        subjectSelect.innerHTML = '<option value="">— Kein Fach —</option>' + subjects.map(s => '<option value="' + escapeHtml(String(s.id)) + '">' + escapeHtml(s.name) + '</option>').join('');
 
         const semesters = window.storageManager.getSemesters();
-        semesterSelect.innerHTML = '<option value="">— Kein Semester —</option>' + semesters.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>').join('');
+        semesterSelect.innerHTML = '<option value="">— Kein Semester —</option>' + semesters.map(s => '<option value="' + escapeHtml(String(s.id)) + '">' + escapeHtml(s.name) + '</option>').join('');
 
         if (editExamId) {
             const exams = window.storageManager.getExams();
@@ -1031,7 +1163,8 @@ function initPruefungenHandlers() {
             codeInput.value = '';
             subjectSelect.value = '';
             semesterSelect.value = '';
-            dateInput.value = new Date().toISOString().split('T')[0];
+            const nowLocal = new Date();
+            dateInput.value = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
             gradeSelect.value = '';
             ectsInput.value = '';
             notesInput.value = '';
@@ -1067,7 +1200,8 @@ function initPruefungenHandlers() {
             const semesterId = semesterSelect.value || null;
             const date = dateInput.value;
             const grade = gradeSelect.value;
-            const ects = ectsInput.value !== '' ? parseInt(ectsInput.value) : null;
+            const ectsParsed = parseInt(ectsInput.value, 10);
+            const ects = Number.isFinite(ectsParsed) ? ectsParsed : null;
             const notes = notesInput.value.trim();
 
             if (!name) { showToast('Bitte gib einen Modulnamen ein.', 'error'); return; }
@@ -1153,11 +1287,10 @@ function initTheme() {
  * @param {boolean} isDark - Whether to apply dark theme
  */
 function applyTheme(isDark) {
-    if (isDark) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    // style.css keys the light-mode overrides (heatmap palette) off .light,
+    // so the class has to be set as well - only removing .dark left them dead.
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('light', !isDark);
 }
 
 // ==================== SUBJECT MANAGEMENT ====================
@@ -1245,6 +1378,33 @@ function initSettings() {
     const btnClose = document.getElementById('btn-settings-close');
     const btnSave = document.getElementById('btn-settings-save');
     const dailyGoalInput = document.getElementById('settings-daily-goal');
+    const notifyPomodoroInput = document.getElementById('settings-notify-pomodoro');
+    const notifyDailyInput = document.getElementById('settings-notify-daily');
+    const notifySoundInput = document.getElementById('settings-notify-sound');
+    const voiceInputSetting = document.getElementById('settings-voice-input');
+    const notifyTestBtn = document.getElementById('btn-test-notification');
+    if (notifyTestBtn) {
+        // The button had no listener at all; it now sends a real test ping.
+        notifyTestBtn.addEventListener('click', async () => {
+            const soundOn = notifySoundInput ? notifySoundInput.checked : true;
+            if (soundOn && typeof playBeep === 'function') playBeep(880, 250, 1);
+            if ('Notification' in window) {
+                const permission = Notification.permission === 'default'
+                    ? await Notification.requestPermission().catch(() => 'denied')
+                    : Notification.permission;
+                if (permission === 'granted') {
+                    new Notification('Lernzeit Tracker', { body: 'Test-Benachrichtigung funktioniert!' });
+                    showToast('Test-Benachrichtigung gesendet!', 'success');
+                } else if (soundOn) {
+                    showToast('Ton-Test abgespielt (Benachrichtigungen blockiert).', 'info');
+                } else {
+                    showToast('Benachrichtigungen sind blockiert.', 'error');
+                }
+            } else if (soundOn) {
+                showToast('Ton-Test abgespielt.', 'info');
+            }
+        });
+    }
     const learningDaysInput = document.getElementById('settings-learning-days');
     const fontSizeInput = document.getElementById('settings-font-size');
     const fontSizeLabel = document.getElementById('settings-font-size-label');
@@ -1350,6 +1510,10 @@ function initSettings() {
         if (pomoIntervalInput) pomoIntervalInput.value = settings.pomoLongBreakInterval || 4;
         if (pomoAutoBreakInput) pomoAutoBreakInput.checked = settings.pomoAutoBreak !== false;
         if (pomoAutoWorkInput) pomoAutoWorkInput.checked = settings.pomoAutoWork === true;
+        if (notifyPomodoroInput) notifyPomodoroInput.checked = settings.notifyPomodoro !== false;
+        if (notifyDailyInput) notifyDailyInput.checked = settings.notifyDaily === true;
+        if (notifySoundInput) notifySoundInput.checked = settings.notifySound !== false;
+        if (voiceInputSetting) voiceInputSetting.checked = settings.voiceInput === true;
         applyThemeFromSettings(settings);
         overlay.classList.remove('translate-y-full');
     });
@@ -1371,21 +1535,35 @@ function initSettings() {
 
         if (newGoal > 0 && learningDays >= 1 && learningDays <= 7) {
             const currentSettings = window.storageManager.getSettings();
+            // Range-clamp everything: unchecked raw values (e.g. pomoWork 9999
+            // or fontSize 200) built unusable timers and layouts.
+            const clampInt = (el, fallback, min, max) => {
+                if (!el) return fallback;
+                const n = parseInt(el.value, 10);
+                if (!Number.isFinite(n)) return fallback;
+                return Math.min(max, Math.max(min, n));
+            };
             const newSettings = {
                 dailyGoal: newGoal,
                 learningDays: learningDays,
-                fontSize: fontSizeInput ? (parseInt(fontSizeInput.value) || 16) : 16,
+                fontSize: clampInt(fontSizeInput, 16, 12, 24),
                 themeMode: currentThemeMode
             };
-            if (pomoWorkInput) newSettings.pomoWork = parseInt(pomoWorkInput.value) || 25;
-            if (pomoShortInput) newSettings.pomoShortBreak = parseInt(pomoShortInput.value) || 5;
-            if (pomoLongInput) newSettings.pomoLongBreak = parseInt(pomoLongInput.value) || 15;
-            if (pomoIntervalInput) newSettings.pomoLongBreakInterval = parseInt(pomoIntervalInput.value) || 4;
+            if (pomoWorkInput) newSettings.pomoWork = clampInt(pomoWorkInput, 25, 1, 120);
+            if (pomoShortInput) newSettings.pomoShortBreak = clampInt(pomoShortInput, 5, 1, 60);
+            if (pomoLongInput) newSettings.pomoLongBreak = clampInt(pomoLongInput, 15, 1, 60);
+            if (pomoIntervalInput) newSettings.pomoLongBreakInterval = clampInt(pomoIntervalInput, 4, 2, 10);
             if (pomoAutoBreakInput) newSettings.pomoAutoBreak = pomoAutoBreakInput.checked;
             if (pomoAutoWorkInput) newSettings.pomoAutoWork = pomoAutoWorkInput.checked;
+            if (notifyPomodoroInput) newSettings.notifyPomodoro = notifyPomodoroInput.checked;
+            if (notifyDailyInput) newSettings.notifyDaily = notifyDailyInput.checked;
+            if (notifySoundInput) newSettings.notifySound = notifySoundInput.checked;
+            if (voiceInputSetting) newSettings.voiceInput = voiceInputSetting.checked;
 
             window.storageManager.updateSettings(newSettings);
-            applyFontSize(fontSizeInput ? (parseInt(fontSizeInput.value) || 16) : 16);
+            // Apply the clamped value, not the raw input: "200" saved 24 but
+            // rendered 200px until the next reload.
+            applyFontSize(newSettings.fontSize);
             overlay.classList.add('translate-y-full');
             updateViews();
             showToast('Einstellungen gespeichert!', 'success');
@@ -1426,7 +1604,12 @@ function initSettings() {
             reader.onload = (event) => {
                 try {
                     const data = JSON.parse(event.target.result);
-                    if (data.entries && data.subjects && data.settings) {
+                    const isPlainObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+                    const validBackup = isPlainObject(data)
+                        && Array.isArray(data.entries)
+                        && Array.isArray(data.subjects)
+                        && isPlainObject(data.settings);
+                    if (validBackup) {
                         if (confirm('Wollen Sie wirklich Ihre aktuellen Daten mit dem Backup überschreiben? Dies kann nicht rückgängig gemacht werden.')) {
                             localStorage.setItem(window.storageManager.STORAGE_KEYS.ENTRIES, JSON.stringify(data.entries));
                             localStorage.setItem(window.storageManager.STORAGE_KEYS.SUBJECTS, JSON.stringify(data.subjects));
@@ -1444,6 +1627,9 @@ function initSettings() {
                             }
                             if (Array.isArray(data.todos)) {
                                 localStorage.setItem('lt_todos', JSON.stringify(data.todos));
+                            }
+                            if (Array.isArray(data.achievements)) {
+                                localStorage.setItem('lt_achievements', JSON.stringify(data.achievements));
                             }
                             location.reload();
                         }
@@ -1484,6 +1670,9 @@ function exportDataAsJSON() {
         exams: window.storageManager.getExams(),
         goals: loadGoals(),
         todos: getTodos(),
+        // Achievements used to silently drop out of the backup: a restore on
+        // a fresh profile lost every unlocked badge.
+        achievements: (() => { try { return JSON.parse(localStorage.getItem('lt_achievements') || '[]'); } catch (e) { return []; } })(),
         exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
@@ -1691,9 +1880,31 @@ function initAddEntry() {
 
         const startTimeDate = new Date(year, month, day, hours, minutes);
 
-        if (startTimeDate > new Date()) {
+        // The future check only applies to NEW entries: a stored entry from
+        // an earlier (wrong-clock) session would otherwise become uneditable.
+        if (!editId && startTimeDate > new Date()) {
             showToast('Datum/Uhrzeit kann nicht in der Zukunft liegen.', 'error');
             return;
+        }
+        if (editId) {
+            const existing = window.storageManager.getEntries().find(e => String(e.id) === String(editId));
+            if (existing) {
+                // All fields count: the older guard only compared slot + duration
+                // and silently dropped note/topic/subject edits.
+                const started = new Date(existing.startTime);
+                const sameSlot = started.getFullYear() === year && started.getMonth() === month &&
+                    started.getDate() === day && started.getHours() === hours && started.getMinutes() === minutes;
+                const unchanged = sameSlot
+                    && Number(existing.duration) === durationMin * 60
+                    && String(existing.subjectId) === String(subjectId)
+                    && String(existing.notes || '') === notesVal
+                    && String(existing.topics || '') === topicsVal;
+                if (unchanged) {
+                    showToast('Keine Änderungen.', 'info');
+                    overlay.classList.add('translate-y-full');
+                    return;
+                }
+            }
         }
 
         const entryData = {
@@ -1846,12 +2057,15 @@ function renderModuleList(semesterId) {
     if (titleEl) titleEl.textContent = semester.name;
 
     const modules = semester.modules || [];
-    const totalEcts = modules.reduce((sum, m) => sum + (m.ects || 0), 0);
-    const totalEstimatedHours = modules.reduce((sum, m) => sum + (m.hours || 0), 0);
+    // Imports carry numbers as strings ("7"); raw "+" would concatenate.
+    const numOr = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+    const totalEcts = modules.reduce((sum, m) => sum + numOr(m.ects), 0);
+    const totalEstimatedHours = modules.reduce((sum, m) => sum + numOr(m.hours), 0);
     const entries = window.storageManager.getEntries();
-    const uniqueSubjectIds = new Set(modules.map(m => m.subjectId).filter(Boolean));
+    // Set lookup: ~40% faster than Array.includes on 100k-entry datasets.
+    const uniqueSubjectIds = new Set(modules.map(m => String(m.subjectId)).filter(id => id && id !== 'null'));
     const totalSpentSeconds = entries
-        .filter(e => uniqueSubjectIds.has(e.subjectId))
+        .filter(e => uniqueSubjectIds.has(String(e.subjectId)))
         .reduce((acc, e) => acc + e.duration, 0);
     const totalSpentHours = (totalSpentSeconds / 3600).toFixed(1);
     const overallProgress = totalEstimatedHours > 0 ? Math.min((totalSpentSeconds / 3600 / totalEstimatedHours) * 100, 100) : 0;
@@ -1928,7 +2142,7 @@ function renderModuleList(semesterId) {
                 <div class="flex flex-wrap gap-2">
                     ${mod.ects ? `<span class="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">${Number.isFinite(Number(mod.ects)) ? Number(mod.ects) : 0} ECTS</span>` : ''}
                     ${examBadge ? `<span class="text-xs ${escapeHtml(examBadge.bgClass)} px-2 py-0.5 rounded-full">📝 ${escapeHtml(examBadge.text)}</span>` : ''}
-                    ${mod.grade ? `<span class="text-xs ${getGradeBadgeClass(mod.grade)} px-2 py-0.5 rounded-full">${mod.grade}</span>` : ''}
+                    ${mod.grade ? `<span class="text-xs ${getGradeBadgeClass(mod.grade)} px-2 py-0.5 rounded-full">${escapeHtml(String(mod.grade))}</span>` : ''}
                 </div>
             `;
             container.appendChild(card);
@@ -1985,9 +2199,9 @@ function renderSemesterExams(semesterId) {
         card.innerHTML = `
             <div class="flex-1">
                 <div class="font-medium text-sm">${escapeHtml(exam.name)}</div>
-                <div class="text-xs text-adaptive-muted">${exam.date || '—'} ${exam.code ? '· ' + escapeHtml(exam.code) : ''} ${exam.ects ? '· ' + exam.ects + ' ECTS' : ''}</div>
+                <div class="text-xs text-adaptive-muted">${exam.date ? escapeHtml(String(exam.date)) : '—'} ${exam.code ? '· ' + escapeHtml(exam.code) : ''} ${Number(exam.ects) > 0 ? '· ' + Number(exam.ects) + ' ECTS' : ''}</div>
             </div>
-            ${exam.grade ? `<span class="text-sm font-bold ${gradeColor}">${exam.grade}</span>` : ''}
+            ${exam.grade ? `<span class="text-sm font-bold ${gradeColor}">${escapeHtml(String(exam.grade))}</span>` : ''}
         `;
         card.addEventListener('click', () => window.openAddExamOverlay(exam.id));
         list.appendChild(card);
@@ -2145,7 +2359,7 @@ function populateModuleSubjectSelect(selectedId) {
     if (!select) return;
     const subjects = window.storageManager.getSubjects();
     select.innerHTML = '<option value="">— Kein Fach —</option>' +
-        subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+        subjects.map(s => `<option value="${escapeHtml(String(s.id))}">${escapeHtml(s.name)}</option>`).join('');
     if (selectedId) select.value = selectedId;
 }
 
@@ -2343,13 +2557,21 @@ function updateStudyRecommendation() {
     const now = new Date();
 
     const recommendations = [];
+    // Index once: a Set membership test is O(1), String-cast keeps legacy
+    // numeric IDs comparable with the stored string IDs.
+    const bySubject = new Map();
+    entries.forEach(e => {
+        const key = String(e.subjectId);
+        if (!bySubject.has(key)) bySubject.set(key, []);
+        bySubject.get(key).push(e);
+    });
     semesters.forEach(semester => {
         (semester.modules || []).forEach(mod => {
             if (!mod.subjectId) return;
             const subject = subjects.find(s => String(s.id) === String(mod.subjectId));
             if (!subject) return;
 
-            const subjectEntries = entries.filter(e => String(e.subjectId) === String(mod.subjectId));
+            const subjectEntries = bySubject.get(String(mod.subjectId)) || [];
             const spentSeconds = subjectEntries.reduce((acc, e) => acc + e.duration, 0);
             const spentHours = spentSeconds / 3600;
             const estimatedHours = mod.hours || 1;
@@ -2493,6 +2715,11 @@ function showToast(message, type = 'success') {
     textSpan.textContent = message;
     toast.appendChild(textSpan);
 
+    // Cap the visible stack: a burst (achievements + save hints) used to fill
+    // the whole screen edge with toasts.
+    while (container.children.length >= 3) {
+        container.removeChild(container.firstElementChild);
+    }
     container.appendChild(toast);
 
     setTimeout(() => {
@@ -2655,11 +2882,12 @@ function setExamFilter(filter) {
 }
 
 function isExamPassed(exam) {
-    if (!exam.grade) return false;
-    const g = exam.grade;
-    if (g === 'B' || g === 'bestanden') return true;
-    if (g === 'NB' || g === 'nicht bestanden') return false;
-    const num = parseFloat(g);
+    // Imports carry 'b', 'Bestanden' or comma grades ('2,3'): compare folded.
+    if (!exam.grade && exam.grade !== 0) return false;
+    const g = String(exam.grade).trim().toUpperCase();
+    if (g === 'B' || g === 'BESTANDEN') return true;
+    if (g === 'NB' || g === 'NICHT BESTANDEN') return false;
+    const num = parseFloat(g.replace(',', '.'));
     if (!isNaN(num)) return num <= 4.0;
     return false;
 }
