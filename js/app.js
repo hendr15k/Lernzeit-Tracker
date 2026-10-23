@@ -2447,18 +2447,22 @@ function exportExamToICS(examDate, moduleName) {
     const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const safeName = icsEscape(moduleName);
 
-    const ics = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Lernzeit Tracker//DE
-BEGIN:VEVENT
-UID:${Date.now()}@lernzeit-tracker
-DTSTAMP:${stamp}
-DTSTART:${dateStr}
-DTEND:${endStr}
-SUMMARY:Prüfung: ${safeName}
-DESCRIPTION:Prüfung für ${safeName} - Lernzeit Tracker
-END:VEVENT
-END:VCALENDAR`;
+    const icsLines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Lernzeit Tracker//DE',
+        'BEGIN:VEVENT',
+        `UID:${Date.now()}@lernzeit-tracker`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${dateStr}`,
+        `DTEND:${endStr}`,
+        `SUMMARY:Prüfung: ${safeName}`,
+        `DESCRIPTION:Prüfung für ${safeName} - Lernzeit Tracker`,
+        'END:VEVENT',
+        'END:VCALENDAR'
+    ];
+    // RFC 5545 verlangt CRLF als Zeilenumbruch.
+    const ics = icsLines.join('\r\n') + '\r\n';
 
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
