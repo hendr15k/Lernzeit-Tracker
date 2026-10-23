@@ -694,7 +694,7 @@ function renderGoals() {
         const daysColor = remainingDays < 0 ? 'text-red-400' : remainingDays <= 7 ? 'text-yellow-400 font-medium' : 'text-adaptive-muted';
         const card = document.createElement('div');
         card.className = 'surface-card p-4 border border-gray-800';
-        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + subjectColor + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + subjectName.substring(0, 2) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + goal.id + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
+        card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0 mr-3"><div class="flex items-center gap-2 mb-1"><div class="w-7 h-7 rounded-full ' + subjectColor + ' flex items-center justify-center text-white text-xs font-bold flex-shrink-0">' + escapeHtml(String(subjectName).slice(0, 2)) + '</div><h3 class="text-base font-semibold text-adaptive truncate">' + escapeHtml(goal.name) + '</h3></div><div class="flex items-center gap-2 text-xs text-adaptive-muted ' + daysColor + '"><span>' + escapeHtml(subjectName) + '</span><span>·</span><span>' + formatDateShort(goal.startDate) + ' → ' + formatDateShort(goal.endDate) + '</span><span>·</span><span>' + daysLabel + '</span></div></div><span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap ' + badge.cls + '">' + badge.label + '</span></div><div class="mt-3"><div class="flex justify-between text-xs text-adaptive-muted mb-1"><span>' + progress.hoursLearned + 'h / ' + progress.targetHours + 'h</span><span>' + progress.progress + '%</span></div><div class="h-2 bg-gray-700 rounded-full overflow-hidden"><div class="h-full ' + progressColor + ' transition-all rounded-full" style="width:' + progress.progress + '%"></div></div></div><div class="mt-3 flex justify-end"><button class="btn-delete-goal btn-interactive p-1.5 hover:bg-surface rounded-lg transition" data-goal-id="' + escapeHtml(String(goal.id)) + '" aria-label="Ziel löschen"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L3 6m14 0V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2"></path></svg></button></div>';
         container.appendChild(card);
     });
     container.querySelectorAll('.btn-delete-goal').forEach(btn => {
@@ -1756,10 +1756,10 @@ function renderSemesterList() {
                         <div class="text-sm text-adaptive-muted">${semester.start ? formatDateShort(semester.start) : ''}${semester.start && semester.end ? ' → ' : ''}${semester.end ? formatDateShort(semester.end) : ''}${durationText ? ' · ' + durationText : ''}</div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button class="btn-edit-semester p-1.5 hover:bg-surface rounded-lg transition" data-id="${semester.id}">
+                        <button class="btn-edit-semester p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(semester.id))}">
                             <i data-lucide="pencil" class="w-4 h-4 text-adaptive-muted"></i>
                         </button>
-                        <button class="btn-delete-semester-item p-1.5 hover:bg-surface rounded-lg transition" data-id="${semester.id}">
+                        <button class="btn-delete-semester-item p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(semester.id))}">
                             <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
                         </button>
                     </div>
@@ -1898,10 +1898,10 @@ function renderModuleList(semesterId) {
                         ${mod.notes ? `<div class="text-sm text-adaptive-muted mt-1 line-clamp-2">${escapeHtml(mod.notes)}</div>` : ''}
                     </div>
                     <div class="flex items-center gap-1 ml-2">
-                        <button class="btn-edit-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${mod.id}">
+                        <button class="btn-edit-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(mod.id))}">
                             <i data-lucide="pencil" class="w-4 h-4 text-adaptive-muted"></i>
                         </button>
-                        <button class="btn-delete-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${mod.id}">
+                        <button class="btn-delete-module p-1.5 hover:bg-surface rounded-lg transition" data-id="${escapeHtml(String(mod.id))}">
                             <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
                         </button>
                     </div>
@@ -2726,10 +2726,10 @@ function renderPruefungen() {
                     ${exam.notes ? '<span class="truncate flex-1">' + escapeHtml(exam.notes) + '</span>' : ''}
                 </div>
                 <div class="flex justify-end gap-2 mt-2">
-                    <button class="btn-edit-exam btn-interactive p-2 hover:bg-surface rounded-lg transition text-adaptive-muted" data-id="${exam.id}" aria-label="Prüfung bearbeiten">
+                    <button class="btn-edit-exam btn-interactive p-2 hover:bg-surface rounded-lg transition text-adaptive-muted" data-id="${escapeHtml(String(exam.id))}" aria-label="Prüfung bearbeiten">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                     </button>
-                    <button class="btn-delete-exam-item btn-interactive p-2 hover:bg-red-900/30 rounded-lg transition text-red-400" data-id="${exam.id}" aria-label="Prüfung löschen">
+                    <button class="btn-delete-exam-item btn-interactive p-2 hover:bg-red-900/30 rounded-lg transition text-red-400" data-id="${escapeHtml(String(exam.id))}" aria-label="Prüfung löschen">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>

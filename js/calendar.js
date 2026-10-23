@@ -409,10 +409,10 @@ function renderHistory(entries, subjects) {
             <div class="flex items-center space-x-2 text-adaptive-muted flex-shrink-0">
                 <span class="mr-2 text-xs opacity-75">${timeStr}</span>
                 <span>${durationMin} min</span>
-                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${entry.id}" aria-label="Eintrag bearbeiten">
+                <button class="btn-edit-entry p-1 hover:text-primary transition" data-id="${escapeHtml(String(entry.id))}" aria-label="Eintrag bearbeiten">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${entry.id}" aria-label="Eintrag löschen">
+                <button class="btn-delete-entry p-1 hover:text-red-500 transition" data-id="${escapeHtml(String(entry.id))}" aria-label="Eintrag löschen">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -485,10 +485,10 @@ function renderFaecher(entries, subjects) {
                 </div>
             </div>
             <div class="flex items-center flex-shrink-0">
-                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach bearbeiten">
+                <button class="btn-edit-subject p-2 hover:text-primary rounded-full transition text-adaptive-muted" data-id="${escapeHtml(String(subject.id))}" aria-label="Fach bearbeiten">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                 </button>
-                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${subject.id}" aria-label="Fach löschen">
+                <button class="btn-delete-subject p-2 hover:text-red-500 rounded-full transition text-adaptive-muted" data-id="${escapeHtml(String(subject.id))}" aria-label="Fach löschen">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
