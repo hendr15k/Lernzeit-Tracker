@@ -1,1554 +1,1473 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Lernzeit-Tracker — Tracke deine Lernzeiten für FH Aachen Fächer">
-    <meta name="theme-color" content="#3b82f6">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Lernzeit Tracker</title>
-    <link rel="manifest" href="manifest.json">
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.473.0"></script>
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="css/toast.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: 'var(--color-bg)',
-                        surface: 'var(--color-surface)',
-                        primary: '#3b82f6',
-                        success: '#22c55e',
-                    }
-                }
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Lernzeit-Tracker — Tracke deine Lernzeiten für FH Aachen Fächer">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Lernzeit Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/tailwind.generated.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/toast.css">
 </head>
-<body class="bg-dark text-adaptive font-sans antialiased pb-24">
-    <!-- Skip link for accessibility -->
-    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
-    
-    <!-- Pull to refresh indicator -->
-    <div id="pull-indicator" class="pull-indicator fixed top-0 left-0 right-0 h-0 overflow-hidden flex items-center justify-center z-50 pointer-events-none">
-        <div class="flex flex-col items-center text-primary">
-            <i data-lucide="refresh-cw" class="w-6 h-6 animate-spin"></i>
-            <span class="text-xs mt-1">Laden...</span>
-        </div>
+<body id="app" class="bg-app text-app font-sans antialiased">
+  <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+
+  <header class="mobile-header" role="banner">
+    <button id="btn-nav-toggle" class="icon-button" type="button" aria-label="Navigation öffnen" aria-expanded="false" aria-controls="workspace-sidebar">
+      <i data-lucide="menu" class="w-6 h-6" aria-hidden="true"></i>
+    </button>
+    <div class="mobile-brand">
+      <span class="brand-mark">L</span>
+      <div>
+        <strong>Lernzeit Tracker</strong>
+        <span>Dein Lernraum</span>
+      </div>
     </div>
+    <div class="mobile-header-actions">
+      <button id="btn-add" class="icon-button" type="button" aria-label="Eintrag hinzufügen">
+        <i data-lucide="plus" class="w-5 h-5" aria-hidden="true"></i>
+      </button>
+      <button id="btn-timer-toggle" class="icon-button icon-button-primary" type="button" aria-label="Timer öffnen">
+        <i data-lucide="play" class="w-5 h-5 fill-current" aria-hidden="true"></i>
+      </button>
+      <button id="btn-theme" class="icon-button" type="button" aria-label="Theme wechseln">
+        <i data-lucide="lightbulb" class="w-5 h-5" aria-hidden="true"></i>
+      </button>
+      <button id="btn-menu" class="icon-button" type="button" aria-label="Einstellungen öffnen">
+        <i data-lucide="settings" class="w-5 h-5" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
 
-    <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden flex flex-col" role="application" aria-label="Lernzeit Tracker Anwendung">
+  <aside id="workspace-sidebar" class="workspace-sidebar" aria-label="Arbeitsbereich">
+    <div class="sidebar-brand">
+      <span class="brand-mark">L</span>
+      <div>
+        <strong>Lernzeit Tracker</strong>
+        <span>Arbeitsbereich</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Hauptnavigation">
+      <button class="nav-btn sidebar-nav-btn" data-target="view-dashboard" aria-controls="view-dashboard" aria-selected="false" tabindex="0">
+  <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Dashboard</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-einheiten" aria-controls="view-einheiten" aria-selected="false" tabindex="0">
+  <i data-lucide="book-open" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Einheiten</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-faecher" aria-controls="view-faecher" aria-selected="false" tabindex="0">
+  <i data-lucide="landmark" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Fächer</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-kalender" aria-controls="view-kalender" aria-selected="false" tabindex="0">
+  <i data-lucide="calendar" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Kalender</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-achievements" aria-controls="view-achievements" aria-selected="false" tabindex="0">
+  <i data-lucide="award" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Erfolge</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-pruefungen" aria-controls="view-pruefungen" aria-selected="false" tabindex="0">
+  <i data-lucide="clipboard-check" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Prüfungen</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-semester" aria-controls="view-semester" aria-selected="false" tabindex="0">
+  <i data-lucide="graduation-cap" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Semester</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-statistiken" aria-controls="view-statistiken" aria-selected="false" tabindex="0">
+  <i data-lucide="bar-chart-2" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Statistiken</span>
+</button>
+<button class="nav-btn sidebar-nav-btn" data-target="view-ziele" aria-controls="view-ziele" aria-selected="false" tabindex="0">
+  <i data-lucide="flag" class="w-5 h-5 shrink-0" aria-hidden="true"></i>
+  <span>Ziele</span>
+</button>
 
-        <!-- Top Header -->
-        <header class="flex justify-between items-center p-4 bg-dark sticky top-0 z-10 transition-colors duration-300" role="banner">
-            <div class="flex items-center space-x-2">
-                <button id="btn-home" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Home" role="button" tabindex="0">
-                    <i data-lucide="home" class="w-6 h-6" aria-hidden="true"></i>
-                </button>
-                <div id="header-title" class="hidden">
-                    <!-- Dynamic Title -->
-                </div>
-            </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="btn-add-sidebar" class="btn btn-primary w-full" type="button" aria-label="Eintrag hinzufügen">
+        <i data-lucide="plus" class="w-5 h-5" aria-hidden="true"></i>
+        Eintrag erfassen
+      </button>
+      <button id="btn-backup" class="btn btn-secondary w-full" type="button" aria-label="Backup erstellen">
+        <i data-lucide="save" class="w-5 h-5" aria-hidden="true"></i>
+        Backup
+      </button>
+    </div>
+  </aside>
 
-            <div class="flex items-center space-x-3">
-                <button id="btn-add" class="btn-interactive p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive touch-target" aria-label="Eintrag hinzufügen" role="button" tabindex="0">
-                    <i data-lucide="plus" class="w-5 h-5" aria-hidden="true"></i>
-                </button>
-                <button id="btn-backup" class="btn-interactive p-2 rounded-full bg-surface hover:bg-gray-700 transition text-adaptive touch-target" aria-label="Backup erstellen" role="button" tabindex="0">
-                    <i data-lucide="save" class="w-5 h-5" aria-hidden="true"></i>
-                </button>
-                <button id="btn-timer-toggle" class="btn-interactive p-2 rounded-full bg-primary hover:bg-blue-600 transition text-white touch-target" aria-label="Timer öffnen" role="button" tabindex="0">
-                    <i data-lucide="play" class="w-5 h-5 fill-current" aria-hidden="true"></i>
-                </button>
-                <button id="btn-theme" class="btn-interactive p-2 rounded-full bg-success hover:bg-green-600 transition text-white touch-target" aria-label="Theme wechseln" role="button" tabindex="0">
-                    <i data-lucide="lightbulb" class="w-5 h-5 fill-current" aria-hidden="true"></i>
-                </button>
-                <button id="btn-menu" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Menü" role="button" tabindex="0">
-                    <i data-lucide="menu" class="w-6 h-6" aria-hidden="true"></i>
-                </button>
-            </div>
-        </header>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-        <!-- Main Content Area -->
-        <main id="main-content" class="flex-1 p-4 overflow-y-auto" role="main" tabindex="-1">
-
-            <!-- View: Dashboard -->
-            <div id="view-dashboard" class="view-section animate-fade-in" role="region" aria-label="Dashboard">
-                <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
-                <div class="grid gap-4">
-                    <!-- Daily Goal Progress Ring -->
-                    <div class="surface-card p-4 border border-gray-800 flex flex-col items-center animate-slide-up">
-                        <svg id="daily-goal-ring" width="120" height="120" viewBox="0 0 120 120" class="block" role="img" aria-label="Tägliches Lernziel Fortschritt">
-                            <!-- Background track -->
-                            <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2937" stroke-width="8" />
-                            <!-- Progress arc -->
-                            <circle id="daily-goal-progress" cx="60" cy="60" r="52" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"
-                                stroke-dasharray="326.73" stroke-dashoffset="326.73"
-                                transform="rotate(-90 60 60)"
-                                class="progress-ring-circle"
-                                aria-hidden="true" />
-                            <!-- Center text -->
-                            <text id="daily-goal-time" x="60" y="55" text-anchor="middle" dominant-baseline="central"
-                                fill="currentColor" font-size="16" font-weight="bold" font-family="inherit" class="counter-animated">0m</text>
-                            <text id="daily-goal-label" x="60" y="73" text-anchor="middle" dominant-baseline="central"
-                                fill="#9ca3af" font-size="11" font-family="inherit">Ziel: 1h</text>
-                            <!-- Fire emoji when goal met -->
-                            <text id="daily-goal-fire" x="95" y="28" text-anchor="middle" dominant-baseline="central"
-                                font-size="16" opacity="0" style="transition: opacity 0.3s ease;" aria-hidden="true">🔥</text>
-                        </svg>
-                    </div>
-
-                    <!-- Focus Score Widget -->
-                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.05s;">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold flex items-center gap-2">
-                                <i data-lucide="target" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+  <main id="main-content" role="main" tabindex="-1">
+    <div aria-label="Dashboard" class="view-section animate-fade-in" id="view-dashboard" role="region">
+<div class="page-heading"><div><p class="eyebrow">DEIN LERNALLTAG, IM BLICK</p><h1>Platz für deinen Fortschritt.</h1><p class="page-description">Ein klarer Kopf. Ein Fach. Dein nächster Schritt.</p></div><span class="privacy-badge"><i data-lucide="shield-check" class="w-4 h-4" aria-hidden="true"></i> Lokal auf deinem Gerät</span></div>
+<section class="focus-hero" aria-label="Dein Lernstart">
+  <div class="hero-copy"><span class="hero-kicker"><span class="status-dot"></span> ZEIT FÜR FOKUS</span><h2>Kleine Schritte.<br>Großer Fortschritt.</h2><p>Mach aus deinem Vorhaben eine Lernsession.<br>Dein Fortschritt beginnt genau hier.</p><div class="hero-actions"><button id="btn-hero-start" class="btn btn-primary" type="button"><i data-lucide="play" class="w-5 h-5" aria-hidden="true"></i>Lernsession starten</button><button id="btn-hero-add" class="btn btn-secondary" type="button">Zeit nachtragen<i data-lucide="arrow-up-right" class="w-4 h-4" aria-hidden="true"></i></button></div></div>
+  <div class="hero-progress"><div class="hero-orbit" aria-hidden="true"><i data-lucide="sprout"></i></div><span class="hero-today-label">HEUTE GELERNT</span><strong id="hero-today-minutes">0m</strong><span>Jede Minute zählt.</span></div>
+</section>
+<div class="dashboard-summary"><div><span class="summary-icon"><i data-lucide="flame" aria-hidden="true"></i></span><div><span>Deine Lernserie</span><strong id="hero-streak">0 Tage</strong></div></div><div><span class="summary-icon mint"><i data-lucide="hourglass" aria-hidden="true"></i></span><div><span>Insgesamt investiert</span><strong id="hero-total">0h</strong></div></div><div class="summary-tip"><i data-lucide="sparkles" aria-hidden="true"></i><p>Regelmäßig ist wichtiger als perfekt.</p></div></div>
+<div class="section-label"><h2>Dein Überblick</h2><span>Fortschritt in deinem Tempo</span></div>
+<div class="grid gap-4 dashboard-grid">
+<!-- Daily Goal Progress Ring -->
+<div class="surface-card p-4 border border-gray-800 flex flex-col items-center animate-slide-up">
+<svg aria-label="Tägliches Lernziel Fortschritt" class="block" height="120" id="daily-goal-ring" role="img" viewbox="0 0 120 120" width="120">
+<!-- Background track -->
+<circle cx="60" cy="60" fill="none" r="52" stroke="#1f2937" stroke-width="8"></circle>
+<!-- Progress arc -->
+<circle aria-hidden="true" class="progress-ring-circle" cx="60" cy="60" fill="none" id="daily-goal-progress" r="52" stroke="#3b82f6" stroke-dasharray="326.73" stroke-dashoffset="326.73" stroke-linecap="round" stroke-width="8" transform="rotate(-90 60 60)"></circle>
+<!-- Center text -->
+<text class="counter-animated" dominant-baseline="central" fill="currentColor" font-family="inherit" font-size="16" font-weight="bold" id="daily-goal-time" text-anchor="middle" x="60" y="55">0m</text>
+<text dominant-baseline="central" fill="#9ca3af" font-family="inherit" font-size="11" id="daily-goal-label" text-anchor="middle" x="60" y="73">Ziel: 1h</text>
+<!-- Fire emoji when goal met -->
+<text aria-hidden="true" dominant-baseline="central" font-size="16" id="daily-goal-fire" opacity="0" style="transition: opacity 0.3s ease;" text-anchor="middle" x="95" y="28">🔥</text>
+</svg>
+</div>
+<!-- Focus Score Widget -->
+<div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.05s;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold flex items-center gap-2">
+<i aria-hidden="true" class="w-5 h-5 text-primary" data-lucide="target"></i>
                                 Focus Score
                             </h2>
-                            <span id="focus-score-badge" class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">—</span>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <svg id="focus-score-ring" width="60" height="60" viewBox="0 0 60 60" aria-hidden="true">
-                                <circle cx="30" cy="30" r="26" fill="none" stroke="#1f2937" stroke-width="5" />
-                                <circle id="focus-score-progress" cx="30" cy="30" r="26" fill="none" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"
-                                    stroke-dasharray="163.36" stroke-dashoffset="163.36"
-                                    transform="rotate(-90 30 30)"
-                                    class="focus-score-ring"
-                                    aria-hidden="true" />
-                            </svg>
-                            <div class="flex-1">
-                                <div class="text-2xl font-bold text-adaptive counter-animated" id="focus-score-value">0</div>
-                                <div class="text-xs text-adaptive-muted" id="focus-score-label">Sessions diese Woche</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recommended Study Time Widget -->
-                    <div class="surface-card p-4 border border-gray-800 recommended-time-card text-white animate-slide-up" style="animation-delay: 0.1s;">
-                        <div class="flex justify-between items-start mb-2">
-                            <h2 class="text-lg font-semibold flex items-center gap-2">
-                                <i data-lucide="clock" class="w-5 h-5" aria-hidden="true"></i>
+<span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full" id="focus-score-badge">—</span>
+</div>
+<div class="flex items-center gap-4">
+<svg aria-hidden="true" height="60" id="focus-score-ring" viewbox="0 0 60 60" width="60">
+<circle cx="30" cy="30" fill="none" r="26" stroke="#1f2937" stroke-width="5"></circle>
+<circle aria-hidden="true" class="focus-score-ring" cx="30" cy="30" fill="none" id="focus-score-progress" r="26" stroke="#3b82f6" stroke-dasharray="163.36" stroke-dashoffset="163.36" stroke-linecap="round" stroke-width="5" transform="rotate(-90 30 30)"></circle>
+</svg>
+<div class="flex-1">
+<div class="text-2xl font-bold text-adaptive counter-animated" id="focus-score-value">0</div>
+<div class="text-xs text-adaptive-muted" id="focus-score-label">Sessions diese Woche</div>
+</div>
+</div>
+</div>
+<!-- Recommended Study Time Widget -->
+<div class="surface-card p-4 border border-gray-800 recommended-time-card text-white animate-slide-up" style="animation-delay: 0.1s;">
+<div class="flex justify-between items-start mb-2">
+<h2 class="text-lg font-semibold flex items-center gap-2">
+<i aria-hidden="true" class="w-5 h-5" data-lucide="clock"></i>
                                 Empfohlene Lernzeit
                             </h2>
-                            <span id="recommended-time-subject" class="text-xs bg-white/20 px-2 py-0.5 rounded-full"></span>
-                        </div>
-                        <div class="flex items-end justify-between">
-                            <div>
-                                <div class="text-3xl font-bold" id="recommended-time-value">—</div>
-                                <div class="text-xs opacity-75" id="recommended-time-reason"></div>
-                            </div>
-                            <button id="btn-start-recommended" class="btn-interactive px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium transition" aria-label="Empfohlene Lernzeit starten">
+<span class="text-xs bg-white/20 px-2 py-0.5 rounded-full" id="recommended-time-subject"></span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold" id="recommended-time-value">—</div>
+<div class="text-xs opacity-75" id="recommended-time-reason"></div>
+</div>
+<button aria-label="Empfohlene Lernzeit starten" class="btn-interactive px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium transition" id="btn-start-recommended">
                                 Starten
                             </button>
-                        </div>
-                    </div>
-
-                    <!-- SVG Line Chart Widget -->
-                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.15s;">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold flex items-center gap-2">
-                                <i data-lucide="trending-up" class="w-5 h-5 text-success" aria-hidden="true"></i>
+</div>
+</div>
+<!-- SVG Line Chart Widget -->
+<div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.15s;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold flex items-center gap-2">
+<i aria-hidden="true" class="w-5 h-5 text-success" data-lucide="trending-up"></i>
                                 Wochen-Trend
                             </h2>
-                            <span id="dashboard-week-comparison" class="text-xs bg-green-400/10 text-green-400 px-2 py-1 rounded-full">—</span>
-                        </div>
-                        <div class="relative h-40" id="dashboard-line-chart" role="img" aria-label="Wochen-Trend Diagramm">
-                            <!-- SVG Line Chart injected via JS -->
-                        </div>
-                    </div>
-
-                    <!-- 7-Day Bar Graph Widget -->
-                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.3s;">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold flex items-center gap-2">
-                                <i data-lucide="bar-chart-2" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+<span class="text-xs bg-green-400/10 text-green-400 px-2 py-1 rounded-full" id="dashboard-week-comparison">—</span>
+</div>
+<div aria-label="Wochen-Trend Diagramm" class="relative h-40" id="dashboard-line-chart" role="img">
+<!-- SVG Line Chart injected via JS -->
+</div>
+</div>
+<!-- 7-Day Bar Graph Widget -->
+<div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.3s;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold flex items-center gap-2">
+<i aria-hidden="true" class="w-5 h-5 text-primary" data-lucide="bar-chart-2"></i>
                                 Letzte 7 Tage
                             </h2>
-                        </div>
-                        <div id="dashboard-graph" class="flex items-end space-x-1 h-32" role="img" aria-label="7-Tage Diagramm">
-                            <!-- Bar graph columns injected via JS -->
-                        </div>
-                    </div>
-
-                    <!-- Subject Distribution Donut Chart -->
-                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.2s;">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold flex items-center gap-2">
-                                <i data-lucide="pie-chart" class="w-5 h-5 text-purple-500" aria-hidden="true"></i>
+</div>
+<div aria-label="7-Tage Diagramm" class="flex items-end space-x-1 h-32" id="dashboard-graph" role="img">
+<!-- Bar graph columns injected via JS -->
+</div>
+</div>
+<!-- Subject Distribution Donut Chart -->
+<div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.2s;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold flex items-center gap-2">
+<i aria-hidden="true" class="w-5 h-5 text-purple-500" data-lucide="pie-chart"></i>
                                 Fächerverteilung
                             </h2>
-                            <span id="subject-distribution-total" class="text-xs text-adaptive-muted"></span>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <svg id="subject-donut-chart" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Fächerverteilung">
-                                <!-- Donut chart injected via JS -->
-                            </svg>
-                            <div id="subject-distribution-legend" class="flex-1 space-y-2 text-sm">
-                                <!-- Legend items injected via JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Mini Todo Widget -->
-                    <div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.25s;">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold flex items-center gap-2">
-                                <i data-lucide="check-square" class="w-5 h-5 text-orange-500" aria-hidden="true"></i>
+<span class="text-xs text-adaptive-muted" id="subject-distribution-total"></span>
+</div>
+<div class="flex items-center gap-4">
+<svg aria-label="Fächerverteilung" height="120" id="subject-donut-chart" role="img" viewbox="0 0 120 120" width="120">
+<!-- Donut chart injected via JS -->
+</svg>
+<div class="flex-1 space-y-2 text-sm" id="subject-distribution-legend">
+<!-- Legend items injected via JS -->
+</div>
+</div>
+</div>
+<!-- Mini Todo Widget -->
+<div class="surface-card p-4 border border-gray-800 animate-slide-up" style="animation-delay: 0.25s;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold flex items-center gap-2">
+<i aria-hidden="true" class="w-5 h-5 text-orange-500" data-lucide="check-square"></i>
                                 Lernziele
                             </h2>
-                            <button id="btn-add-todo" class="btn-interactive p-1 hover:bg-surface rounded transition" aria-label="Neues Lernziel hinzufügen">
-                                <i data-lucide="plus-circle" class="w-5 h-5 text-primary" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <div id="todo-list" class="space-y-2 max-h-48 overflow-y-auto" role="list" aria-label="Lernziele Liste">
-                            <!-- Todo items injected via JS -->
-                        </div>
-                        <div id="todo-empty-state" class="text-sm text-adaptive-muted text-center py-4 hidden">
+<button aria-label="Neues Lernziel hinzufügen" class="btn-interactive p-1 hover:bg-surface rounded transition" id="btn-add-todo">
+<i aria-hidden="true" class="w-5 h-5 text-primary" data-lucide="plus-circle"></i>
+</button>
+</div>
+<div aria-label="Lernziele Liste" class="space-y-2 max-h-48 overflow-y-auto" id="todo-list" role="list">
+<!-- Todo items injected via JS -->
+</div>
+<div class="text-sm text-adaptive-muted text-center py-4 hidden" id="todo-empty-state">
                             Keine Lernziele vorhanden
                         </div>
-                    </div>
-
-                    <!-- Streak Widget -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center animate-slide-up" style="animation-delay: 0.3s;">
-                             <div class="flex items-center gap-2">
-                                 <div class="text-3xl font-bold text-primary counter-animated" id="dashboard-streak">0</div>
-                                 <span id="streak-fire" class="text-xl" aria-hidden="true">🔥</span>
-                             </div>
-                             <div class="text-xs text-adaptive-muted">Tage Streak</div>
-                        </div>
-                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center animate-slide-up" style="animation-delay: 0.35s;">
-                             <div class="text-3xl font-bold text-success counter-animated" id="dashboard-total">0h</div>
-                             <div class="text-xs text-adaptive-muted">Gesamtzeit</div>
-                        </div>
-                    </div>
-
-                    <!-- Heatmap Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Lernaktivität</h2>
-                            <span id="heatmap-summary" class="text-xs text-adaptive-muted">Letzte 12 Wochen</span>
-                        </div>
-                        <div id="heatmap-container" class="overflow-x-auto pb-2">
-                            <div class="flex gap-1">
-                                <div class="flex flex-col gap-1 text-[10px] text-adaptive-muted mr-1 justify-start pt-0.5">
-                                    <span class="h-3">Mo</span>
-                                    <span class="h-3"></span>
-                                    <span class="h-3">Mi</span>
-                                    <span class="h-3"></span>
-                                    <span class="h-3">Fr</span>
-                                    <span class="h-3"></span>
-                                    <span class="h-3">So</span>
-                                </div>
-                                <div id="heatmap-grid" class="flex gap-[3px]">
-                                    <!-- Dynamic heatmap cells -->
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-end gap-1 mt-2 text-[10px] text-adaptive-muted">
-                            <span>Weniger</span>
-                            <div class="flex gap-[2px]">
-                                <div class="w-3 h-3 rounded-sm bg-gray-800 heatmap-legend-level-0"></div>
-                                <div class="w-3 h-3 rounded-sm bg-green-900 heatmap-legend-level-1"></div>
-                                <div class="w-3 h-3 rounded-sm bg-green-700 heatmap-legend-level-2"></div>
-                                <div class="w-3 h-3 rounded-sm bg-green-500 heatmap-legend-level-3"></div>
-                                <div class="w-3 h-3 rounded-sm bg-green-400 heatmap-legend-level-4"></div>
-                            </div>
-                            <span>Mehr</span>
-                        </div>
-                    </div>
-
-                    <!-- Achievements Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Achievements</h2>
-                            <span id="achievements-summary" class="text-xs text-adaptive-muted">0/16 freigeschaltet</span>
-                        </div>
-                        <div id="achievements-list" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            <!-- Dynamic achievements -->
-                        </div>
-                    </div>
-
-                    <!-- Exam Countdown Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Nächste Prüfungen</h2>
-                            <span id="exam-countdown-summary" class="text-xs text-adaptive-muted"></span>
-                        </div>
-                        <div id="exam-countdown-list" class="space-y-2">
-                            <!-- Dynamic exam countdowns -->
-                        </div>
-                    </div>
-
-                    <!-- Extra Stats Widget -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
-                             <div class="text-xl font-bold text-adaptive" id="dashboard-best-day">0h</div>
-                             <div class="text-xs text-adaptive-muted">Bester Tag</div>
-                        </div>
-                        <div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
-                             <div class="text-xl font-bold text-adaptive" id="dashboard-avg-day">0h</div>
-                             <div class="text-xs text-adaptive-muted">Ø pro Tag</div>
-                        </div>
-                    </div>
-
-                    <!-- Bestandene Prüfungen Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Bestandene Prüfungen</h2>
-                            <span id="pruefungen-widget-count" class="text-xs text-adaptive-muted"></span>
-                        </div>
-                        <div id="pruefungen-widget-stats" class="grid grid-cols-3 gap-2 mb-3">
-                            <div class="bg-surface rounded-lg p-2 text-center">
-                                <div class="text-lg font-bold text-primary" id="exam-count-total">0</div>
-                                <div class="text-[10px] text-adaptive-muted">Gesamt</div>
-                            </div>
-                            <div class="bg-surface rounded-lg p-2 text-center">
-                                <div class="text-lg font-bold text-success" id="exam-count-passed">0</div>
-                                <div class="text-[10px] text-adaptive-muted">Bestanden</div>
-                            </div>
-                            <div class="bg-surface rounded-lg p-2 text-center">
-                                <div class="text-lg font-bold text-adaptive" id="exam-avg-grade">—</div>
-                                <div class="text-[10px] text-adaptive-muted">Ø Note</div>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-center px-1 mb-3">
-                            <span class="text-[10px] text-adaptive-muted">ECTS-gewichtete Ø</span>
-                            <span id="exam-avg-grade-ects" class="text-sm font-bold text-primary">—</span>
-                        </div>
-                        <div id="pruefungen-widget" class="space-y-2 max-h-48 overflow-y-auto">
-                            <!-- Dynamic exam results -->
-                        </div>
-                        <div id="pruefungen-widget-empty" class="text-sm text-adaptive-muted text-center py-3 hidden">
+</div>
+<!-- Streak Widget -->
+<div class="grid grid-cols-2 gap-4">
+<div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center animate-slide-up" style="animation-delay: 0.3s;">
+<div class="flex items-center gap-2">
+<div class="text-3xl font-bold text-primary counter-animated" id="dashboard-streak">0</div>
+<span aria-hidden="true" class="text-xl" id="streak-fire">🔥</span>
+</div>
+<div class="text-xs text-adaptive-muted">Tage Streak</div>
+</div>
+<div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center animate-slide-up" style="animation-delay: 0.35s;">
+<div class="text-3xl font-bold text-success counter-animated" id="dashboard-total">0h</div>
+<div class="text-xs text-adaptive-muted">Gesamtzeit</div>
+</div>
+</div>
+<!-- Heatmap Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Lernaktivität</h2>
+<span class="text-xs text-adaptive-muted" id="heatmap-summary">Letzte 12 Wochen</span>
+</div>
+<div class="overflow-x-auto pb-2" id="heatmap-container">
+<div class="flex gap-1">
+<div class="flex flex-col gap-1 text-[10px] text-adaptive-muted mr-1 justify-start pt-0.5">
+<span class="h-3">Mo</span>
+<span class="h-3"></span>
+<span class="h-3">Mi</span>
+<span class="h-3"></span>
+<span class="h-3">Fr</span>
+<span class="h-3"></span>
+<span class="h-3">So</span>
+</div>
+<div class="flex gap-[3px]" id="heatmap-grid">
+<!-- Dynamic heatmap cells -->
+</div>
+</div>
+</div>
+<div class="flex items-center justify-end gap-1 mt-2 text-[10px] text-adaptive-muted">
+<span>Weniger</span>
+<div class="flex gap-[2px]">
+<div class="w-3 h-3 rounded-sm bg-gray-800 heatmap-legend-level-0"></div>
+<div class="w-3 h-3 rounded-sm bg-green-900 heatmap-legend-level-1"></div>
+<div class="w-3 h-3 rounded-sm bg-green-700 heatmap-legend-level-2"></div>
+<div class="w-3 h-3 rounded-sm bg-green-500 heatmap-legend-level-3"></div>
+<div class="w-3 h-3 rounded-sm bg-green-400 heatmap-legend-level-4"></div>
+</div>
+<span>Mehr</span>
+</div>
+</div>
+<!-- Achievements Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Achievements</h2>
+<span class="text-xs text-adaptive-muted" id="achievements-summary">0/16 freigeschaltet</span>
+</div>
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-3" id="achievements-list">
+<!-- Dynamic achievements -->
+</div>
+</div>
+<!-- Exam Countdown Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Nächste Prüfungen</h2>
+<span class="text-xs text-adaptive-muted" id="exam-countdown-summary"></span>
+</div>
+<div class="space-y-2" id="exam-countdown-list">
+<!-- Dynamic exam countdowns -->
+</div>
+</div>
+<!-- Extra Stats Widget -->
+<div class="grid grid-cols-2 gap-4">
+<div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+<div class="text-xl font-bold text-adaptive" id="dashboard-best-day">0h</div>
+<div class="text-xs text-adaptive-muted">Bester Tag</div>
+</div>
+<div class="surface-card p-4 border border-gray-800 flex flex-col items-center justify-center">
+<div class="text-xl font-bold text-adaptive" id="dashboard-avg-day">0h</div>
+<div class="text-xs text-adaptive-muted">Ø pro Tag</div>
+</div>
+</div>
+<!-- Bestandene Prüfungen Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Bestandene Prüfungen</h2>
+<span class="text-xs text-adaptive-muted" id="pruefungen-widget-count"></span>
+</div>
+<div class="grid grid-cols-3 gap-2 mb-3" id="pruefungen-widget-stats">
+<div class="bg-surface rounded-lg p-2 text-center">
+<div class="text-lg font-bold text-primary" id="exam-count-total">0</div>
+<div class="text-[10px] text-adaptive-muted">Gesamt</div>
+</div>
+<div class="bg-surface rounded-lg p-2 text-center">
+<div class="text-lg font-bold text-success" id="exam-count-passed">0</div>
+<div class="text-[10px] text-adaptive-muted">Bestanden</div>
+</div>
+<div class="bg-surface rounded-lg p-2 text-center">
+<div class="text-lg font-bold text-adaptive" id="exam-avg-grade">—</div>
+<div class="text-[10px] text-adaptive-muted">Ø Note</div>
+</div>
+</div>
+<div class="flex justify-between items-center px-1 mb-3">
+<span class="text-[10px] text-adaptive-muted">ECTS-gewichtete Ø</span>
+<span class="text-sm font-bold text-primary" id="exam-avg-grade-ects">—</span>
+</div>
+<div class="space-y-2 max-h-48 overflow-y-auto" id="pruefungen-widget">
+<!-- Dynamic exam results -->
+</div>
+<div class="text-sm text-adaptive-muted text-center py-3 hidden" id="pruefungen-widget-empty">
                             Keine Prüfungen eingetragen
                         </div>
-                    </div>
-
-                    <!-- Weekly Stats Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Wochenstatistik</h2>
-                            <span id="weekly-range-label" class="text-xs text-adaptive-muted"></span>
-                        </div>
-
-                        <!-- Weekly Bar Chart (Mo–So) -->
-                        <div class="flex items-end space-x-1 h-24 mb-1" id="weekly-bar-chart">
-                            <!-- Bars injected via JS -->
-                        </div>
-                        <div class="flex justify-between text-[10px] text-adaptive-muted mb-4 px-0.5" id="weekly-bar-labels">
-                            <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
-                        </div>
-
-                        <!-- Stats Grid -->
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-surface rounded-lg p-3 text-center">
-                                <div class="text-lg font-bold text-primary" id="weekly-avg-day">0h</div>
-                                <div class="text-[10px] text-adaptive-muted">Ø pro Tag</div>
-                            </div>
-                            <div class="bg-surface rounded-lg p-3 text-center">
-                                <div class="text-lg font-bold text-adaptive" id="weekly-avg-subject">0h</div>
-                                <div class="text-[10px] text-adaptive-muted">Ø pro Fach</div>
-                            </div>
-                            <div class="bg-surface rounded-lg p-3 text-center">
-                                <div class="text-lg font-bold text-success" id="weekly-most-productive">—</div>
-                                <div class="text-[10px] text-adaptive-muted">Produktivster Tag</div>
-                            </div>
-                            <div class="bg-surface rounded-lg p-3 text-center">
-                                <div class="text-lg font-bold text-adaptive" id="weekly-total">0h</div>
-                                <div class="text-[10px] text-adaptive-muted">Woche gesamt</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Todo Checklist Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Prüfungsvorbereitung</h2>
-                            <button id="btn-show-all-todos" class="text-xs text-primary hover:underline">Alle anzeigen →</button>
-                        </div>
-                        <div id="todo-list-mini" class="space-y-2 max-h-64 overflow-y-auto">
-                            <!-- Dynamic todos -->
-                        </div>
-                        <div id="todo-progress-mini" class="mt-3 pt-3 border-t border-gray-700">
-                            <div class="flex justify-between text-xs text-adaptive-muted">
-                                <span>Fortschritt</span>
-                                <span id="todo-progress-text">0/0</span>
-                            </div>
-                            <div class="h-2 bg-gray-700 rounded-full mt-1 overflow-hidden">
-                                <div id="todo-progress-bar" class="h-full bg-success transition-all" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Wochenvergleich by Subject -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Wochenvergleich</h2>
-                            <span id="weekly-compare-range" class="text-xs text-adaptive-muted"></span>
-                        </div>
-                        <div id="weekly-compare-list" class="space-y-3">
-                            <!-- Dynamic rows -->
-                        </div>
-                    </div>
-
-                    <!-- Subject Distribution Pie Chart -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Fächerverteilung</h2>
-                        </div>
-                        <div id="subject-pie-chart" class="text-sm text-adaptive-muted">
+</div>
+<!-- Weekly Stats Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Wochenstatistik</h2>
+<span class="text-xs text-adaptive-muted" id="weekly-range-label"></span>
+</div>
+<!-- Weekly Bar Chart (Mo–So) -->
+<div class="flex items-end space-x-1 h-24 mb-1" id="weekly-bar-chart">
+<!-- Bars injected via JS -->
+</div>
+<div class="flex justify-between text-[10px] text-adaptive-muted mb-4 px-0.5" id="weekly-bar-labels">
+<span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface rounded-lg p-3 text-center">
+<div class="text-lg font-bold text-primary" id="weekly-avg-day">0h</div>
+<div class="text-[10px] text-adaptive-muted">Ø pro Tag</div>
+</div>
+<div class="bg-surface rounded-lg p-3 text-center">
+<div class="text-lg font-bold text-adaptive" id="weekly-avg-subject">0h</div>
+<div class="text-[10px] text-adaptive-muted">Ø pro Fach</div>
+</div>
+<div class="bg-surface rounded-lg p-3 text-center">
+<div class="text-lg font-bold text-success" id="weekly-most-productive">—</div>
+<div class="text-[10px] text-adaptive-muted">Produktivster Tag</div>
+</div>
+<div class="bg-surface rounded-lg p-3 text-center">
+<div class="text-lg font-bold text-adaptive" id="weekly-total">0h</div>
+<div class="text-[10px] text-adaptive-muted">Woche gesamt</div>
+</div>
+</div>
+</div>
+<!-- Todo Checklist Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Prüfungsvorbereitung</h2>
+<button class="text-xs text-primary hover:underline" id="btn-show-all-todos">Alle anzeigen →</button>
+</div>
+<div class="space-y-2 max-h-64 overflow-y-auto" id="todo-list-mini">
+<!-- Dynamic todos -->
+</div>
+<div class="mt-3 pt-3 border-t border-gray-700" id="todo-progress-mini">
+<div class="flex justify-between text-xs text-adaptive-muted">
+<span>Fortschritt</span>
+<span id="todo-progress-text">0/0</span>
+</div>
+<div class="h-2 bg-gray-700 rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-success transition-all" id="todo-progress-bar" style="width: 0%"></div>
+</div>
+</div>
+</div>
+<!-- Wochenvergleich by Subject -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Wochenvergleich</h2>
+<span class="text-xs text-adaptive-muted" id="weekly-compare-range"></span>
+</div>
+<div class="space-y-3" id="weekly-compare-list">
+<!-- Dynamic rows -->
+</div>
+</div>
+<!-- Subject Distribution Pie Chart -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Fächerverteilung</h2>
+</div>
+<div class="text-sm text-adaptive-muted" id="subject-pie-chart">
                             Details unter Statistiken → Lernzeit nach Fach.
                         </div>
-                    </div>
-
-                    <!-- Learning Trend Line -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Lerntrend</h2>
-                        </div>
-                        <div id="learning-trend-line" class="text-sm text-adaptive-muted">
+</div>
+<!-- Learning Trend Line -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Lerntrend</h2>
+</div>
+<div class="text-sm text-adaptive-muted" id="learning-trend-line">
                             Details unter Statistiken → Wöchentlicher Lernfortschritt.
                         </div>
-                    </div>
-
-                    <!-- Lern-Trends Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">📈 Lern-Trends</h2>
-                            <span id="trends-period" class="text-xs text-adaptive-muted"></span>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg">🕐</span>
-                                    <span class="text-sm text-adaptive-muted">Beste Zeit</span>
-                                </div>
-                                <span id="trend-best-time" class="text-sm font-semibold">—</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg">📊</span>
-                                    <span class="text-sm text-adaptive-muted">Ø Sitzung</span>
-                                </div>
-                                <span id="trend-avg-session" class="text-sm font-semibold">—</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg">📅</span>
-                                    <span class="text-sm text-adaptive-muted">Trend</span>
-                                </div>
-                                <span id="trend-direction" class="text-sm font-semibold flex items-center gap-1">—</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg">🏆</span>
-                                    <span class="text-sm text-adaptive-muted">Top Tag</span>
-                                </div>
-                                <span id="trend-top-day" class="text-sm font-semibold">—</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fach-Kacheln Widget -->
-                    <div class="surface-card p-4 border border-gray-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">Fächer SS26</h2>
-                            <span id="dashboard-subject-summary" class="text-xs text-adaptive-muted"></span>
-                        </div>
-                        <div id="dashboard-subject-tiles" class="grid gap-3">
-                            <!-- Dynamic subject tiles -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- View: Einheiten -->
-            <div id="view-einheiten" class="view-section hidden animate-fade-in" role="region" aria-label="Lerneinheiten">
-                <div class="flex flex-col space-y-4 mb-6">
-                    <div class="flex justify-between items-center">
-                        <h1 class="text-3xl font-bold">Einheiten</h1>
-                        <label for="history-filter-subject" class="sr-only">Nach Fach filtern</label>
-                        <select id="history-filter-subject" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm" aria-label="Nach Fach filtern">
-                            <option value="">Alle Fächer</option>
-                            <!-- Options injected via JS -->
-                        </select>
-                    </div>
-                    <label for="history-search-input" class="sr-only">Suche in Notizen oder Fächern</label>
-                    <input type="text" id="history-search-input" placeholder="Suche in Notizen oder Fächern..." class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-sm" aria-label="Suchen">
-                </div>
-                <div id="einheiten-list" class="space-y-4" role="list" aria-label="Lerneinheiten Liste">
-                    <!-- Dynamic List -->
-                </div>
-            </div>
-
-            <!-- View: Fächer -->
-            <div id="view-faecher" class="view-section hidden animate-fade-in" role="region" aria-label="Fächer">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold">Fächer</h1>
-                    <button id="btn-add-subject" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" aria-label="Fach hinzufügen">
-                        <i data-lucide="plus" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div id="faecher-list" class="grid gap-4" role="list" aria-label="Fächer Liste">
-                    <!-- Dynamic List -->
-                </div>
-            </div>
-
-            <!-- View: Kalender -->
-            <div id="view-kalender" class="view-section hidden animate-fade-in" role="region" aria-label="Kalender">
-                <h1 class="text-3xl font-bold mb-6">Kalender</h1>
-                <div class="flex space-x-2 mb-6" id="calendar-view-controls" role="tablist" aria-label="Kalenderansicht auswählen">
-                    <button class="calendar-view-btn btn-interactive px-4 py-2 bg-surface rounded-full text-sm font-medium text-adaptive touch-target" data-view="day" role="tab" aria-selected="true">Tagessicht</button>
-                    <button class="calendar-view-btn btn-interactive px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted touch-target" data-view="week" role="tab" aria-selected="false">Wochensicht</button>
-                    <button class="calendar-view-btn btn-interactive px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted touch-target" data-view="month" role="tab" aria-selected="false">Monatssicht</button>
-                </div>
-                <div id="kalender-list" class="space-y-6" role="tabpanel" aria-label="Kalenderansicht">
-                    <!-- Dynamic List -->
-                </div>
-            </div>
-
-            <!-- View: Achievements -->
-            <div id="view-achievements" class="view-section hidden animate-fade-in" role="region" aria-label="Erreichbarkeiten">
-                <h1 class="text-3xl font-bold mb-2">Erreichbarkeiten</h1>
-
-                <!-- Gesamt-Fortschritt -->
-                <div class="surface-card p-4 border border-gray-800 mb-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-semibold text-adaptive" id="achievements-total-text">0 / 16 erreicht</span>
-                        <span class="text-xs text-adaptive-muted" id="achievements-percentage">0%</span>
-                    </div>
-                    <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
-                        <div id="achievements-total-bar" class="h-full bg-success transition-all duration-500 rounded-full" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Kategorie: Dauer-Meilensteine -->
-                <details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden" open>
-                    <summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
-                        <span class="text-sm font-semibold text-adaptive flex items-center gap-2">
-                            <span>⏱️</span> Dauer-Meilensteine
+</div>
+<!-- Lern-Trends Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">📈 Lern-Trends</h2>
+<span class="text-xs text-adaptive-muted" id="trends-period"></span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-lg">🕐</span>
+<span class="text-sm text-adaptive-muted">Beste Zeit</span>
+</div>
+<span class="text-sm font-semibold" id="trend-best-time">—</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-lg">📊</span>
+<span class="text-sm text-adaptive-muted">Ø Sitzung</span>
+</div>
+<span class="text-sm font-semibold" id="trend-avg-session">—</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-lg">📅</span>
+<span class="text-sm text-adaptive-muted">Trend</span>
+</div>
+<span class="text-sm font-semibold flex items-center gap-1" id="trend-direction">—</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-lg">🏆</span>
+<span class="text-sm text-adaptive-muted">Top Tag</span>
+</div>
+<span class="text-sm font-semibold" id="trend-top-day">—</span>
+</div>
+</div>
+</div>
+<!-- Fach-Kacheln Widget -->
+<div class="surface-card p-4 border border-gray-800">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-lg font-semibold">Fächer SS26</h2>
+<span class="text-xs text-adaptive-muted" id="dashboard-subject-summary"></span>
+</div>
+<div class="grid gap-3" id="dashboard-subject-tiles">
+<!-- Dynamic subject tiles -->
+</div>
+</div>
+</div>
+</div>
+<div aria-label="Lerneinheiten" class="view-section hidden animate-fade-in" id="view-einheiten" role="region">
+<div class="flex flex-col space-y-4 mb-6">
+<div class="flex justify-between items-center">
+<h1 class="text-3xl font-bold">Einheiten</h1>
+<label class="sr-only" for="history-filter-subject">Nach Fach filtern</label>
+<select aria-label="Nach Fach filtern" class="bg-surface text-adaptive p-2 rounded-lg border border-gray-700 outline-none text-sm" id="history-filter-subject">
+<option value="">Alle Fächer</option>
+<!-- Options injected via JS -->
+</select>
+</div>
+<label class="sr-only" for="history-search-input">Suche in Notizen oder Fächern</label>
+<input aria-label="Suchen" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-sm" id="history-search-input" placeholder="Suche in Notizen oder Fächern..." type="text"/>
+</div>
+<div aria-label="Lerneinheiten Liste" class="space-y-4" id="einheiten-list" role="list">
+<!-- Dynamic List -->
+</div>
+</div>
+<div aria-label="Fächer" class="view-section hidden animate-fade-in" id="view-faecher" role="region">
+<div class="flex justify-between items-center mb-6">
+<h1 class="text-3xl font-bold">Fächer</h1>
+<button aria-label="Fach hinzufügen" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" id="btn-add-subject">
+<i class="w-5 h-5" data-lucide="plus"></i>
+</button>
+</div>
+<div aria-label="Fächer Liste" class="grid gap-4" id="faecher-list" role="list">
+<!-- Dynamic List -->
+</div>
+</div>
+<div aria-label="Kalender" class="view-section hidden animate-fade-in" id="view-kalender" role="region">
+<h1 class="text-3xl font-bold mb-6">Kalender</h1>
+<div aria-label="Kalenderansicht auswählen" class="flex space-x-2 mb-6" id="calendar-view-controls" role="tablist">
+<button aria-selected="true" class="calendar-view-btn btn-interactive px-4 py-2 bg-surface rounded-full text-sm font-medium text-adaptive touch-target" data-view="day">Tagessicht</button>
+<button aria-selected="false" class="calendar-view-btn btn-interactive px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted touch-target" data-view="week">Wochensicht</button>
+<button aria-selected="false" class="calendar-view-btn btn-interactive px-4 py-2 hover:bg-surface rounded-full text-sm font-medium text-adaptive-muted touch-target" data-view="month">Monatssicht</button>
+</div>
+<div aria-label="Kalenderansicht" class="space-y-6" id="kalender-list" role="tabpanel">
+<!-- Dynamic List -->
+</div>
+</div>
+<div aria-label="Erfolge" class="view-section hidden animate-fade-in" id="view-achievements" role="region">
+<h1 class="text-3xl font-bold mb-2">Erfolge</h1>
+<!-- Gesamt-Fortschritt -->
+<div class="surface-card p-4 border border-gray-800 mb-4">
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-semibold text-adaptive" id="achievements-total-text">0 / 16 erreicht</span>
+<span class="text-xs text-adaptive-muted" id="achievements-percentage">0%</span>
+</div>
+<div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-success transition-all duration-500 rounded-full" id="achievements-total-bar" style="width: 0%"></div>
+</div>
+</div>
+<!-- Kategorie: Dauer-Meilensteine -->
+<details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden" open="">
+<summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
+<span class="text-sm font-semibold text-adaptive flex items-center gap-2">
+<span>⏱️</span> Dauer-Meilensteine
                         </span>
-                        <span class="text-xs text-adaptive-muted category-progress" data-category="duration"></span>
-                    </summary>
-                    <div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-duration"></div>
-                </details>
-
-                <!-- Kategorie: Streaks -->
-                <details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
-                    <summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
-                        <span class="text-sm font-semibold text-adaptive flex items-center gap-2">
-                            <span>🔥</span> Streaks
+<span class="text-xs text-adaptive-muted category-progress" data-category="duration"></span>
+</summary>
+<div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-duration"></div>
+</details>
+<!-- Kategorie: Streaks -->
+<details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
+<summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
+<span class="text-sm font-semibold text-adaptive flex items-center gap-2">
+<span>🔥</span> Streaks
                         </span>
-                        <span class="text-xs text-adaptive-muted category-progress" data-category="streaks"></span>
-                    </summary>
-                    <div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-streaks"></div>
-                </details>
-
-                <!-- Kategorie: Pomodoro -->
-                <details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
-                    <summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
-                        <span class="text-sm font-semibold text-adaptive flex items-center gap-2">
-                            <span>🍅</span> Pomodoro
+<span class="text-xs text-adaptive-muted category-progress" data-category="streaks"></span>
+</summary>
+<div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-streaks"></div>
+</details>
+<!-- Kategorie: Pomodoro -->
+<details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
+<summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
+<span class="text-sm font-semibold text-adaptive flex items-center gap-2">
+<span>🍅</span> Pomodoro
                         </span>
-                        <span class="text-xs text-adaptive-muted category-progress" data-category="pomodoro"></span>
-                    </summary>
-                    <div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-pomodoro"></div>
-                </details>
-
-                <!-- Kategorie: Wochen/Monatsziele -->
-                <details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
-                    <summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
-                        <span class="text-sm font-semibold text-adaptive flex items-center gap-2">
-                            <span>📅</span> Wochen- & Monatsziele
+<span class="text-xs text-adaptive-muted category-progress" data-category="pomodoro"></span>
+</summary>
+<div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-pomodoro"></div>
+</details>
+<!-- Kategorie: Wochen/Monatsziele -->
+<details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
+<summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
+<span class="text-sm font-semibold text-adaptive flex items-center gap-2">
+<span>📅</span> Wochen- &amp; Monatsziele
                         </span>
-                        <span class="text-xs text-adaptive-muted category-progress" data-category="goals"></span>
-                    </summary>
-                    <div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-goals"></div>
-                </details>
-
-                <!-- Kategorie: Besondere Leistungen -->
-                <details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
-                    <summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
-                        <span class="text-sm font-semibold text-adaptive flex items-center gap-2">
-                            <span>⭐</span> Besondere Leistungen
+<span class="text-xs text-adaptive-muted category-progress" data-category="goals"></span>
+</summary>
+<div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-goals"></div>
+</details>
+<!-- Kategorie: Besondere Leistungen -->
+<details class="achievement-category surface-card border border-gray-800 mb-3 rounded-xl overflow-hidden">
+<summary class="p-4 cursor-pointer hover:bg-surface/50 flex justify-between items-center">
+<span class="text-sm font-semibold text-adaptive flex items-center gap-2">
+<span>⭐</span> Besondere Leistungen
                         </span>
-                        <span class="text-xs text-adaptive-muted category-progress" data-category="special"></span>
-                    </summary>
-                    <div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-special"></div>
-                </details>
-            </div>
+<span class="text-xs text-adaptive-muted category-progress" data-category="special"></span>
+</summary>
+<div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3" id="cat-special"></div>
+</details>
+</div>
+<div aria-label="Prüfungen" class="view-section hidden animate-fade-in" id="view-pruefungen" role="region">
+<div class="flex justify-between items-center mb-6">
+<h1 class="text-3xl font-bold">Prüfungen</h1>
+<button aria-label="Prüfung eintragen" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" id="btn-add-exam">
+<i class="w-5 h-5" data-lucide="plus"></i>
+</button>
+</div>
+<div class="flex gap-2 mb-4" id="pruefungen-filter">
+<button class="pruefung-filter-btn px-4 py-2 bg-primary/20 text-primary rounded-full text-sm font-medium border border-primary/30" data-filter="all">Alle</button>
+<button class="pruefung-filter-btn px-4 py-2 bg-surface text-adaptive-muted rounded-full text-sm font-medium border border-gray-700" data-filter="bestanden">Bestanden</button>
+<button class="pruefung-filter-btn px-4 py-2 bg-surface text-adaptive-muted rounded-full text-sm font-medium border border-gray-700" data-filter="nicht-bestanden">Nicht bestanden</button>
+</div>
+<div aria-label="Prüfungsliste" class="space-y-3" id="pruefungen-list" role="list">
+<!-- Dynamic exam cards -->
+</div>
+<div class="hidden text-center py-12" id="pruefungen-empty-state">
+<i class="w-12 h-12 mx-auto text-adaptive-muted mb-4" data-lucide="file-text"></i>
+<p class="text-adaptive-muted">Keine Prüfungen eingetragen</p>
+<p class="text-adaptive-muted text-sm">Klicke auf + um eine Prüfung einzutragen</p>
+</div>
+</div>
+<div aria-label="Semester" class="view-section hidden animate-fade-in" id="view-semester" role="region">
+<!-- Semester List View -->
+<div id="semester-list-view">
+<div class="flex justify-between items-center mb-6">
+<h1 class="text-2xl font-bold">Semester</h1>
+<button class="p-2 bg-primary rounded-full hover:bg-blue-600 transition" id="btn-add-semester">
+<i class="w-5 h-5" data-lucide="plus"></i>
+</button>
+</div>
+<div class="space-y-3" id="semester-list">
+<!-- Dynamic Semester Cards -->
+</div>
+<div class="hidden text-center py-12" id="semester-empty-state">
+<i class="w-12 h-12 mx-auto text-adaptive-muted mb-4" data-lucide="graduation-cap"></i>
+<p class="text-adaptive-muted">Keine Semester vorhanden</p>
+<p class="text-adaptive-muted text-sm">Füge dein erstes Semester hinzu</p>
+</div>
+</div>
+<!-- Module List View (hidden by default) -->
+<div class="hidden" id="semester-detail-view">
+<div class="flex justify-between items-center mb-6">
+<button class="p-2 hover:bg-surface rounded-full transition" id="btn-back-to-semesters">
+<i class="w-5 h-5" data-lucide="arrow-left"></i>
+</button>
+<h1 class="text-xl font-bold flex-1 text-center pr-10" id="semester-detail-title">Semester</h1>
+<button class="p-2 bg-primary rounded-full hover:bg-blue-600 transition" id="btn-add-module">
+<i class="w-5 h-5" data-lucide="plus"></i>
+</button>
+</div>
+<div class="grid grid-cols-3 gap-3 mb-6" id="semester-stats">
+<!-- Stats cards -->
+</div>
+<div class="space-y-3" id="module-list">
+<!-- Dynamic Module Cards -->
+</div>
+<div class="hidden text-center py-12" id="module-empty-state">
+<i class="w-12 h-12 mx-auto text-adaptive-muted mb-4" data-lucide="book-open"></i>
+<p class="text-adaptive-muted">Keine Module vorhanden</p>
+<p class="text-adaptive-muted text-sm">Füge dein erstes Modul hinzu</p>
+</div>
+<div class="hidden mt-6" id="semester-exams-section">
+<h2 class="text-sm font-medium text-adaptive-muted uppercase tracking-wider mb-3">Verknüpfte Prüfungen</h2>
+<div class="space-y-2" id="semester-exams-list"></div>
+<div class="hidden text-center py-4" id="semester-exams-empty">
+<p class="text-adaptive-muted text-sm">Keine Prüfungen für dieses Semester</p>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="Statistiken" class="view-section hidden animate-fade-in" id="view-statistiken" role="region">
+<div class="max-w-md mx-auto px-4 pb-8">
+<h1 class="text-3xl font-bold mb-6">Statistiken</h1>
+<!-- 4 Stat-Karten -->
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="surface-card p-4 border border-gray-800">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Gesamtlerndauer</div>
+<div class="text-2xl font-bold text-primary" id="stat-total-hours">0h</div>
+</div>
+<div class="surface-card p-4 border border-gray-800">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Ø Tagesleistung</div>
+<div class="text-2xl font-bold text-primary" id="stat-avg-day">0h</div>
+</div>
+<div class="surface-card p-4 border border-gray-800">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Bester Tag</div>
+<div class="text-lg font-bold text-adaptive truncate" id="stat-best-day">—</div>
+</div>
+<div class="surface-card p-4 border border-gray-800">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Längste Session</div>
+<div class="text-lg font-bold text-adaptive" id="stat-longest-session">—</div>
+</div>
+</div>
+<!-- Monatsvergleichs-Bar-Chart -->
+<div class="surface-card p-4 border border-gray-800 mb-6">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Monatsvergleich (letzte 6 Monate)</div>
+<div class="space-y-2" id="stat-monthly-chart"></div>
+</div>
+<!-- Subject-Comparison -->
+<div class="surface-card p-4 border border-gray-800 mb-6">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Lernzeit nach Fach</div>
+<div class="space-y-2" id="stat-subject-bars"></div>
+</div>
+<!-- Wöchentlicher Lernfortschritt -->
+<div class="surface-card p-4 border border-gray-800 mb-6">
+<div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Wöchentlicher Lernfortschritt</div>
+<div class="flex justify-center" id="stat-weekly-line-chart"></div>
+</div>
+<!-- Notenverteilung -->
+<div class="surface-card p-4 border border-gray-800 mb-6">
+<div class="flex justify-between items-center mb-3">
+<span class="text-[10px] text-adaptive-muted uppercase tracking-wider">Notenverteilung (Prüfungen)</span>
+<button class="text-[10px] text-primary hover:text-blue-300 transition uppercase tracking-wider" id="btn-export-grades" title="Noten als CSV exportieren">CSV Export</button>
+</div>
+<div class="space-y-2" id="stat-grade-distribution"></div>
+<div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-700">
+<span class="text-[10px] text-adaptive-muted uppercase tracking-wider">Ø Note (bestanden)</span>
+<span class="text-lg font-bold text-primary" id="stat-avg-grade">—</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<span class="text-[10px] text-adaptive-muted uppercase tracking-wider">ECTS-gewichtete Ø</span>
+<span class="text-lg font-bold text-primary" id="stat-avg-grade-ects">—</span>
+</div>
+</div>
+</div>
+</div>
+<div aria-label="Lernziele" class="view-section hidden animate-fade-in" id="view-ziele" role="region">
+<div class="flex justify-between items-center mb-6">
+<h1 class="text-3xl font-bold">Lernziele</h1>
+<button aria-label="Neues Ziel hinzufügen" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" id="btn-add-goal">
+<i class="w-5 h-5" data-lucide="plus"></i>
+</button>
+</div>
+<div class="text-center py-12 hidden" id="goals-empty-state">
+<i class="w-16 h-16 mx-auto text-adaptive-muted mb-4" data-lucide="target"></i>
+<p class="text-adaptive-muted text-lg mb-2">Noch keine Lernziele</p>
+<p class="text-adaptive-muted text-sm">Klicke auf den Button, um ein neues Ziel zu setzen.</p>
+</div>
+<div class="space-y-4" id="goals-list">
+<!-- Goal cards injected via JS -->
+</div>
+</div>
+  </main>
 
-            <!-- View: Prüfungen -->
-            <div id="view-pruefungen" class="view-section hidden animate-fade-in" role="region" aria-label="Prüfungen">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold">Prüfungen</h1>
-                    <button id="btn-add-exam" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" aria-label="Prüfung eintragen">
-                        <i data-lucide="plus" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div id="pruefungen-filter" class="flex gap-2 mb-4">
-                    <button class="pruefung-filter-btn px-4 py-2 bg-primary/20 text-primary rounded-full text-sm font-medium border border-primary/30" data-filter="all">Alle</button>
-                    <button class="pruefung-filter-btn px-4 py-2 bg-surface text-adaptive-muted rounded-full text-sm font-medium border border-gray-700" data-filter="bestanden">Bestanden</button>
-                    <button class="pruefung-filter-btn px-4 py-2 bg-surface text-adaptive-muted rounded-full text-sm font-medium border border-gray-700" data-filter="nicht-bestanden">Nicht bestanden</button>
-                </div>
-                <div id="pruefungen-list" class="space-y-3" role="list" aria-label="Prüfungsliste">
-                    <!-- Dynamic exam cards -->
-                </div>
-                <div id="pruefungen-empty-state" class="hidden text-center py-12">
-                    <i data-lucide="file-text" class="w-12 h-12 mx-auto text-adaptive-muted mb-4"></i>
-                    <p class="text-adaptive-muted">Keine Prüfungen eingetragen</p>
-                    <p class="text-adaptive-muted text-sm">Klicke auf + um eine Prüfung einzutragen</p>
-                </div>
-            </div>
-
-            <!-- View: Semester -->
-            <div id="view-semester" class="view-section hidden animate-fade-in" role="region" aria-label="Semester">
-                <!-- Semester List View -->
-                <div id="semester-list-view">
-                    <div class="flex justify-between items-center mb-6">
-                        <h1 class="text-2xl font-bold">Semester</h1>
-                        <button id="btn-add-semester" class="p-2 bg-primary rounded-full hover:bg-blue-600 transition">
-                            <i data-lucide="plus" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    <div id="semester-list" class="space-y-3">
-                        <!-- Dynamic Semester Cards -->
-                    </div>
-                    <div id="semester-empty-state" class="hidden text-center py-12">
-                        <i data-lucide="graduation-cap" class="w-12 h-12 mx-auto text-adaptive-muted mb-4"></i>
-                        <p class="text-adaptive-muted">Keine Semester vorhanden</p>
-                        <p class="text-adaptive-muted text-sm">Füge dein erstes Semester hinzu</p>
-                    </div>
-                </div>
-
-                <!-- Module List View (hidden by default) -->
-                <div id="semester-detail-view" class="hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <button id="btn-back-to-semesters" class="p-2 hover:bg-surface rounded-full transition">
-                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                        </button>
-                        <h1 id="semester-detail-title" class="text-xl font-bold flex-1 text-center pr-10">Semester</h1>
-                        <button id="btn-add-module" class="p-2 bg-primary rounded-full hover:bg-blue-600 transition">
-                            <i data-lucide="plus" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    <div id="semester-stats" class="grid grid-cols-3 gap-3 mb-6">
-                        <!-- Stats cards -->
-                    </div>
-                    <div id="module-list" class="space-y-3">
-                        <!-- Dynamic Module Cards -->
-                    </div>
-                    <div id="module-empty-state" class="hidden text-center py-12">
-                        <i data-lucide="book-open" class="w-12 h-12 mx-auto text-adaptive-muted mb-4"></i>
-                        <p class="text-adaptive-muted">Keine Module vorhanden</p>
-                        <p class="text-adaptive-muted text-sm">Füge dein erstes Modul hinzu</p>
-                    </div>
-                    <div id="semester-exams-section" class="hidden mt-6">
-                        <h2 class="text-sm font-medium text-adaptive-muted uppercase tracking-wider mb-3">Verknüpfte Prüfungen</h2>
-                        <div id="semester-exams-list" class="space-y-2"></div>
-                        <div id="semester-exams-empty" class="hidden text-center py-4">
-                            <p class="text-adaptive-muted text-sm">Keine Prüfungen für dieses Semester</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- View: Statistiken -->
-            <div id="view-statistiken" class="view-section hidden animate-fade-in" role="region" aria-label="Statistiken">
-                <div class="max-w-md mx-auto px-4 pb-8">
-                    <h1 class="text-3xl font-bold mb-6">Statistiken</h1>
-
-                    <!-- 4 Stat-Karten -->
-                    <div class="grid grid-cols-2 gap-3 mb-6">
-                        <div class="surface-card p-4 border border-gray-800">
-                            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Gesamtlerndauer</div>
-                            <div id="stat-total-hours" class="text-2xl font-bold text-primary">0h</div>
-                        </div>
-                        <div class="surface-card p-4 border border-gray-800">
-                            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Ø Tagesleistung</div>
-                            <div id="stat-avg-day" class="text-2xl font-bold text-primary">0h</div>
-                        </div>
-                        <div class="surface-card p-4 border border-gray-800">
-                            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Bester Tag</div>
-                            <div id="stat-best-day" class="text-lg font-bold text-adaptive truncate">—</div>
-                        </div>
-                        <div class="surface-card p-4 border border-gray-800">
-                            <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-1">Längste Session</div>
-                            <div id="stat-longest-session" class="text-lg font-bold text-adaptive">—</div>
-                        </div>
-                    </div>
-
-                    <!-- Monatsvergleichs-Bar-Chart -->
-                    <div class="surface-card p-4 border border-gray-800 mb-6">
-                        <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Monatsvergleich (letzte 6 Monate)</div>
-                        <div id="stat-monthly-chart" class="space-y-2"></div>
-                    </div>
-
-                    <!-- Subject-Comparison -->
-                    <div class="surface-card p-4 border border-gray-800 mb-6">
-                        <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Lernzeit nach Fach</div>
-                        <div id="stat-subject-bars" class="space-y-2"></div>
-                    </div>
-
-                    <!-- Wöchentlicher Lernfortschritt -->
-                    <div class="surface-card p-4 border border-gray-800 mb-6">
-                        <div class="text-[10px] text-adaptive-muted uppercase tracking-wider mb-3">Wöchentlicher Lernfortschritt</div>
-                        <div id="stat-weekly-line-chart" class="flex justify-center"></div>
-                    </div>
-
-                    <!-- Notenverteilung -->
-                    <div class="surface-card p-4 border border-gray-800 mb-6">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-[10px] text-adaptive-muted uppercase tracking-wider">Notenverteilung (Prüfungen)</span>
-                            <button id="btn-export-grades" class="text-[10px] text-primary hover:text-blue-300 transition uppercase tracking-wider" title="Noten als CSV exportieren">CSV Export</button>
-                        </div>
-                        <div id="stat-grade-distribution" class="space-y-2"></div>
-                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-700">
-                            <span class="text-[10px] text-adaptive-muted uppercase tracking-wider">Ø Note (bestanden)</span>
-                            <span id="stat-avg-grade" class="text-lg font-bold text-primary">—</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-[10px] text-adaptive-muted uppercase tracking-wider">ECTS-gewichtete Ø</span>
-                            <span id="stat-avg-grade-ects" class="text-lg font-bold text-primary">—</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- View: Ziele -->
-            <div id="view-ziele" class="view-section hidden animate-fade-in" role="region" aria-label="Lernziele">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold">Lernziele</h1>
-                    <button id="btn-add-goal" class="btn-interactive bg-surface hover:bg-gray-700 text-white p-2 rounded-full transition touch-target" aria-label="Neues Ziel hinzufügen">
-                        <i data-lucide="plus" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div id="goals-empty-state" class="text-center py-12 hidden">
-                    <i data-lucide="target" class="w-16 h-16 mx-auto text-adaptive-muted mb-4"></i>
-                    <p class="text-adaptive-muted text-lg mb-2">Noch keine Lernziele</p>
-                    <p class="text-adaptive-muted text-sm">Klicke auf den Button, um ein neues Ziel zu setzen.</p>
-                </div>
-                <div id="goals-list" class="space-y-4">
-                    <!-- Goal cards injected via JS -->
-                </div>
-            </div>
-
-            <!-- Add Goal Overlay -->
-            <div id="add-goal-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-                <div class="flex justify-between items-center p-4">
-                    <button id="btn-add-goal-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
-                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                    </button>
-                    <div id="add-goal-title" class="text-sm font-medium text-adaptive-muted">Neues Lernziel</div>
-                    <div class="w-10"></div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Name des Ziels</label>
-                        <input type="text" id="add-goal-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Mathe Klausur vorbereiten">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
-                        <select id="add-goal-subject" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Alle Fächer —</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Ziel-Stunden</label>
-                        <input type="number" id="add-goal-target-hours" min="1" max="1000" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 50">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Startdatum</label>
-                        <input type="date" id="add-goal-start-date" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Enddatum</label>
-                        <input type="date" id="add-goal-end-date" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                    </div>
-                </div>
-                <div class="p-8 pb-12">
-                    <button id="btn-add-goal-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+  <div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-goal-overlay">
+<div class="flex justify-between items-center p-4">
+<button aria-label="Schließen" class="p-2 rounded-full hover:bg-surface transition" id="btn-add-goal-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted" id="add-goal-title">Neues Lernziel</div>
+<div class="w-10"></div>
+</div>
+<div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Name des Ziels</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-goal-name" placeholder="z.B. Mathe Klausur vorbereiten" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-goal-subject">
+<option value="">— Alle Fächer —</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Ziel-Stunden</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-goal-target-hours" max="1000" min="1" placeholder="z.B. 50" type="number"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Startdatum</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-goal-start-date" type="date"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Enddatum</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-goal-end-date" type="date"/>
+</div>
+</div>
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-goal-save">
                         Ziel speichern
                     </button>
-                </div>
-            </div>
-
-            <!-- Export Overlay -->
-            <div id="export-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-                <div class="flex justify-between items-center p-4">
-                    <button id="btn-export-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
-                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                    </button>
-                    <div class="text-sm font-medium text-adaptive-muted">Export</div>
-                    <div class="w-10"></div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
-                    <h2 class="text-2xl font-bold">Daten exportieren</h2>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Format</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="export-format-csv" class="export-format-btn py-3 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium">CSV</button>
-                            <button id="export-format-json" class="export-format-btn py-3 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive">JSON</button>
-                        </div>
-                    </div>
-                    <div class="w-full grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm text-adaptive-muted mb-2">Von</label>
-                            <input type="date" id="export-date-from" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm text-adaptive-muted mb-2">Bis</label>
-                            <input type="date" id="export-date-to" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                        </div>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Fach</label>
-                        <select id="export-subject-filter" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">Alle Fächer</option>
-                        </select>
-                    </div>
-                    <div class="w-full" id="export-csv-options">
-                        <label class="block text-sm text-adaptive-muted mb-2">CSV-Separator</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="export-sep-semicolon" class="export-sep-btn py-2 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium">Semikolon (;)</button>
-                            <button id="export-sep-comma" class="export-sep-btn py-2 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive">Komma (,)</button>
-                        </div>
-                    </div>
-                    <div class="w-full surface-card p-4 border border-gray-800 rounded-lg text-center">
-                        <div class="text-sm text-adaptive-muted mb-1">Einträge im Export</div>
-                        <div class="text-3xl font-bold text-primary" id="export-preview-count">—</div>
-                        <div class="text-xs text-adaptive-muted mt-1" id="export-preview-range">Kein Datumsbereich gewählt</div>
-                    </div>
-                </div>
-                <div class="p-8 pb-12 space-y-3">
-                    <button id="btn-export-preview" class="w-full py-4 bg-surface hover:bg-gray-700 rounded-full text-lg font-bold transition border border-gray-700 text-adaptive">📋 Vorschau</button>
-                    <button id="btn-export-download" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">⬇️ Exportieren</button>
-                    <button id="btn-export-cancel" class="w-full py-3 bg-surface hover:bg-gray-700 rounded-full text-sm text-adaptive-muted transition">Abbrechen</button>
-                </div>
-            </div>
-
-            <!-- Add Semester Modal -->
-            <div id="add-semester-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-                <div class="flex justify-between items-center p-4">
-                    <button id="btn-add-semester-close" class="p-2 rounded-full hover:bg-surface transition">
-                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                    </button>
-                    <div id="add-semester-title" class="text-sm font-medium text-adaptive-muted">Semester hinzufügen</div>
-                    <div class="w-10"></div>
-                </div>
-                <div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Name</label>
-                        <input type="text" id="add-semester-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 3. Semester">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Startdatum</label>
-                        <input type="date" id="add-semester-start" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Enddatum</label>
-                        <input type="date" id="add-semester-end" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                    </div>
-                </div>
-                <div class="p-8 pb-12">
-                    <button id="btn-add-semester-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="export-overlay">
+<div class="flex justify-between items-center p-4">
+<button aria-label="Schließen" class="p-2 rounded-full hover:bg-surface transition" id="btn-export-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted">Export</div>
+<div class="w-10"></div>
+</div>
+<div class="flex-1 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
+<h2 class="text-2xl font-bold">Daten exportieren</h2>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Format</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="export-format-btn py-3 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium" id="export-format-csv">CSV</button>
+<button class="export-format-btn py-3 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive" id="export-format-json">JSON</button>
+</div>
+</div>
+<div class="w-full grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm text-adaptive-muted mb-2">Von</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="export-date-from" type="date"/>
+</div>
+<div>
+<label class="block text-sm text-adaptive-muted mb-2">Bis</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="export-date-to" type="date"/>
+</div>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Fach</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="export-subject-filter">
+<option value="">Alle Fächer</option>
+</select>
+</div>
+<div class="w-full" id="export-csv-options">
+<label class="block text-sm text-adaptive-muted mb-2">CSV-Separator</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="export-sep-btn py-2 bg-primary/10 border border-primary rounded-lg transition text-center text-primary font-medium" id="export-sep-semicolon">Semikolon (;)</button>
+<button class="export-sep-btn py-2 bg-surface border border-gray-700 rounded-lg transition text-center text-adaptive" id="export-sep-comma">Komma (,)</button>
+</div>
+</div>
+<div class="w-full surface-card p-4 border border-gray-800 rounded-lg text-center">
+<div class="text-sm text-adaptive-muted mb-1">Einträge im Export</div>
+<div class="text-3xl font-bold text-primary" id="export-preview-count">—</div>
+<div class="text-xs text-adaptive-muted mt-1" id="export-preview-range">Kein Datumsbereich gewählt</div>
+</div>
+</div>
+<div class="p-8 pb-12 space-y-3">
+<button class="w-full py-4 bg-surface hover:bg-gray-700 rounded-full text-lg font-bold transition border border-gray-700 text-adaptive" id="btn-export-preview">📋 Vorschau</button>
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-export-download">⬇️ Exportieren</button>
+<button class="w-full py-3 bg-surface hover:bg-gray-700 rounded-full text-sm text-adaptive-muted transition" id="btn-export-cancel">Abbrechen</button>
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-semester-overlay">
+<div class="flex justify-between items-center p-4">
+<button class="p-2 rounded-full hover:bg-surface transition" id="btn-add-semester-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted" id="add-semester-title">Semester hinzufügen</div>
+<div class="w-10"></div>
+</div>
+<div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Name</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-semester-name" placeholder="z.B. 3. Semester" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Startdatum</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-semester-start" type="date"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Enddatum</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-semester-end" type="date"/>
+</div>
+</div>
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-semester-save">
                         Speichern
                     </button>
-                    <button id="btn-delete-semester" class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition">
+<button class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition" id="btn-delete-semester">
                         Semester löschen
                     </button>
-                </div>
-            </div>
-
-            <!-- Add/Edit Module Modal -->
-            <div id="add-module-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-                <div class="flex justify-between items-center p-4">
-                    <button id="btn-add-module-close" class="p-2 rounded-full hover:bg-surface transition">
-                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                    </button>
-                    <div id="add-module-title" class="text-sm font-medium text-adaptive-muted">Modul hinzufügen</div>
-                    <div class="w-10"></div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Modulname</label>
-                        <input type="text" id="add-module-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Höhere Mathematik I">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Fach (für Zeittracking)</label>
-                        <select id="add-module-subject" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Kein Fach —</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Modulcode</label>
-                        <input type="text" id="add-module-code" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 52111">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">ECTS</label>
-                        <input type="number" id="add-module-ects" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5" min="0">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Geschätzte Stunden</label>
-                        <input type="number" id="add-module-hours" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 150" min="0">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Prüfungsphase</label>
-                        <select id="add-module-exam-period" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Keine Prüfung —</option>
-                            <option value="2026-03-30">Mär/Apr 2026 (30.03.–02.04.)</option>
-                            <option value="2026-07-14">Jul 2026 (14.07.–31.07.)</option>
-                            <option value="2026-09-21">Sep 2026 (21.09.–02.10.)</option>
-                            <option value="2027-02-01">Jan/Feb 2027 (01.02.–19.02.)</option>
-                            <option value="2026-03-14">Mär 2026 – WiSe 2025/26 (14.03.–28.03.)</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Prüfungsdatum (optional)</label>
-                        <input type="date" id="add-module-exam-date" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Note (optional)</label>
-                        <select id="add-module-grade" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Keine Note —</option>
-                            <option value="1.0">1.0</option>
-                            <option value="1.3">1.3</option>
-                            <option value="1.7">1.7</option>
-                            <option value="2.0">2.0</option>
-                            <option value="2.3">2.3</option>
-                            <option value="2.7">2.7</option>
-                            <option value="3.0">3.0</option>
-                            <option value="3.3">3.3</option>
-                            <option value="3.7">3.7</option>
-                            <option value="4.0">4.0 (bestanden)</option>
-                            <option value="5.0">5.0 (nicht bestanden)</option>
-                            <option value="B">Bestanden</option>
-                            <option value="NB">Nicht bestanden</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Notizen</label>
-                        <textarea id="add-module-notes" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" placeholder="Freitext..."></textarea>
-                    </div>
-                </div>
-                <div class="p-8 pb-12">
-                    <button id="btn-add-module-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-module-overlay">
+<div class="flex justify-between items-center p-4">
+<button class="p-2 rounded-full hover:bg-surface transition" id="btn-add-module-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted" id="add-module-title">Modul hinzufügen</div>
+<div class="w-10"></div>
+</div>
+<div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Modulname</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-module-name" placeholder="z.B. Höhere Mathematik I" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Fach (für Zeittracking)</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-module-subject">
+<option value="">— Kein Fach —</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Modulcode</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-module-code" placeholder="z.B. 52111" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">ECTS</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-module-ects" min="0" placeholder="z.B. 5" type="number"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Geschätzte Stunden</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-module-hours" min="0" placeholder="z.B. 150" type="number"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Prüfungsphase</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-module-exam-period">
+<option value="">— Keine Prüfung —</option>
+<option value="2026-03-30">Mär/Apr 2026 (30.03.–02.04.)</option>
+<option value="2026-07-14">Jul 2026 (14.07.–31.07.)</option>
+<option value="2026-09-21">Sep 2026 (21.09.–02.10.)</option>
+<option value="2027-02-01">Jan/Feb 2027 (01.02.–19.02.)</option>
+<option value="2026-03-14">Mär 2026 – WiSe 2025/26 (14.03.–28.03.)</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Prüfungsdatum (optional)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-module-exam-date" type="date"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Note (optional)</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-module-grade">
+<option value="">— Keine Note —</option>
+<option value="1.0">1.0</option>
+<option value="1.3">1.3</option>
+<option value="1.7">1.7</option>
+<option value="2.0">2.0</option>
+<option value="2.3">2.3</option>
+<option value="2.7">2.7</option>
+<option value="3.0">3.0</option>
+<option value="3.3">3.3</option>
+<option value="3.7">3.7</option>
+<option value="4.0">4.0 (bestanden)</option>
+<option value="5.0">5.0 (nicht bestanden)</option>
+<option value="B">Bestanden</option>
+<option value="NB">Nicht bestanden</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Notizen</label>
+<textarea class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" id="add-module-notes" placeholder="Freitext..."></textarea>
+</div>
+</div>
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-module-save">
                         Speichern
                     </button>
-                    <button id="btn-delete-module" class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition">
+<button class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition" id="btn-delete-module">
                         Modul löschen
                     </button>
-                </div>
-            </div>
-
-            <!-- Add Exam Modal -->
-            <div id="add-exam-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-                <div class="flex justify-between items-center p-4">
-                    <button id="btn-add-exam-close" class="p-2 rounded-full hover:bg-surface transition">
-                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                    </button>
-                    <div id="add-exam-title" class="text-sm font-medium text-adaptive-muted">Prüfung eintragen</div>
-                    <div class="w-10"></div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Modulname</label>
-                        <input type="text" id="add-exam-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Höhere Mathematik 2">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Modulcode (optional)</label>
-                        <input type="text" id="add-exam-code" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 52111">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
-                        <select id="add-exam-subject" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Kein Fach —</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Semester (optional)</label>
-                        <select id="add-exam-semester" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Kein Semester —</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Prüfungsdatum</label>
-                        <input type="date" id="add-exam-date" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Note</label>
-                        <select id="add-exam-grade" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Keine Note —</option>
-                            <option value="1.0">1.0</option>
-                            <option value="1.3">1.3</option>
-                            <option value="1.7">1.7</option>
-                            <option value="2.0">2.0</option>
-                            <option value="2.3">2.3</option>
-                            <option value="2.7">2.7</option>
-                            <option value="3.0">3.0</option>
-                            <option value="3.3">3.3</option>
-                            <option value="3.7">3.7</option>
-                            <option value="4.0">4.0 (bestanden)</option>
-                            <option value="5.0">5.0 (nicht bestanden)</option>
-                            <option value="B">Bestanden</option>
-                            <option value="NB">Nicht bestanden</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">ECTS (optional)</label>
-                        <input type="number" id="add-exam-ects" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5" min="0">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Notizen (optional)</label>
-                        <textarea id="add-exam-notes" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" placeholder="Freitext..."></textarea>
-                    </div>
-                </div>
-                <div class="p-8 pb-12">
-                    <button id="btn-add-exam-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-exam-overlay">
+<div class="flex justify-between items-center p-4">
+<button class="p-2 rounded-full hover:bg-surface transition" id="btn-add-exam-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted" id="add-exam-title">Prüfung eintragen</div>
+<div class="w-10"></div>
+</div>
+<div class="flex-1 flex flex-col items-center justify-start p-8 space-y-5 overflow-y-auto">
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Modulname</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-exam-name" placeholder="z.B. Höhere Mathematik 2" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Modulcode (optional)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-exam-code" placeholder="z.B. 52111" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-exam-subject">
+<option value="">— Kein Fach —</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Semester (optional)</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-exam-semester">
+<option value="">— Kein Semester —</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Prüfungsdatum</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-exam-date" type="date"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Note</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-exam-grade">
+<option value="">— Keine Note —</option>
+<option value="1.0">1.0</option>
+<option value="1.3">1.3</option>
+<option value="1.7">1.7</option>
+<option value="2.0">2.0</option>
+<option value="2.3">2.3</option>
+<option value="2.7">2.7</option>
+<option value="3.0">3.0</option>
+<option value="3.3">3.3</option>
+<option value="3.7">3.7</option>
+<option value="4.0">4.0 (bestanden)</option>
+<option value="5.0">5.0 (nicht bestanden)</option>
+<option value="B">Bestanden</option>
+<option value="NB">Nicht bestanden</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">ECTS (optional)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-exam-ects" min="0" placeholder="z.B. 5" type="number"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Notizen (optional)</label>
+<textarea class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" id="add-exam-notes" placeholder="Freitext..."></textarea>
+</div>
+</div>
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-exam-save">
                         Prüfung speichern
                     </button>
-                    <button id="btn-add-exam-cancel" class="w-full py-3 mt-3 bg-surface hover:bg-gray-700 rounded-full text-sm text-adaptive-muted transition">
+<button class="w-full py-3 mt-3 bg-surface hover:bg-gray-700 rounded-full text-sm text-adaptive-muted transition" id="btn-add-exam-cancel">
                         Abbrechen
                     </button>
-                    <button id="btn-delete-exam" class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition">
+<button class="hidden w-full py-3 mt-3 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition" id="btn-delete-exam">
                         Prüfung löschen
                     </button>
-                </div>
-            </div>
-
-            <!-- Add Todo Modal -->
-            <div id="add-todo-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-                <div class="flex justify-between items-center p-4">
-                    <button id="btn-add-todo-close" class="p-2 rounded-full hover:bg-surface transition">
-                        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                    </button>
-                    <div id="add-todo-title" class="text-sm font-medium text-adaptive-muted">Todo hinzufügen</div>
-                    <div class="w-10"></div>
-                </div>
-                <div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Titel</label>
-                        <input type="text" id="add-todo-title-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Kapitel 5 lernen">
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
-                        <select id="add-todo-subject" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="">— Kein Fach —</option>
-                        </select>
-                    </div>
-                    <div class="w-full">
-                        <label class="block text-sm text-adaptive-muted mb-2">Priorität</label>
-                        <select id="add-todo-priority" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                            <option value="low">Niedrig</option>
-                            <option value="medium" selected>Mittel</option>
-                            <option value="high">Hoch</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="p-8 pb-12">
-                    <button id="btn-add-todo-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-todo-overlay">
+<div class="flex justify-between items-center p-4">
+<button class="p-2 rounded-full hover:bg-surface transition" id="btn-add-todo-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted" id="add-todo-title">Todo hinzufügen</div>
+<div class="w-10"></div>
+</div>
+<div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-6 overflow-y-auto">
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Titel</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-todo-title-input" placeholder="z.B. Kapitel 5 lernen" type="text"/>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Fach (optional)</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-todo-subject">
+<option value="">— Kein Fach —</option>
+</select>
+</div>
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Priorität</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-todo-priority">
+<option value="low">Niedrig</option>
+<option selected="" value="medium">Mittel</option>
+<option value="high">Hoch</option>
+</select>
+</div>
+</div>
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-todo-save">
                         Speichern
                     </button>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- Bottom Navigation -->
-<nav class="fixed bottom-0 left-0 right-0 bg-dark border-t border-gray-800 pb-safe z-40" role="navigation" aria-label="Hauptnavigation">
-            <div class="max-w-md mx-auto flex justify-between items-center px-2 py-3">
-                <button class="nav-btn active btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard" tabindex="0">
-                    <i data-lucide="gauge" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Dashboard</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-einheiten" role="tab" aria-selected="false" aria-controls="view-einheiten" tabindex="-1">
-                    <i data-lucide="history" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Einheiten</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-faecher" role="tab" aria-selected="false" aria-controls="view-faecher" tabindex="-1">
-                    <i data-lucide="landmark" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Fächer</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-kalender" role="tab" aria-selected="false" aria-controls="view-kalender" tabindex="-1">
-                    <i data-lucide="calendar" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Kalender</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-pruefungen" role="tab" aria-selected="false" aria-controls="view-pruefungen" tabindex="-1">
-                    <i data-lucide="clipboard-check" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Prüfungen</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-achievements" role="tab" aria-selected="false" aria-controls="view-achievements" tabindex="-1">
-                    <i data-lucide="award" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Erfolge</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-semester" role="tab" aria-selected="false" aria-controls="view-semester" tabindex="-1">
-                    <i data-lucide="graduation-cap" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Semester</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-statistiken" role="tab" aria-selected="false" aria-controls="view-statistiken" tabindex="-1">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Statistiken</span>
-                </button>
-                <button class="nav-btn btn-interactive flex flex-col items-center space-y-1 text-adaptive-muted hover:text-adaptive transition flex-1 touch-target" data-target="view-ziele" role="tab" aria-selected="false" aria-controls="view-ziele" tabindex="-1">
-                    <i data-lucide="flag" class="w-5 h-5" aria-hidden="true"></i>
-                    <span class="text-[9px]">Ziele</span>
-                </button>
-            </div>
-        </nav>
-
-        <!-- Floating Action Button -->
-        <button id="fab-main" class="btn-interactive fixed bottom-24 left-1/2 -ml-7 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center z-30 transition-transform touch-target hover:scale-110" title="Timer starten" aria-label="Timer starten" role="button">
-            <i data-lucide="plus" class="w-6 h-6 text-white" aria-hidden="true"></i>
-        </button>
-
-        <!-- Timer Overlay -->
-        <div id="timer-overlay" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col" role="dialog" aria-modal="true" aria-labelledby="timer-title">
-            <!-- Timer Header -->
-            <div class="flex justify-between items-center p-4">
-                <button id="btn-timer-close" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" aria-label="Timer schließen">
-                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                </button>
-                <div id="timer-title" class="text-sm font-medium text-adaptive-muted">Timer</div>
-                <div class="w-10"></div>
-            </div>
-
-            <!-- Timer Content -->
-            <div class="flex-1 min-h-0 overflow-y-auto">
-            <div class="min-h-full flex flex-col items-center justify-start p-8 space-y-8">
-
-                <!-- Subject Selector -->
-                <div class="w-full max-w-xs">
-                     <label for="timer-subject-select" class="sr-only">Fach auswählen</label>
-                     <select id="timer-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none" aria-label="Fach auswählen">
-                        <!-- Options injected via JS -->
-                     </select>
-                </div>
-
-                <!-- Recommendation -->
-                <div id="study-recommendation" class="w-full max-w-xs text-center text-sm text-adaptive-muted"></div>
-
-                <!-- Thema (Topics) -->
-                <div class="w-full max-w-xs">
-                     <label for="timer-topics-input" class="sr-only">Thema</label>
-                     <input type="text" id="timer-topics-input" list="timer-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" placeholder="Thema (z.B. Reihen, Folgen)" aria-label="Thema eingeben">
-                     <datalist id="timer-topics-datalist"></datalist>
-                </div>
-
-                <!-- Time Display -->
-                <div class="flex flex-col items-center space-y-2">
-                    <div id="timer-ring-bg" class="w-48 h-48 rounded-full border-4 border-transparent flex items-center justify-center transition-colors duration-500">
-                        <div class="text-7xl font-mono font-bold tracking-wider counter-animated" id="timer-display" aria-live="polite" aria-atomic="true">
+</div>
+</div>
+<div aria-labelledby="timer-title" aria-modal="true" class="fixed inset-0 z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="timer-overlay" role="dialog">
+<!-- Timer Header -->
+<div class="flex justify-between items-center p-4">
+<button aria-label="Timer schließen" class="btn-interactive p-2 rounded-full hover:bg-surface transition touch-target" id="btn-timer-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted" id="timer-title">Timer</div>
+<div class="w-10"></div>
+</div>
+<!-- Timer Content -->
+<div class="flex-1 min-h-0 overflow-y-auto">
+<div class="min-h-full flex flex-col items-center justify-start p-8 space-y-8">
+<!-- Subject Selector -->
+<div class="w-full max-w-xs">
+<label class="sr-only" for="timer-subject-select">Fach auswählen</label>
+<select aria-label="Fach auswählen" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center appearance-none" id="timer-subject-select">
+<!-- Options injected via JS -->
+</select>
+</div>
+<!-- Recommendation -->
+<div class="w-full max-w-xs text-center text-sm text-adaptive-muted" id="study-recommendation"></div>
+<!-- Thema (Topics) -->
+<div class="w-full max-w-xs">
+<label class="sr-only" for="timer-topics-input">Thema</label>
+<input aria-label="Thema eingeben" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none text-center" id="timer-topics-input" list="timer-topics-datalist" placeholder="Thema (z.B. Reihen, Folgen)" type="text"/>
+<datalist id="timer-topics-datalist"></datalist>
+</div>
+<!-- Time Display -->
+<div class="flex flex-col items-center space-y-2">
+<div class="w-48 h-48 rounded-full border-4 border-transparent flex items-center justify-center transition-colors duration-500" id="timer-ring-bg">
+<div aria-atomic="true" aria-live="polite" class="text-7xl font-mono font-bold tracking-wider counter-animated" id="timer-display">
                             00:00:00
                         </div>
-                    </div>
-                    <div id="pomodoro-indicator" class="text-sm text-adaptive-muted" aria-live="polite"></div>
-                </div>
-
-                <!-- Notes Toggle & Textarea -->
-                <div class="w-full max-w-xs" id="timer-notes-wrapper">
-                    <button id="btn-timer-notes-toggle" class="text-sm text-adaptive-muted hover:text-adaptive transition flex items-center gap-1 mx-auto" type="button">
+</div>
+<div aria-live="polite" class="text-sm text-adaptive-muted" id="pomodoro-indicator"></div>
+</div>
+<!-- Notes Toggle & Textarea -->
+<div class="w-full max-w-xs" id="timer-notes-wrapper">
+<button class="text-sm text-adaptive-muted hover:text-adaptive transition flex items-center gap-1 mx-auto" id="btn-timer-notes-toggle" type="button">
                         📝 <span id="timer-notes-toggle-label">Notizen</span>
-                    </button>
-                    <div id="timer-notes-collapsed" class="hidden w-full mt-2">
-                        <div class="relative">
-                            <textarea id="timer-notes-input" class="w-full bg-surface text-adaptive p-2 pr-10 rounded-lg border border-gray-700 outline-none text-sm resize-none" rows="3" placeholder="Notizen zur Session..."></textarea>
-                            <button id="btn-voice-input" class="absolute right-2 top-2 p-1.5 hover:bg-gray-700 rounded-full transition" title="Sprach­eingabe (Ctrl+M)">
-                                <i data-lucide="mic" class="w-4 h-4 text-adaptive-muted"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pomodoro Toggle -->
-                <button id="btn-pomodoro-toggle" class="btn-interactive text-xs bg-surface hover:bg-gray-700 px-3 py-1.5 rounded-full transition border border-gray-700 touch-target"><span aria-hidden="true">🍅</span> Pomodoro</button>
-
-                <!-- Controls -->
-                <div class="flex items-center space-x-6">
-                    <button id="btn-timer-start" class="btn-interactive w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition touch-target" aria-label="Timer starten">
-                         <i data-lucide="play" class="w-8 h-8 fill-current ml-1" aria-hidden="true"></i>
-                    </button>
-                    <button id="btn-timer-pause" class="hidden btn-interactive w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black touch-target" aria-label="Timer pausieren">
-                         <i data-lucide="pause" class="w-8 h-8 fill-current" aria-hidden="true"></i>
-                    </button>
-                    <button id="btn-timer-stop" class="btn-interactive w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white touch-target" aria-label="Timer stoppen">
-                         <i data-lucide="square" class="w-6 h-6 fill-current" aria-hidden="true"></i>
-                    </button>
-                </div>
-            </div>
-            </div>
-
-            <!-- Save Button (visible when stopped/paused) -->
-            <div class="p-8 pb-12">
-                <button id="btn-timer-save" class="btn-interactive w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50 touch-target">
+</button>
+<div class="hidden w-full mt-2" id="timer-notes-collapsed">
+<div class="relative">
+<textarea class="w-full bg-surface text-adaptive p-2 pr-10 rounded-lg border border-gray-700 outline-none text-sm resize-none" id="timer-notes-input" placeholder="Notizen zur Session..." rows="3"></textarea>
+<button class="absolute right-2 top-2 p-1.5 hover:bg-gray-700 rounded-full transition" id="btn-voice-input" title="Sprach­eingabe (Ctrl+M)">
+<i class="w-4 h-4 text-adaptive-muted" data-lucide="mic"></i>
+</button>
+</div>
+</div>
+</div>
+<!-- Pomodoro Toggle -->
+<button class="btn-interactive text-xs bg-surface hover:bg-gray-700 px-3 py-1.5 rounded-full transition border border-gray-700 touch-target" id="btn-pomodoro-toggle"><span aria-hidden="true">🍅</span> Pomodoro</button>
+<!-- Controls -->
+<div class="flex items-center space-x-6">
+<button aria-label="Timer starten" class="btn-interactive w-16 h-16 rounded-full bg-surface hover:bg-gray-700 flex items-center justify-center transition touch-target" id="btn-timer-start">
+<i aria-hidden="true" class="w-8 h-8 fill-current ml-1" data-lucide="play"></i>
+</button>
+<button aria-label="Timer pausieren" class="hidden btn-interactive w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition text-black touch-target" id="btn-timer-pause">
+<i aria-hidden="true" class="w-8 h-8 fill-current" data-lucide="pause"></i>
+</button>
+<button aria-label="Timer stoppen" class="btn-interactive w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition text-white touch-target" id="btn-timer-stop">
+<i aria-hidden="true" class="w-6 h-6 fill-current" data-lucide="square"></i>
+</button>
+</div>
+</div>
+</div>
+<!-- Save Button (visible when stopped/paused) -->
+<div class="p-8 pb-12">
+<button class="btn-interactive w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50 touch-target" id="btn-timer-save">
                     Sitzung speichern
                 </button>
-            </div>
-        </div>
-
-        <!-- Add Entry Overlay -->
-        <div id="add-entry-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-            <!-- Header -->
-            <div class="flex justify-between items-center p-4">
-                <button id="btn-add-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
-                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                </button>
-                <div class="text-sm font-medium text-adaptive-muted">Eintrag hinzufügen</div>
-                <div class="w-10"></div> <!-- Spacer -->
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 min-h-0 overflow-y-auto">
-            <div class="min-h-full flex flex-col items-center justify-center p-8 space-y-8">
-
-                <!-- Subject -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Fach</label>
-                    <select id="add-subject-select" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                        <!-- Options injected via JS -->
-                    </select>
-                </div>
-
-                <!-- Thema (Topics) -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Thema</label>
-                    <input type="text" id="add-topics-input" list="add-topics-datalist" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Reihen, Folgen">
-                    <datalist id="add-topics-datalist"></datalist>
-                </div>
-
-                <!-- Date -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Datum</label>
-                    <input type="date" id="add-date-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                </div>
-
-                <!-- Time -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Uhrzeit</label>
-                    <input type="time" id="add-time-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none">
-                </div>
-
-                <!-- Duration -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Dauer (Minuten)</label>
-                    <input type="number" id="add-duration-input" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none mb-2" placeholder="z.B. 45">
-                    <div class="flex gap-2 justify-between">
-                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="15">15m</button>
-                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="30">30m</button>
-                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="45">45m</button>
-                         <button type="button" class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="60">60m</button>
-                    </div>
-                </div>
-
-                <!-- Notes -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Notizen</label>
-                    <textarea id="add-notes-input" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" placeholder="Zusätzliche Notizen..."></textarea>
-                </div>
-
-            </div>
-            </div>
-
-            <!-- Save Button -->
-            <div class="p-8 pb-12">
-                <button id="btn-add-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-entry-overlay">
+<!-- Header -->
+<div class="flex justify-between items-center p-4">
+<button aria-label="Schließen" class="p-2 rounded-full hover:bg-surface transition" id="btn-add-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted">Eintrag hinzufügen</div>
+<div class="w-10"></div> <!-- Spacer -->
+</div>
+<!-- Content -->
+<div class="flex-1 min-h-0 overflow-y-auto">
+<div class="min-h-full flex flex-col items-center justify-center p-8 space-y-8">
+<!-- Subject -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Fach</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-subject-select">
+<!-- Options injected via JS -->
+</select>
+</div>
+<!-- Thema (Topics) -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Thema</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-topics-input" list="add-topics-datalist" placeholder="z.B. Reihen, Folgen" type="text"/>
+<datalist id="add-topics-datalist"></datalist>
+</div>
+<!-- Date -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Datum</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-date-input" type="date"/>
+</div>
+<!-- Time -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Uhrzeit</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-time-input" type="time"/>
+</div>
+<!-- Duration -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Dauer (Minuten)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none mb-2" id="add-duration-input" min="1" placeholder="z.B. 45" type="number"/>
+<div class="flex gap-2 justify-between">
+<button class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="15" type="button">15m</button>
+<button class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="30" type="button">30m</button>
+<button class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="45" type="button">45m</button>
+<button class="btn-quick-duration flex-1 bg-surface border border-gray-700 hover:bg-gray-700 text-adaptive text-xs py-2 rounded-lg transition" data-val="60" type="button">60m</button>
+</div>
+</div>
+<!-- Notes -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Notizen</label>
+<textarea class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none h-24 resize-none" id="add-notes-input" placeholder="Zusätzliche Notizen..."></textarea>
+</div>
+</div>
+</div>
+<!-- Save Button -->
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-save">
                     Speichern
                 </button>
-            </div>
-        </div>
-
-        <!-- Add Subject Overlay -->
-        <div id="add-subject-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-            <!-- Header -->
-            <div class="flex justify-between items-center p-4">
-                <button id="btn-add-subject-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
-                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                </button>
-                <div class="text-sm font-medium text-adaptive-muted">Fach hinzufügen</div>
-                <div class="w-10"></div> <!-- Spacer -->
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-8 overflow-y-auto">
-
-                <!-- Name -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Name</label>
-                    <input type="text" id="add-subject-name" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. Physik">
-                </div>
-
-                <!-- Color -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Farbe</label>
-                    <select id="add-subject-color" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none">
-                        <option value="bg-red-500">Rot</option>
-                        <option value="bg-orange-500">Orange</option>
-                        <option value="bg-yellow-500">Gelb</option>
-                        <option value="bg-green-500">Grün</option>
-                        <option value="bg-teal-500">Türkis</option>
-                        <option value="bg-blue-500">Blau</option>
-                        <option value="bg-indigo-500">Indigo</option>
-                        <option value="bg-purple-500">Lila</option>
-                        <option value="bg-pink-500">Pink</option>
-                        <option value="bg-gray-500">Grau</option>
-                    </select>
-                </div>
-
-                <!-- Weekly Goal -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Wochenziel (Stunden)</label>
-                    <input type="number" id="add-subject-weekly-goal" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5" min="0" max="50">
-                </div>
-
-            </div>
-
-            <!-- Save Button -->
-            <div class="p-8 pb-12">
-                <button id="btn-add-subject-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="add-subject-overlay">
+<!-- Header -->
+<div class="flex justify-between items-center p-4">
+<button aria-label="Schließen" class="p-2 rounded-full hover:bg-surface transition" id="btn-add-subject-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted">Fach hinzufügen</div>
+<div class="w-10"></div> <!-- Spacer -->
+</div>
+<!-- Content -->
+<div class="flex-1 min-h-0 flex flex-col items-center justify-start p-8 space-y-8 overflow-y-auto">
+<!-- Name -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Name</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-subject-name" placeholder="z.B. Physik" type="text"/>
+</div>
+<!-- Color -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Farbe</label>
+<select class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none appearance-none" id="add-subject-color">
+<option value="bg-red-500">Rot</option>
+<option value="bg-orange-500">Orange</option>
+<option value="bg-yellow-500">Gelb</option>
+<option value="bg-green-500">Grün</option>
+<option value="bg-teal-500">Türkis</option>
+<option value="bg-blue-500">Blau</option>
+<option value="bg-indigo-500">Indigo</option>
+<option value="bg-purple-500">Lila</option>
+<option value="bg-pink-500">Pink</option>
+<option value="bg-gray-500">Grau</option>
+</select>
+</div>
+<!-- Weekly Goal -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Wochenziel (Stunden)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="add-subject-weekly-goal" max="50" min="0" placeholder="z.B. 5" type="number"/>
+</div>
+</div>
+<!-- Save Button -->
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-add-subject-save">
                     Fach Speichern
                 </button>
-            </div>
-        </div>
-
-        <!-- Settings Overlay -->
-        <div id="settings-overlay" class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-            <!-- Header -->
-            <div class="flex justify-between items-center p-4">
-                <button id="btn-settings-close" class="p-2 rounded-full hover:bg-surface transition" aria-label="Schließen">
-                    <i data-lucide="chevron-down" class="w-6 h-6"></i>
-                </button>
-                <div class="text-sm font-medium text-adaptive-muted">Einstellungen</div>
-                <div class="w-10"></div> <!-- Spacer -->
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 flex flex-col items-center justify-start p-8 space-y-8 overflow-y-auto">
-
-                <h2 class="text-2xl font-bold">Einstellungen</h2>
-
-                <!-- Daily Goal -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Tägliches Ziel (Minuten)</label>
-                    <input type="number" id="settings-daily-goal" min="1" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 60">
-                </div>
-
-                <!-- Learning Days -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Lern-Tage pro Woche</label>
-                    <input type="number" id="settings-learning-days" min="1" max="7" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="z.B. 5">
-                </div>
-
-                <!-- Font Size -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Schriftgröße</label>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs text-adaptive-muted">A</span>
-                        <input type="range" id="settings-font-size" min="12" max="24" step="1" value="16" class="flex-1 accent-primary">
-                        <span class="text-lg text-adaptive-muted">A</span>
-                    </div>
-                    <div class="text-center text-xs text-adaptive-muted mt-1" id="settings-font-size-label">16px</div>
-                </div>
-
-                <!-- Theme Mode -->
-                <div class="w-full">
-                    <label class="block text-sm text-adaptive-muted mb-2">Design</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button id="settings-theme-light" class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center">
-                            <span class="text-2xl mb-1 block">☀️</span>
-                            <span class="text-xs text-adaptive-muted">Hell</span>
-                        </button>
-                        <button id="settings-theme-dark" class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center">
-                            <span class="text-2xl mb-1 block">🌙</span>
-                            <span class="text-xs text-adaptive-muted">Dunkel</span>
-                        </button>
-                        <button id="settings-theme-auto" class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center">
-                            <span class="text-2xl mb-1 block">⚙️</span>
-                            <span class="text-xs text-adaptive-muted">Auto</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Pomodoro Settings -->
-                <div class="w-full pt-8 border-t border-gray-800">
-                    <h3 class="text-lg font-bold mb-4">🍅 Pomodoro</h3>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="text-xs text-adaptive-muted mb-1 block">Arbeit (Min)</label>
-                            <input type="number" id="settings-pomo-work" min="1" max="120" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="25">
-                        </div>
-                        <div>
-                            <label class="text-xs text-adaptive-muted mb-1 block">Kurze Pause (Min)</label>
-                            <input type="number" id="settings-pomo-short" min="1" max="60" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="5">
-                        </div>
-                        <div>
-                            <label class="text-xs text-adaptive-muted mb-1 block">Lange Pause (Min)</label>
-                            <input type="number" id="settings-pomo-long" min="1" max="60" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="15">
-                        </div>
-                        <div>
-                            <label class="text-xs text-adaptive-muted mb-1 block">Lange Pause alle X</label>
-                            <input type="number" id="settings-pomo-interval" min="1" max="10" class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" placeholder="4">
-                        </div>
-                    </div>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
-                            <input type="checkbox" id="settings-pomo-auto-break" checked class="accent-primary w-4 h-4">
+</div>
+</div>
+<div class="fixed inset-0 bg-dark z-50 transform translate-y-full transition-transform duration-300 flex flex-col" id="settings-overlay">
+<!-- Header -->
+<div class="flex justify-between items-center p-4">
+<button aria-label="Schließen" class="p-2 rounded-full hover:bg-surface transition" id="btn-settings-close">
+<i class="w-6 h-6" data-lucide="chevron-down"></i>
+</button>
+<div class="text-sm font-medium text-adaptive-muted">Einstellungen</div>
+<div class="w-10"></div> <!-- Spacer -->
+</div>
+<!-- Content -->
+<div class="flex-1 flex flex-col items-center justify-start p-8 space-y-8 overflow-y-auto">
+<h2 class="text-2xl font-bold">Einstellungen</h2>
+<!-- Daily Goal -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Tägliches Ziel (Minuten)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="settings-daily-goal" min="1" placeholder="z.B. 60" type="number"/>
+</div>
+<!-- Learning Days -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Lern-Tage pro Woche</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="settings-learning-days" max="7" min="1" placeholder="z.B. 5" type="number"/>
+</div>
+<!-- Font Size -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Schriftgröße</label>
+<div class="flex items-center gap-3">
+<span class="text-xs text-adaptive-muted">A</span>
+<input class="flex-1 accent-primary" id="settings-font-size" max="24" min="12" step="1" type="range" value="16"/>
+<span class="text-lg text-adaptive-muted">A</span>
+</div>
+<div class="text-center text-xs text-adaptive-muted mt-1" id="settings-font-size-label">16px</div>
+</div>
+<!-- Theme Mode -->
+<div class="w-full">
+<label class="block text-sm text-adaptive-muted mb-2">Design</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center" id="settings-theme-light">
+<span class="text-2xl mb-1 block">☀️</span>
+<span class="text-xs text-adaptive-muted">Hell</span>
+</button>
+<button class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center" id="settings-theme-dark">
+<span class="text-2xl mb-1 block">🌙</span>
+<span class="text-xs text-adaptive-muted">Dunkel</span>
+</button>
+<button class="p-3 bg-surface border border-gray-700 rounded-lg transition hover:border-gray-500 text-center" id="settings-theme-auto">
+<span class="text-2xl mb-1 block">⚙️</span>
+<span class="text-xs text-adaptive-muted">Auto</span>
+</button>
+</div>
+</div>
+<!-- Pomodoro Settings -->
+<div class="w-full pt-8 border-t border-gray-800">
+<h3 class="text-lg font-bold mb-4">🍅 Pomodoro</h3>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<label class="text-xs text-adaptive-muted mb-1 block">Arbeit (Min)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="settings-pomo-work" max="120" min="1" placeholder="25" type="number"/>
+</div>
+<div>
+<label class="text-xs text-adaptive-muted mb-1 block">Kurze Pause (Min)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="settings-pomo-short" max="60" min="1" placeholder="5" type="number"/>
+</div>
+<div>
+<label class="text-xs text-adaptive-muted mb-1 block">Lange Pause (Min)</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="settings-pomo-long" max="60" min="1" placeholder="15" type="number"/>
+</div>
+<div>
+<label class="text-xs text-adaptive-muted mb-1 block">Lange Pause alle X</label>
+<input class="w-full bg-surface text-adaptive p-3 rounded-lg border border-gray-700 outline-none" id="settings-pomo-interval" max="10" min="1" placeholder="4" type="number"/>
+</div>
+</div>
+<div class="space-y-3">
+<label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+<input checked="" class="accent-primary w-4 h-4" id="settings-pomo-auto-break" type="checkbox"/>
                             Pause automatisch starten
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
-                            <input type="checkbox" id="settings-pomo-auto-work" class="accent-primary w-4 h-4">
+<label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+<input class="accent-primary w-4 h-4" id="settings-pomo-auto-work" type="checkbox"/>
                             Arbeit automatisch nach Pause starten
                         </label>
-                    </div>
-                </div>
-
-                <!-- Notification Settings -->
-                <div class="w-full pt-8 border-t border-gray-800">
-                    <h3 class="text-lg font-bold mb-4">🔔 Benachrichtigungen</h3>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
-                            <input type="checkbox" id="settings-notify-pomodoro" class="accent-primary w-4 h-4">
+</div>
+</div>
+<!-- Notification Settings -->
+<div class="w-full pt-8 border-t border-gray-800">
+<h3 class="text-lg font-bold mb-4">🔔 Benachrichtigungen</h3>
+<div class="space-y-3">
+<label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+<input class="accent-primary w-4 h-4" id="settings-notify-pomodoro" type="checkbox"/>
                             Pomodoro-Benachrichtigungen
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
-                            <input type="checkbox" id="settings-notify-daily" class="accent-primary w-4 h-4">
+<label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+<input class="accent-primary w-4 h-4" id="settings-notify-daily" type="checkbox"/>
                             Tägliche Lern-Erinnerung
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
-                            <input type="checkbox" id="settings-notify-sound" checked class="accent-primary w-4 h-4">
+<label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+<input checked="" class="accent-primary w-4 h-4" id="settings-notify-sound" type="checkbox"/>
                             Ton bei Benachrichtigungen
                         </label>
-                    </div>
-                    <button id="btn-test-notification" class="mt-4 w-full py-2 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition text-sm">
+</div>
+<button class="mt-4 w-full py-2 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition text-sm" id="btn-test-notification">
                         Benachrichtigung testen
                     </button>
-                </div>
-
-                <!-- Quick Entry Settings -->
-                <div class="w-full pt-8 border-t border-gray-800">
-                    <h3 class="text-lg font-bold mb-4">⌨️ Tastenkürzel</h3>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-adaptive-muted">Neuer Eintrag</span>
-                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">N</kbd>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-adaptive-muted">Overlay speichern</span>
-                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + Enter</kbd>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-adaptive-muted">Overlay schließen</span>
-                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Esc</kbd>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-adaptive-muted">Sprach­eingabe</span>
-                            <kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + M</kbd>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
-                            <input type="checkbox" id="settings-voice-input" class="accent-primary w-4 h-4">
+</div>
+<!-- Quick Entry Settings -->
+<div class="w-full pt-8 border-t border-gray-800">
+<h3 class="text-lg font-bold mb-4">⌨️ Tastenkürzel</h3>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between">
+<span class="text-adaptive-muted">Neuer Eintrag</span>
+<kbd class="bg-surface px-2 py-0.5 rounded text-xs">N</kbd>
+</div>
+<div class="flex justify-between">
+<span class="text-adaptive-muted">Overlay speichern</span>
+<kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + Enter</kbd>
+</div>
+<div class="flex justify-between">
+<span class="text-adaptive-muted">Overlay schließen</span>
+<kbd class="bg-surface px-2 py-0.5 rounded text-xs">Esc</kbd>
+</div>
+<div class="flex justify-between">
+<span class="text-adaptive-muted">Sprach­eingabe</span>
+<kbd class="bg-surface px-2 py-0.5 rounded text-xs">Ctrl + M</kbd>
+</div>
+</div>
+<div class="mt-4">
+<label class="flex items-center gap-2 text-sm text-adaptive cursor-pointer">
+<input class="accent-primary w-4 h-4" id="settings-voice-input" type="checkbox"/>
                             Sprach­eingabe für Notizen
                         </label>
-                    </div>
-                </div>
-
-                <!-- Data Management -->
-                <div class="w-full pt-8 border-t border-gray-800">
-                    <h3 class="text-lg font-bold mb-4">Datenverwaltung</h3>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <button id="btn-export-open" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            <span>Export (Filter)</span>
-                        </button>
-                        <button id="btn-settings-export" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
-                            <i data-lucide="archive" class="w-4 h-4"></i>
-                            <span>Backup (JSON)</span>
-                        </button>
-                        <button id="btn-settings-import-trigger" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
-                            <i data-lucide="upload" class="w-4 h-4"></i>
-                            <span>Importieren</span>
-                        </button>
-                        <button id="btn-settings-export-csv" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
-                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                            <span>CSV (schnell)</span>
-                        </button>
-                        <button id="btn-settings-export-pdf" class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                            <span>Wochen-Bericht</span>
-                        </button>
-                        <input type="file" id="settings-import-input" class="hidden" accept=".json">
-                    </div>
-                </div>
-
-                <!-- Danger Zone -->
-                <div class="w-full pt-4 border-t border-gray-800">
-                    <h3 class="text-red-500 font-bold mb-4">Gefahrenzone</h3>
-                    <button id="btn-settings-reset" class="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg transition font-medium">
+</div>
+</div>
+<!-- Data Management -->
+<div class="w-full pt-8 border-t border-gray-800">
+<h3 class="text-lg font-bold mb-4">Datenverwaltung</h3>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<button class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1" id="btn-export-open">
+<i class="w-4 h-4" data-lucide="download"></i>
+<span>Export (Filter)</span>
+</button>
+<button class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1" id="btn-settings-export">
+<i class="w-4 h-4" data-lucide="archive"></i>
+<span>Backup (JSON)</span>
+</button>
+<button class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1" id="btn-settings-import-trigger">
+<i class="w-4 h-4" data-lucide="upload"></i>
+<span>Importieren</span>
+</button>
+<button class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1" id="btn-settings-export-csv">
+<i class="w-4 h-4" data-lucide="file-spreadsheet"></i>
+<span>CSV (schnell)</span>
+</button>
+<button class="py-3 bg-surface hover:bg-gray-700 text-adaptive border border-gray-700 rounded-lg transition font-medium text-sm flex flex-col items-center justify-center space-y-1" id="btn-settings-export-pdf">
+<i class="w-4 h-4" data-lucide="file-text"></i>
+<span>Wochen-Bericht</span>
+</button>
+<input accept=".json" class="hidden" id="settings-import-input" type="file"/>
+</div>
+</div>
+<!-- Danger Zone -->
+<div class="w-full pt-4 border-t border-gray-800">
+<h3 class="text-red-500 font-bold mb-4">Gefahrenzone</h3>
+<button class="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg transition font-medium" id="btn-settings-reset">
                         Alle Daten löschen
                     </button>
-                </div>
-
-            </div>
-
-            <!-- Save Button -->
-            <div class="p-8 pb-12">
-                <button id="btn-settings-save" class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50">
+</div>
+</div>
+<!-- Save Button -->
+<div class="p-8 pb-12">
+<button class="w-full py-4 bg-primary hover:bg-blue-600 rounded-full text-lg font-bold transition shadow-lg shadow-blue-900/50" id="btn-settings-save">
                     Einstellungen Speichern
                 </button>
-            </div>
-        </div>
+</div>
+</div>
+
+  <div class="fixed bottom-20 left-4 right-4 z-40 transform translate-y-full transition-transform duration-300 surface-card p-4 border border-gray-700 shadow-xl flex items-center justify-between gap-3 hidden" id="pwa-install-banner">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+<i class="w-5 h-5 text-primary" data-lucide="download"></i>
+</div>
+<div>
+<div class="font-bold text-adaptive text-sm">App installieren</div>
+<div class="text-xs text-adaptive-muted">Für schnelleren Zugriff auf den Homescreen</div>
+</div>
+</div>
+<div class="flex items-center gap-2 flex-shrink-0">
+<button class="px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-full transition" id="pwa-install-btn">Installieren</button>
+<button aria-label="Schließen" class="p-2 text-adaptive-muted hover:text-adaptive transition" id="pwa-dismiss-btn">
+<i class="w-4 h-4" data-lucide="x"></i>
+</button>
+</div>
+</div>
+  <div class="fixed bottom-20 left-4 right-4 z-40 transform translate-y-full transition-transform duration-300 surface-card p-4 border border-green-600/50 shadow-xl flex items-center justify-between gap-3 hidden" id="update-banner">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-success/20 rounded-full flex items-center justify-center flex-shrink-0">
+<i class="w-5 h-5 text-success" data-lucide="refresh-cw"></i>
+</div>
+<div>
+<div class="font-bold text-adaptive text-sm">Update verfügbar</div>
+<div class="text-xs text-adaptive-muted">Neue Version wird geladen...</div>
+</div>
+</div>
+</div>
+
+  <div id="pull-indicator" class="pull-indicator" aria-hidden="true">
+    <div class="flex flex-col items-center text-primary">
+      <i data-lucide="refresh-cw" class="w-6 h-6 animate-spin" aria-hidden="true"></i>
+      <span class="text-xs mt-1">Laden...</span>
+    </div>
+  </div>
+
+  <button id="fab-main" class="fab-main" type="button" title="Timer starten" aria-label="Timer starten">
+    <i data-lucide="plus" class="w-6 h-6 text-white" aria-hidden="true"></i>
+  </button>
+
+  <nav class="mobile-bottom-nav" role="navigation" aria-label="Schnellnavigation">
+    <div class="mobile-bottom-nav-inner">
+      <button class="nav-btn mobile-nav-btn" data-target="view-dashboard" aria-controls="view-dashboard" aria-selected="false" tabindex="0">
+  <i data-lucide="layout-dashboard" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Dashboard</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-einheiten" aria-controls="view-einheiten" aria-selected="false" tabindex="0">
+  <i data-lucide="book-open" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Einheiten</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-faecher" aria-controls="view-faecher" aria-selected="false" tabindex="0">
+  <i data-lucide="landmark" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Fächer</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-kalender" aria-controls="view-kalender" aria-selected="false" tabindex="0">
+  <i data-lucide="calendar" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Kalender</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-achievements" aria-controls="view-achievements" aria-selected="false" tabindex="0">
+  <i data-lucide="award" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Erfolge</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-pruefungen" aria-controls="view-pruefungen" aria-selected="false" tabindex="0">
+  <i data-lucide="clipboard-check" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Prüfungen</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-semester" aria-controls="view-semester" aria-selected="false" tabindex="0">
+  <i data-lucide="graduation-cap" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Semester</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-statistiken" aria-controls="view-statistiken" aria-selected="false" tabindex="0">
+  <i data-lucide="bar-chart-2" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Statistiken</span>
+</button>
+<button class="nav-btn mobile-nav-btn" data-target="view-ziele" aria-controls="view-ziele" aria-selected="false" tabindex="0">
+  <i data-lucide="flag" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Ziele</span>
+</button>
+<button id="btn-more-nav" class="mobile-nav-btn mobile-more-btn" type="button" aria-label="Weitere Bereiche anzeigen" aria-controls="workspace-sidebar" aria-expanded="false">
+  <i data-lucide="menu" class="w-5 h-5" aria-hidden="true"></i>
+  <span class="text-[10px]">Mehr</span>
+</button>
 
     </div>
+  </nav>
 
-    <!-- PWA Install Banner -->
-    <div id="pwa-install-banner" class="fixed bottom-20 left-4 right-4 z-40 transform translate-y-full transition-transform duration-300 surface-card p-4 border border-gray-700 shadow-xl flex items-center justify-between gap-3 hidden">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                <i data-lucide="download" class="w-5 h-5 text-primary"></i>
-            </div>
-            <div>
-                <div class="font-bold text-adaptive text-sm">App installieren</div>
-                <div class="text-xs text-adaptive-muted">Für schnelleren Zugriff auf den Homescreen</div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 flex-shrink-0">
-            <button id="pwa-install-btn" class="px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-full transition">Installieren</button>
-            <button id="pwa-dismiss-btn" class="p-2 text-adaptive-muted hover:text-adaptive transition" aria-label="Schließen">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Update Available Banner -->
-    <div id="update-banner" class="fixed bottom-20 left-4 right-4 z-40 transform translate-y-full transition-transform duration-300 surface-card p-4 border border-green-600/50 shadow-xl flex items-center justify-between gap-3 hidden">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-success/20 rounded-full flex items-center justify-center flex-shrink-0">
-                <i data-lucide="refresh-cw" class="w-5 h-5 text-success"></i>
-            </div>
-            <div>
-                <div class="font-bold text-adaptive text-sm">Update verfügbar</div>
-                <div class="text-xs text-adaptive-muted">Neue Version wird geladen...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="js/store.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/timer.js"></script>
-    <script src="js/achievements.js"></script>
-    <script src="js/calendar.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/app.js"></script>
-    <script>
-        // Guarded: the icon bundle comes from a CDN and may be unavailable.
-        refreshIcons();
-    </script>
+  <script src="vendor/lucide.min.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    if (typeof refreshIcons === 'function') refreshIcons();
+  </script>
 </body>
 </html>

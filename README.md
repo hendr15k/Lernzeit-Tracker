@@ -5,6 +5,12 @@ Ein moderner Lernzeit-Tracker, der als Progressive Web App (PWA) konzipiert ist.
 [Live Demo](https://hendr15k.github.io/Lernzeit-Tracker/)
 
 
+## Oberfläche
+
+Ein ruhiger Arbeitsbereich statt einer langen Telefonliste: feste Seitenleiste am Desktop, kompakte Kopfzeile und Schnellnavigation am Handy, ein Fokusbereich mit direktem Start der Lernsession und ein Raster, das Kennzahlen und Diagramme nach Relevanz ordnet. Alle Daten bleiben lokal, die Oberfläche braucht zur Laufzeit kein CDN.
+
+Screenshots und Prüfung: `npm install`, `npm test` (Playwright, Handy und Desktop). Tailwind wird lokal gebaut mit `npm run build:css`.
+
 ## Funktionen
 
 *   **Dashboard:**
@@ -31,7 +37,7 @@ Ein moderner Lernzeit-Tracker, der als Progressive Web App (PWA) konzipiert ist.
 ## Technologien
 
 *   HTML5
-*   CSS3 (Tailwind CSS via CDN)
+*   CSS3 (lokal gebautes Tailwind)
 *   JavaScript (ES6+)
 *   Lucide Icons (für Icons)
 

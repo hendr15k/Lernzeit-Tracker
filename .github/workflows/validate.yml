@@ -5,8 +5,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check files
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Check JavaScript syntax
         run: |
-          [ -f index.html ] && echo "HTML OK" || echo "No index.html"
-          for f in *.js; do [ -f "$f" ] && node --check "$f" 2>/dev/null && echo "$f OK" || echo "$f syntax error"; done
-          echo "Done"
+          set -e
+          for f in $(git ls-files '*.js'); do
+            node --check "$f"
+          done
+      - name: Rebuild utility CSS and fail on drift
+        run: |
+          npm run build:css
+          git diff --exit-code -- css/tailwind.generated.css
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: UI tests
+        run: npm test

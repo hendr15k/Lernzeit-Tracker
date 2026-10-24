@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernzeit-tracker-v8';
+const CACHE_NAME = 'lernzeit-tracker-v9-workspace';
 
 // Everything the app needs to boot offline. Keep this list in sync with the
 // <script> tags in index.html - a missing module used to break the app offline.
@@ -7,6 +7,9 @@ const LOCAL_ASSETS = [
     './index.html',
     './style.css',
     './css/toast.css',
+    './css/tailwind.generated.css',
+    './vendor/lucide.min.js',
+    './js/ui.js',
     './js/utils.js',
     './js/store.js',
     './js/timer.js',
@@ -20,10 +23,7 @@ const LOCAL_ASSETS = [
     './icon-512.png'
 ];
 
-const CDN_ASSETS = [
-    'https://cdn.tailwindcss.com',
-    'https://unpkg.com/lucide@0.473.0'
-];
+const CDN_ASSETS = [];
 
 self.addEventListener('install', (e) => {
     e.waitUntil((async () => {
