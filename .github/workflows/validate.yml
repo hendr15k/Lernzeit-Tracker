@@ -52,6 +52,7 @@ jobs:
           curl -fsS http://127.0.0.1:18085/css/tailwind.generated.css >/dev/null
           curl -fsS http://127.0.0.1:18085/api/health | grep -q ok
           curl -fsS -c /tmp/ci-cookies.txt -H 'Content-Type: application/json' \
+            -H 'Origin: http://127.0.0.1:18085' \
             -d '{"username":"hendrik","password":"test-password"}' \
             http://127.0.0.1:18085/api/login | grep -q hendrik
           curl -fsS -b /tmp/ci-cookies.txt http://127.0.0.1:18085/api/me | grep -q hendrik

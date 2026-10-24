@@ -220,7 +220,8 @@ function checkOrigin(req) {
   if (!origin) return true;
   try {
     const parsed = new URL(origin);
-    return parsed.host === req.headers.host;
+    const expectedHost = req.headers['x-forwarded-host'] || req.headers.host;
+    return parsed.host === expectedHost;
   } catch (err) {
     return false;
   }
