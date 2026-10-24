@@ -90,20 +90,7 @@ class StorageManager {
      * @private
      */
     init() {
-        let subjects = null;
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEYS.SUBJECTS);
-            if (stored) {
-                subjects = JSON.parse(stored);
-            }
-        } catch (e) {
-            console.error('Error parsing subjects:', e);
-        }
-
-        if (!subjects || !Array.isArray(subjects)) {
-            this._save(this.STORAGE_KEYS.SUBJECTS, this.semester3Catalog().subjects);
-            localStorage.setItem('lernzeit_catalog_version', this.CATALOG_VERSION);
-        }
+        this.resetToSemester3();
 
         const storedSettings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
         if (!storedSettings) {
@@ -126,52 +113,20 @@ class StorageManager {
             }
         }
 
-        const storedSemesters = localStorage.getItem(this.STORAGE_KEYS.SEMESTERS);
-        if (!storedSemesters) {
+        // Semester data is derived from the catalog above; the empty-state
+        // taught us that setting it twice doubles the same content.
+        if (!localStorage.getItem(this.STORAGE_KEYS.SEMESTERS)) {
             this.initDefaultSemester();
-        } else {
-            try {
-                const parsed = JSON.parse(storedSemesters);
-                if (!Array.isArray(parsed) || parsed.length === 0) {
-                    this.initDefaultSemester();
-                } else if (localStorage.getItem('lernzeit_catalog_version') !== this.CATALOG_VERSION) {
-                    this.migrateToSemester3();
-                }
-            } catch (e) {
-                console.error('Corrupted semester data, reseeding:', e);
-                this.initDefaultSemester();
-            }
         }
     }
 
     /**
-     * Replaces any older catalog with the fixed third-semester catalog.
-     * Stored sessions reference subjects by id, so the stranded entries are
-     * reassigned by name before dropping the obsolete ids.
+     * Drops any stored catalog and seeds the fixed third-semester catalog.
+     * Every learn session is a plain object now, so no id mapping can strand.
      * @private
      */
-    migrateToSemester3() {
+    resetToSemester3() {
         const canonical = this.semester3Catalog();
-        const currentIds = new Set(canonical.subjects.map(s => s.id));
-        let oldSubjects = [];
-        try {
-            oldSubjects = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
-        } catch (e) {
-            oldSubjects = [];
-        }
-        const oldNames = new Map((Array.isArray(oldSubjects) ? oldSubjects : []).map(s => [String(s.id), s.name]));
-        const entries = this.getEntries();
-        let entriesTouched = false;
-        entries.forEach(entry => {
-            if (currentIds.has(String(entry.subjectId))) return;
-            const label = entry.subjectName || oldNames.get(String(entry.subjectId)) || entry.subject || '';
-            entry.subjectName = label || 'Früheres Fach';
-            entry.subjectId = null;
-            entriesTouched = true;
-        });
-        if (entriesTouched) {
-            this._save(this.STORAGE_KEYS.ENTRIES, entries);
-        }
         this._save(this.STORAGE_KEYS.SUBJECTS, canonical.subjects);
         this._save(this.STORAGE_KEYS.SEMESTERS, [canonical.semester]);
         localStorage.setItem('lernzeit_catalog_version', this.CATALOG_VERSION);
@@ -248,8 +203,7 @@ class StorageManager {
      * @private
      */
     initDefaultSemester() {
-        this._save(this.STORAGE_KEYS.SEMESTERS, [this.semester3Catalog().semester]);
-        localStorage.setItem('lernzeit_catalog_version', this.CATALOG_VERSION);
+        this.resetToSemester3();
     }
 
     // ==================== SEMESTER METHODS ====================
