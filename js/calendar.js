@@ -370,7 +370,7 @@ function renderHistory(entries, subjects) {
     if (searchTerm) {
         filteredEntries = filteredEntries.filter(e => {
             const subject = subjects.find(s => s.id === e.subjectId);
-            const subjectName = subject ? subject.name.toLowerCase() : 'gelöschtes fach';
+            const subjectName = subject ? subject.name.toLowerCase() : String(e.subjectName || 'früheres fach').toLowerCase();
             const notes = e.notes ? e.notes.toLowerCase() : '';
             const topics = e.topics ? e.topics.toLowerCase() : '';
             return subjectName.includes(searchTerm) || notes.includes(searchTerm) || topics.includes(searchTerm);
@@ -398,7 +398,7 @@ function renderHistory(entries, subjects) {
             fragment.appendChild(header);
         }
 
-        const subject = subjects.find(s => s.id === entry.subjectId) || { name: 'Gelöschtes Fach', color: 'bg-gray-400' };
+        const subject = subjects.find(s => s.id === entry.subjectId) || { name: entry.subjectName || 'Früheres Fach', color: 'bg-gray-400' };
         const durationMin = Math.round(entry.duration / 60);
         const timeStr = new Date(entry.startTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 

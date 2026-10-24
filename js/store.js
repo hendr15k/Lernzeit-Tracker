@@ -35,6 +35,7 @@ class StorageManager {
         };
         this._entriesCache = null;
         this._entriesCacheRaw = null;
+        this.CATALOG_VERSION = 'sem3-ws2627-v1';
         if (!skipSeed) this.init();
     }
 
@@ -100,17 +101,8 @@ class StorageManager {
         }
 
         if (!subjects || !Array.isArray(subjects)) {
-            const defaultSubjects = [
-                { id: '1', name: 'Höhere Mathematik 2', color: 'bg-blue-500', weeklyGoal: 6 },
-                { id: '2', name: 'GET2', color: 'bg-green-500', weeklyGoal: 8 },
-                { id: '3', name: 'Physik', color: 'bg-purple-500', weeklyGoal: 8 },
-                { id: '4', name: 'Bauelemente', color: 'bg-orange-500', weeklyGoal: 8 },
-                { id: '5', name: 'Digitaltechnik', color: 'bg-red-500', weeklyGoal: 5 },
-                { id: '6', name: 'Höhere Mathematik 1', color: 'bg-cyan-500', weeklyGoal: 6 },
-                { id: '7', name: 'GET1', color: 'bg-emerald-500', weeklyGoal: 8 },
-                { id: '8', name: 'Programmierung & TI', color: 'bg-violet-500', weeklyGoal: 6 }
-            ];
-            this._save(this.STORAGE_KEYS.SUBJECTS, defaultSubjects);
+            this._save(this.STORAGE_KEYS.SUBJECTS, this.semester3Catalog().subjects);
+            localStorage.setItem('lernzeit_catalog_version', this.CATALOG_VERSION);
         }
 
         const storedSettings = localStorage.getItem(this.STORAGE_KEYS.SETTINGS);
@@ -142,10 +134,8 @@ class StorageManager {
                 const parsed = JSON.parse(storedSemesters);
                 if (!Array.isArray(parsed) || parsed.length === 0) {
                     this.initDefaultSemester();
-                } else {
-                    this.migrateModulesSubjectId();
-                    this.migrateExamDates();
-                    this.migrateWiSe2025();
+                } else if (localStorage.getItem('lernzeit_catalog_version') !== this.CATALOG_VERSION) {
+                    this.migrateToSemester3();
                 }
             } catch (e) {
                 console.error('Corrupted semester data, reseeding:', e);
@@ -155,165 +145,102 @@ class StorageManager {
     }
 
     /**
-     * Migrates modules to include subjectId based on module name matching
+     * Replaces any older catalog with the fixed third-semester catalog.
+     * Stored sessions reference subjects by id, so the stranded entries are
+     * reassigned by name before dropping the obsolete ids.
      * @private
      */
-    migrateModulesSubjectId() {
-        const semesters = this.getSemesters();
-        const subjects = this.getSubjects();
-        let needsUpdate = false;
-
-        semesters.forEach(semester => {
-            (semester.modules || []).forEach(mod => {
-                if (mod.klausur && !mod.examPeriod) {
-                    mod.examPeriod = mod.klausur;
-                    delete mod.klausur;
-                    needsUpdate = true;
-                }
-
-                if (!mod.subjectId && mod.name) {
-                    const matched = subjects.find(s => {
-                        const sName = s.name.toLowerCase();
-                        const mName = mod.name.toLowerCase();
-                        const getMatch = /get\s*([12])/.exec(sName);
-                        if (getMatch) {
-                            // "GET" subjects only match their own number, otherwise
-                            // "Grundlagen der Elektrotechnik 1" became GET2.
-                            return mName.includes('elektrotechnik') && mName.includes(getMatch[1]);
-                        }
-                        return sName.includes(mName) || mName.includes(sName) ||
-                            (sName.includes('hm') && mName.includes('mathematik'));
-                    });
-                    if (matched) {
-                        mod.subjectId = matched.id;
-                        needsUpdate = true;
-                    }
-                }
-            });
-        });
-
-        if (needsUpdate) {
-            this.saveSemesters(semesters);
+    migrateToSemester3() {
+        const canonical = this.semester3Catalog();
+        const currentIds = new Set(canonical.subjects.map(s => s.id));
+        let oldSubjects = [];
+        try {
+            oldSubjects = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SUBJECTS) || '[]');
+        } catch (e) {
+            oldSubjects = [];
         }
+        const oldNames = new Map((Array.isArray(oldSubjects) ? oldSubjects : []).map(s => [String(s.id), s.name]));
+        const entries = this.getEntries();
+        let entriesTouched = false;
+        entries.forEach(entry => {
+            if (currentIds.has(String(entry.subjectId))) return;
+            const label = entry.subjectName || oldNames.get(String(entry.subjectId)) || entry.subject || '';
+            entry.subjectName = label || 'Früheres Fach';
+            entry.subjectId = null;
+            entriesTouched = true;
+        });
+        if (entriesTouched) {
+            this._save(this.STORAGE_KEYS.ENTRIES, entries);
+        }
+        this._save(this.STORAGE_KEYS.SUBJECTS, canonical.subjects);
+        this._save(this.STORAGE_KEYS.SEMESTERS, [canonical.semester]);
+        localStorage.setItem('lernzeit_catalog_version', this.CATALOG_VERSION);
     }
 
     /**
-     * Migrates exam dates for modules
+     * Canonical third-semester catalog used for fresh installs and upgrades.
      * @private
      */
-    migrateExamDates() {
-        const semesters = this.getSemesters();
-        const examDateMap = {
-            'Höhere Mathematik 2': '2026-07-28',
-            'Grundgebiete der Elektrotechnik 2': '2026-07-28',
-            'Physik': '2026-07-24',
-            'Bauelemente': '2026-07-20',
-            'Digitaltechnik': '2026-07-28'
-        };
-
-        let needsUpdate = false;
-        semesters.forEach(semester => {
-            (semester.modules || []).forEach(mod => {
-                if (!mod.examDate && mod.examPeriod === '2026-07-14') {
-                    const match = Object.keys(examDateMap).find(name =>
-                        mod.name.includes(name) || name.includes(mod.name)
-                    );
-                    if (match) {
-                        mod.examDate = examDateMap[match];
-                        needsUpdate = true;
-                    }
-                }
-            });
-        });
-
-        if (needsUpdate) {
-            this.saveSemesters(semesters);
-        }
-    }
-
-    /**
-     * Migrates WiSe 2025/26 semester if not already present
-     * @private
-     */
-    migrateWiSe2025() {
-        const semesters = this.getSemesters();
-        // Match the stable id first: a user-renamed WiSe semester lost all name
-        // markers and was re-added on every load, producing duplicates.
-        const hasWiSe = semesters.some(s =>
-            s.id === 'wse202526' ||
-            (s.name && (s.name.toLowerCase().includes('wse') ||
-                s.name.toLowerCase().includes('wintersemester') ||
-                s.name.toLowerCase().includes('2025/26')))
-        );
-        if (hasWiSe) return;
-
-        const subjects = this.getSubjects();
-        const getSubjectId = (name) => {
-            const s = subjects.find(sub => sub.name.toLowerCase() === name.toLowerCase());
-            return s ? s.id : null;
-        };
-
-        const wiSeSemester = {
-            id: 'wse202526',
-            name: 'Wintersemester 2025/26',
-            start: '2025-10-01',
-            end: '2026-03-31',
+    semester3Catalog() {
+        const subjects = [
+            { id: 'sem3-signal', name: 'Angewandte Leitungs- und Signaltheorie', color: 'bg-blue-500', weeklyGoal: 8 },
+            { id: 'sem3-messtechnik', name: 'Elektrische Messtechnik', color: 'bg-green-500', weeklyGoal: 8 },
+            { id: 'sem3-numerik', name: 'Numerische Mathematik', color: 'bg-orange-500', weeklyGoal: 6 },
+            { id: 'sem3-regelung', name: 'Grundlagen der Regelungstechnik', color: 'bg-purple-500', weeklyGoal: 8 }
+        ];
+        const semester = {
+            id: 'sem3-ws2627',
+            name: '3. Semester - WS 2026/27',
+            start: '2026-10-01',
+            end: '2027-03-31',
             modules: [
                 {
-                    id: 'wse-hm1',
-                    subjectId: getSubjectId('Höhere Mathematik 1'),
-                    name: 'Höhere Mathematik 1 für Elektrotechnik',
-                    code: '51114',
-                    ects: 9,
-                    hours: 270,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-21',
-                    notes: 'Reelle und komplexe Zahlen, Elementare Funktionen, Folgen und Reihen, Differenzial- und Integralrechnung einer Veränderlichen, Vektoren und Matrizen, Lineare Gleichungssysteme'
+                    id: 'sem3-signal',
+                    subjectId: 'sem3-signal',
+                    name: 'Angewandte Leitungs- und Signaltheorie',
+                    code: '53104',
+                    ects: 7,
+                    hours: 210,
+                    examPeriod: 'WS26/27',
+                    examDate: '',
+                    notes: 'Leitungen, Wellen, Reflexion und Anpassung, Streuparameter und Signalintegrität'
                 },
                 {
-                    id: 'wse-get1',
-                    subjectId: getSubjectId('GET1'),
-                    name: 'Grundlagen der Elektrotechnik 1',
-                    code: '51102',
-                    ects: 11,
-                    hours: 330,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-23',
-                    notes: 'Gleichstromnetzwerke, Wechselspannung und Wechselstrom, Schaltvorgänge in einfachen elektrischen Netzwerken, Praktikum (5 Versuche + Lernzielkontrollen)'
+                    id: 'sem3-messtechnik',
+                    subjectId: 'sem3-messtechnik',
+                    name: 'Elektrische Messtechnik',
+                    code: '53101',
+                    ects: 7,
+                    hours: 210,
+                    examPeriod: 'WS26/27',
+                    examDate: '',
+                    notes: 'Messunsicherheit, Sensorik, Oszilloskop und Spektrum, digitale Messtechnik'
                 },
                 {
-                    id: 'wse-prog',
-                    subjectId: getSubjectId('Programmierung & TI'),
-                    name: 'Grundlagen der Programmierung und technische Informatik',
-                    code: '51111',
-                    ects: 10,
-                    hours: 300,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-22',
-                    notes: 'Darstellung von Zahlen in EDV-Systemen, Boolesche Algebra, Programmierung in C++, Objektorientiertes Programmieren, Endliche Automaten, Mikroprozessortechnik'
+                    id: 'sem3-numerik',
+                    subjectId: 'sem3-numerik',
+                    name: 'Numerische Mathematik',
+                    code: '53112',
+                    ects: 7,
+                    hours: 210,
+                    examPeriod: 'WS26/27',
+                    examDate: '',
+                    notes: 'Numerische Gleichungslöser, Interpolation, Integration, Fehlerabschätzung'
+                },
+                {
+                    id: 'sem3-regelung',
+                    subjectId: 'sem3-regelung',
+                    name: 'Grundlagen der Regelungstechnik',
+                    code: '53113',
+                    ects: 7,
+                    hours: 210,
+                    examPeriod: 'WS26/27',
+                    examDate: '',
+                    notes: 'Modellbildung, Übertragungsfunktion, Stabilität, Reglerentwurf'
                 }
             ]
         };
-
-        // Ensure subject IDs match existing or future subjects
-        wiSeSemester.modules.forEach(mod => {
-            if (!mod.subjectId) {
-                const fallbackMap = {
-                    'Höhere Mathematik 1 für Elektrotechnik': 'Höhere Mathematik 1',
-                    'Grundlagen der Elektrotechnik 1': 'GET1',
-                    'Grundlagen der Programmierung und technische Informatik': 'Programmierung & TI'
-                };
-                const searchName = fallbackMap[mod.name] || mod.name;
-                const found = subjects.find(s =>
-                    s.name.toLowerCase() === searchName.toLowerCase() ||
-                    mod.name.toLowerCase().includes(s.name.toLowerCase())
-                );
-                if (found) mod.subjectId = found.id;
-            }
-        });
-
-        semesters.push(wiSeSemester);
-        this.saveSemesters(semesters);
+        return { subjects, semester };
     }
 
     /**
@@ -321,76 +248,8 @@ class StorageManager {
      * @private
      */
     initDefaultSemester() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const ssStart = `${year}-04-01`;
-        const ssEnd = `${year}-09-30`;
-
-        const timestamp = Date.now();
-        const semester = {
-            id: timestamp.toString(),
-            name: `2. Semester (Kernstudium) - ${year}`,
-            start: ssStart,
-            end: ssEnd,
-            modules: [
-                {
-                    id: (timestamp + 1).toString(),
-                    subjectId: '1',
-                    name: 'Höhere Mathematik 2 für ET',
-                    code: '52111',
-                    ects: 5,
-                    hours: 150,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-28',
-                    notes: 'Differenzial- und Integralrechnung mehrerer Veränderlicher, Differenzialgleichungen, Fourier- und Laplace-Transformation, Grundlagen der Wahrscheinlichkeitsrechnung und Statistik'
-                },
-                {
-                    id: (timestamp + 2).toString(),
-                    subjectId: '2',
-                    name: 'Grundgebiete der Elektrotechnik 2',
-                    code: '52102',
-                    ects: 7,
-                    hours: 210,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-28',
-                    notes: 'Elektrisches Feld, Magnetisches Feld, Induktionsgesetz, Wechselstrom'
-                },
-                {
-                    id: (timestamp + 3).toString(),
-                    subjectId: '3',
-                    name: 'Physik',
-                    code: '52103',
-                    ects: 7,
-                    hours: 210,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-24',
-                    notes: 'Mechanik, Thermodynamik, Elektrodynamik, Optik, Festkörperphysik'
-                },
-                {
-                    id: (timestamp + 4).toString(),
-                    subjectId: '4',
-                    name: 'Bauelemente und Grundschaltungen',
-                    code: '52112',
-                    ects: 7,
-                    hours: 210,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-20',
-                    notes: 'Halbleiter, Dioden, Transistoren, Operationsverstärker'
-                },
-                {
-                    id: (timestamp + 5).toString(),
-                    subjectId: '5',
-                    name: 'Digitaltechnik',
-                    code: '52107',
-                    ects: 4,
-                    hours: 120,
-                    examPeriod: '2026-07-14',
-                    examDate: '2026-07-28',
-                    notes: 'Boolesche Algebra, Karnaugh-Veitch-Diagramm, Flip-Flops, Schaltnetze, Schaltwerke'
-                }
-            ]
-        };
-        this._save(this.STORAGE_KEYS.SEMESTERS, [semester]);
+        this._save(this.STORAGE_KEYS.SEMESTERS, [this.semester3Catalog().semester]);
+        localStorage.setItem('lernzeit_catalog_version', this.CATALOG_VERSION);
     }
 
     // ==================== SEMESTER METHODS ====================
@@ -584,14 +443,10 @@ class StorageManager {
         }
         if (Array.isArray(parsed)) return parsed;
         return [
-            { id: '1', name: 'HM2', color: 'bg-blue-500' },
-            { id: '2', name: 'GET2', color: 'bg-green-500' },
-            { id: '3', name: 'Bauelemente', color: 'bg-orange-500' },
-            { id: '4', name: 'Physik', color: 'bg-purple-500' },
-            { id: '5', name: 'Digitaltechnik', color: 'bg-red-500' },
-            { id: '6', name: 'Höhere Mathematik 1', color: 'bg-cyan-500' },
-            { id: '7', name: 'GET1', color: 'bg-emerald-500' },
-            { id: '8', name: 'Programmierung & TI', color: 'bg-violet-500' }
+            { id: 'sem3-signal', name: 'Angewandte Leitungs- und Signaltheorie', color: 'bg-blue-500' },
+            { id: 'sem3-messtechnik', name: 'Elektrische Messtechnik', color: 'bg-green-500' },
+            { id: 'sem3-numerik', name: 'Numerische Mathematik', color: 'bg-orange-500' },
+            { id: 'sem3-regelung', name: 'Grundlagen der Regelungstechnik', color: 'bg-purple-500' }
         ];
     }
 

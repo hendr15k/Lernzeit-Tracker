@@ -927,7 +927,7 @@ function exportFilteredCSV(entries, sep) {
         const startTimeStr = padZero2(date.getHours()) + ':' + padZero2(date.getMinutes());
         const endTimeStr2 = padZero2(endDate2.getHours()) + ':' + padZero2(endDate2.getMinutes());
         const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
-        const subjectName = subject ? subject.name : 'Unbekannt';
+        const subjectName = subject ? subject.name : (entry.subjectName || 'Früheres Fach');
         const durationMinutes = Math.round(entry.duration / 60);
         const totalMinutes2 = Math.round(entry.duration / 60);
         const hours2 = Math.floor(totalMinutes2 / 60);
@@ -958,7 +958,7 @@ function exportFilteredJSON(entries) {
         const subject = subjects.find(s => String(s.id) === String(entry.subjectId));
         const endTime2 = new Date(entry.endTime);
         const localIso = date.getFullYear() + '-' + padZero2(date.getMonth() + 1) + '-' + padZero2(date.getDate());
-        return { id: entry.id, datum: localIso, von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : 'Unbekannt', fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
+        return { id: entry.id, datum: localIso, von: padZero2(date.getHours()) + ':' + padZero2(date.getMinutes()), bis: padZero2(endTime2.getHours()) + ':' + padZero2(endTime2.getMinutes()), fach: subject ? subject.name : (entry.subjectName || 'Früheres Fach'), fachId: entry.subjectId, thema: entry.topics || '', dauerMinuten: Math.round(entry.duration / 60), notizen: entry.notes || '' };
     })};
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1700,7 +1700,7 @@ function exportDataAsCSV() {
         const dateStr = date.toLocaleDateString('de-DE');
         const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         const subject = subjects.find(s => s.id === entry.subjectId);
-        const subjectName = subject ? subject.name : 'Unbekannt';
+        const subjectName = subject ? subject.name : (entry.subjectName || 'Früheres Fach');
         const durationMin = Math.round(entry.duration / 60);
         const csvField = (v) => '"' + csvSafeCell(v).replace(/"/g, '""') + '"';
         csvContent += `${dateStr},${timeStr},${csvField(subjectName)},${durationMin},${entry.notes ? csvField(entry.notes) : ''}\r\n`;
