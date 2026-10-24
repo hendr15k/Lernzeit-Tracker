@@ -1,10 +1,41 @@
 services:
+  api:
+    build:
+      context: .
+      target: api
+    image: lernzeit-api:local
+    container_name: lernzeit-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+      AUTH_USER: ${AUTH_USER:-hendrik}
+    volumes:
+      - lernzeit-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
   lernzeit-tracker:
     build:
       context: .
     image: lernzeit-tracker:local
     container_name: lernzeit-tracker
     restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
     ports:
       - "${APP_PORT:-8085}:80"
     read_only: true
@@ -26,3 +57,7 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+volumes:
+  lernzeit-data:
+    name: lernzeit-data

@@ -13,8 +13,26 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="css/toast.css">
 </head>
-<body id="app" class="bg-app text-app font-sans antialiased">
+<body id="app" class="bg-app text-app font-sans antialiased auth-locked">
   <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+
+  <section id="auth-gate" class="auth-gate" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <div class="auth-brand"><span class="brand-mark">L</span><div><strong>Lernzeit Tracker</strong><span>Dein Lernraum</span></div></div>
+      <p class="eyebrow">PERSÖNLICHER ZUGANG</p>
+      <h1 id="auth-title">Willkommen zurück.</h1>
+      <p class="auth-intro">Melde dich an, um deine Lernzeiten, Fächer und Ziele von überall zu erreichen.</p>
+      <form id="auth-form" autocomplete="on">
+        <label for="auth-username">Benutzername</label>
+        <input id="auth-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        <label for="auth-password">Passwort</label>
+        <input id="auth-password" name="password" type="password" autocomplete="current-password" required>
+        <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
+        <button id="auth-submit" class="btn btn-primary auth-submit" type="submit">Anmelden</button>
+      </form>
+      <p class="auth-footnote">Deine Daten werden auf deinem eigenen Server gespeichert und sind an dein Konto gebunden, nicht nur im Browser-Cache.</p>
+    </div>
+  </section>
 
   <header class="mobile-header" role="banner">
     <button id="btn-nav-toggle" class="icon-button" type="button" aria-label="Navigation öffnen" aria-expanded="false" aria-controls="workspace-sidebar">
@@ -98,6 +116,10 @@
       <button id="btn-backup" class="btn btn-secondary w-full" type="button" aria-label="Backup erstellen">
         <i data-lucide="save" class="w-5 h-5" aria-hidden="true"></i>
         Backup
+      </button>
+      <button class="btn btn-secondary w-full" type="button" data-action="logout" aria-label="Abmelden">
+        <i data-lucide="log-out" class="w-5 h-5" aria-hidden="true"></i>
+        Abmelden <span class="auth-user-inline" data-auth-user>hendrik</span>
       </button>
     </div>
   </aside>
@@ -1458,6 +1480,7 @@
   </nav>
 
   <script src="vendor/lucide.min.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/store.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/timer.js"></script>

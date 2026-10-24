@@ -1,5 +1,14 @@
 const { test, expect } = require('@playwright/test');
 
+test.beforeEach(async ({ page }) => {
+  await page.request.delete('/api/data');
+});
+
+async function flushSync(page) {
+  await page.evaluate(async () => { if (window.lernzeitAuth) await window.lernzeitAuth.syncNow(); });
+  await page.waitForTimeout(150);
+}
+
 const EXPECTED = [
   { id: 'sem3-signal', name: 'Angewandte Leitungs- und Signaltheorie', code: '53104' },
   { id: 'sem3-messtechnik', name: 'Elektrische Messtechnik', code: '53101' },
@@ -69,6 +78,7 @@ test('existing install migrates to semester 3 and keeps old sessions', async ({ 
     subjects.push({ id: 'eigene-1', name: 'Eigenes Fach', color: 'bg-teal-500', weeklyGoal: 2 });
     localStorage.setItem('lernzeit_subjects', JSON.stringify(subjects));
   });
+  await flushSync(page);
   await page.reload();
   await expect(page.locator('#btn-hero-start')).toBeVisible({ timeout: 10000 });
   const custom = await page.evaluate(() => JSON.parse(localStorage.getItem('lernzeit_subjects') || '[]').some((s) => s.name === 'Eigenes Fach'));

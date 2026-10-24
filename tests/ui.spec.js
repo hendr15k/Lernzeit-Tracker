@@ -1,5 +1,14 @@
 const { test, expect } = require('@playwright/test');
 
+test.beforeEach(async ({ page }) => {
+  await page.request.delete('/api/data');
+});
+
+async function flushSync(page) {
+  await page.evaluate(async () => { if (window.lernzeitAuth) await window.lernzeitAuth.syncNow(); });
+  await page.waitForTimeout(150);
+}
+
 test('desktop workspace has a full-height sidebar and a wide dashboard', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
@@ -90,6 +99,7 @@ test('manual add-entry via overlay persists to localStorage and survives reload'
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('lernzeit_entries') || '[]').pop());
   expect(saved.duration).toBe(45 * 60);
   expect(String(saved.notes || '')).toContain('pw-e2e-manual');
+  await flushSync(page);
   await page.reload();
   await expect(page.locator('#btn-hero-start')).toBeVisible({ timeout: 10000 });
   const afterReload = await page.evaluate(() => JSON.parse(localStorage.getItem('lernzeit_entries') || '[]'));
@@ -209,7 +219,7 @@ test('no duplicate ids and no uncaught script errors', async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
-test('service worker serves app offline', async ({ page, context }) => {
+test('service worker serves the login shell offline', async ({ page, context }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   await expect(page.locator('#btn-hero-start')).toBeVisible({ timeout: 10000 });
@@ -232,7 +242,9 @@ test('service worker serves app offline', async ({ page, context }) => {
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.locator('#btn-hero-start')).toBeVisible({ timeout: 15000 });
+    // Server-side accounts require a reachable API for authentication. The
+    // cached shell must still boot and show the gate instead of a blank page.
+    await expect(page.locator('#auth-gate')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#view-dashboard')).toBeAttached({ timeout: 15000 });
   } finally {
     await context.setOffline(false);

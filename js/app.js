@@ -22,7 +22,9 @@ let _editingModuleId = null;
 /**
  * Initializes the application on DOMContentLoaded
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await (window.authReady || Promise.resolve());
+    if (!window.storageManager) window.storageManager = new StorageManager();
     initNavigation();
     updateSubjectSelects();
     initFilterListener();

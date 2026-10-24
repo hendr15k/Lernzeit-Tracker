@@ -31,7 +31,9 @@
     const nav = document.querySelector('.sidebar-nav [data-target="' + view.id + '"]');
     document.title = (nav?.textContent.trim() || 'Dashboard') + ' · Lernzeit Tracker';
   }
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    await (window.authReady || Promise.resolve());
+    if (!window.storageManager) window.storageManager = new StorageManager();
     const sidebar = document.getElementById('workspace-sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
     const toggle = document.getElementById('btn-nav-toggle');

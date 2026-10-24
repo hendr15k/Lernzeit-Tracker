@@ -10,3 +10,8 @@ playwright.config.js
 Dockerfile
 compose.yaml
 README.md
+.env
+.env.*
+!.env.example
+test-results
+data

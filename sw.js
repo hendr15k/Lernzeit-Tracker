@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lernzeit-tracker-v9-workspace';
+const CACHE_NAME = 'lernzeit-tracker-v10-auth';
 
 // Everything the app needs to boot offline. Keep this list in sync with the
 // <script> tags in index.html - a missing module used to break the app offline.
@@ -9,6 +9,7 @@ const LOCAL_ASSETS = [
     './css/toast.css',
     './css/tailwind.generated.css',
     './vendor/lucide.min.js',
+    './js/auth.js',
     './js/ui.js',
     './js/utils.js',
     './js/store.js',
@@ -86,6 +87,8 @@ self.addEventListener('fetch', (e) => {
     }
 
     const url = new URL(request.url);
+    // Never cache API calls: sessions and data must always reach the server.
+    if (url.pathname.startsWith('/api/')) return;
     const sameOrigin = url.origin === self.location.origin;
 
     if (!sameOrigin) {

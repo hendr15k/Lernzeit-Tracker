@@ -617,7 +617,8 @@ class StorageManager {
 
 // Initialize storage manager in browser environment
 if (typeof document !== 'undefined') {
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await (window.authReady || Promise.resolve());
     window.storageManager = new StorageManager();
 });
 }

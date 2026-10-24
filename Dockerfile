@@ -10,9 +10,21 @@ COPY vendor ./vendor
 COPY icon-192.png icon-512.png ./
 RUN npm run build:css
 
+# API and account storage. No dependencies and no build step.
+FROM node:22-alpine AS api
+WORKDIR /app
+RUN mkdir -p /data && chown -R node:node /data
+COPY --chown=node:node server ./server
+ENV NODE_ENV=production DATA_DIR=/data
+USER node
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
+CMD ["node", "server/server.js"]
+
 FROM nginx:1.29-alpine
 LABEL org.opencontainers.image.title="Lernzeit Tracker" \
-      org.opencontainers.image.description="Lokale Lernzeit-PWA" \
+      org.opencontainers.image.description="Lernzeit-PWA mit Login" \
       org.opencontainers.image.source="https://github.com/hendr15k/Lernzeit-Tracker"
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/index.html /app/manifest.json /app/sw.js /app/style.css /usr/share/nginx/html/
