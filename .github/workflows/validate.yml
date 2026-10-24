@@ -25,3 +25,20 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: UI tests
         run: npm test
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t lernzeit-tracker:ci .
+      - name: Boot and probe
+        run: |
+          docker run -d --name lernzeit-ci -p 18085:80 lernzeit-tracker:ci
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:18085/healthz | grep -q ok; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18085/ | grep -q "Lernzeit Tracker"
+          curl -fsS http://127.0.0.1:18085/css/tailwind.generated.css >/dev/null
+          docker stop lernzeit-ci
